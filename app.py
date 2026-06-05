@@ -1,17 +1,27 @@
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import json
 import os
 import uuid
 import hashlib
+import random
 
 # ==========================================
-# 1. ตั้งค่าระบบเบื้องต้น
+# 1. ตั้งค่าระบบ (REBIRTH EDITION)
 # ==========================================
-st.set_page_config(page_title="Discipline & Focus HQ", layout="wide", page_icon="🎯")
-DB_FILE = "focus_hq_db.json"
-today = str(date.today())
+st.set_page_config(page_title="REBIRTH HQ", layout="wide", page_icon="💀")
+DB_FILE = "rebirth_db.json"
+today_date = date.today()
+today_str = str(today_date)
+
+GOGGINS_QUOTES = [
+    "เวลาของคุณกำลังหมดลงทุกวินาที จะนั่งโง่ๆ หรือจะลุกไปสร้างตำนาน!",
+    "ความเจ็บปวดสร้างความยิ่งใหญ่ ความสบายสร้างความกระจอก!",
+    "คนอื่นหยุดเมื่อเหนื่อย แต่เราหยุดเมื่อเสร็จ!",
+    "เมื่อคุณคิดว่าไม่ไหวแล้ว คุณเพิ่งใช้พลังไปแค่ 40% STAY HARD!",
+    "จงทำในสิ่งที่คุณเกลียดทุกวัน เพื่อให้จิตใจมันด้านชา!"
+]
 
 def hash_password(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
@@ -23,14 +33,9 @@ def load_db():
     else:
         data = {}
     
-    # โครงสร้างฐานข้อมูลสำหรับคนมีวินัย
-    defaults = {
-        "users": {}, "squad_tasks": [], "private_tasks": {}, 
-        "habits": {}, "deep_work": {}, "reflections": {}, "contracts": []
-    }
+    defaults = {"users": {}, "missions": {}, "cookie_jar": {}, "mirror": {}, "callus": {}, "haters": {}}
     for k, v in defaults.items():
         if k not in data: data[k] = v
-        
     return data
 
 def save_db(data):
@@ -39,227 +44,260 @@ def save_db(data):
 
 db = load_db()
 
-# ฟังก์ชันแจก EXP
-def add_exp(email, amount):
-    db["users"][email]["exp"] += amount
-    if db["users"][email]["exp"] >= 100:
-        db["users"][email]["level"] += 1
-        db["users"][email]["exp"] -= 100
-        st.balloons()
-        st.success(f"🎉 LEVEL UP! ตอนนี้คุณเลเวล {db['users'][email]['level']} แล้ว!")
-
 # ==========================================
-# 2. ระบบเข้าสู่ระบบ (Authentication)
+# 2. ระบบคัดกรอง (ฆ่าร่างเก่า สมัครร่างใหม่)
 # ==========================================
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
 with st.sidebar:
-    st.title("🔐 เข้าสู่ระบบ")
+    st.title("💀 จุดเกิดใหม่ (Rebirth)")
     
     if st.session_state.current_user is None:
-        auth_mode = st.radio("เลือกทำรายการ:", ["เข้าสู่ระบบ", "สมัครสมาชิกใหม่"])
-        email_input = st.text_input("📧 อีเมล:")
-        pass_input = st.text_input("🔑 รหัสผ่าน:", type="password")
+        auth_mode = st.radio("เลือก:", ["รายงานตัว (Login)", "ฆ่าร่างเก่า (Register)"])
+        email_input = st.text_input("อีเมล:")
+        pass_input = st.text_input("รหัสผ่าน:", type="password")
         
-        if auth_mode == "สมัครสมาชิกใหม่":
-            name_input = st.text_input("👤 ชื่อผู้ใช้:")
-            if st.button("สมัครสมาชิก"):
+        if auth_mode == "ฆ่าร่างเก่า (Register)":
+            name_input = st.text_input("ฉายานักรบ:")
+            birth_date = st.date_input("วันเกิด (เพื่อคำนวณวันตาย):", min_value=date(1940, 1, 1), max_value=today_date)
+            if st.button("เกิดใหม่เป็นคนจริง"):
                 if email_input and pass_input and name_input:
                     if email_input in db["users"]:
-                        st.error("อีเมลนี้ถูกใช้แล้ว!")
+                        st.error("วิญญาณดวงนี้มีอยู่แล้ว!")
                     else:
                         db["users"][email_input] = {
-                            "password": hash_password(pass_input), 
-                            "username": name_input,
-                            "level": 1, "exp": 0
+                            "password": hash_password(pass_input), "username": name_input,
+                            "birthdate": str(birth_date), "level": 1, "exp": 0, "streak": 0, 
+                            "iron_will": 0, "last_login": today_str, "cleared_yesterday": True,
+                            "hell_week_active": False, "hell_week_end": ""
                         }
-                        # สร้างพื้นที่ส่วนตัว
-                        db["private_tasks"][email_input] = []
-                        db["habits"][email_input] = []
-                        db["deep_work"][email_input] = 0
-                        db["reflections"][email_input] = []
+                        db["missions"][email_input] = []
+                        db["cookie_jar"][email_input] = []
+                        db["mirror"][email_input] = []
+                        db["callus"][email_input] = []
+                        db["haters"][email_input] = []
                         save_db(db)
-                        st.success("สร้างโปรไฟล์สำเร็จ! เข้าสู่ระบบได้เลย")
+                        st.success("ร่างเก่าตายไปแล้ว ล็อกอินเพื่อเริ่มนรกขุมใหม่!")
                 else:
-                    st.warning("กรอกข้อมูลให้ครบครับ")
+                    st.warning("กรอกให้ครบ!")
                     
-        elif auth_mode == "เข้าสู่ระบบ":
-            if st.button("เข้าสู่ระบบ"):
+        elif auth_mode == "รายงานตัว (Login)":
+            if st.button("บุก!"):
                 if email_input in db["users"] and db["users"][email_input]["password"] == hash_password(pass_input):
+                    user_data = db["users"][email_input]
+                    
+                    # เช็คการตายจากวันก่อนหน้า
+                    if user_data["last_login"] != today_str:
+                        if not user_data["cleared_yesterday"]:
+                            if user_data.get("hell_week_active", False):
+                                user_data["level"] = 1 # HELL WEEK PENALTY (รีเซ็ตเวล 1)
+                                user_data["exp"] = 0
+                                user_data["hell_week_active"] = False
+                            else:
+                                user_data["exp"] -= 50
+                                if user_data["exp"] < 0:
+                                    user_data["level"] = max(1, user_data["level"] - 1)
+                                    user_data["exp"] = 0
+                            user_data["streak"] = 0
+                        
+                        # เช็ควันหมดอายุ Hell Week
+                        if user_data.get("hell_week_active") and today_str > user_data["hell_week_end"]:
+                            user_data["hell_week_active"] = False
+                            
+                        user_data["last_login"] = today_str
+                        user_data["cleared_yesterday"] = False
+                        save_db(db)
+                        
                     st.session_state.current_user = email_input
                     st.rerun()
                 else:
-                    st.error("ข้อมูลไม่ถูกต้อง!")
+                    st.error("ข้อมูลผิด รึแกความจำเสื่อม!")
     else:
-        user_data = db["users"][st.session_state.current_user]
-        st.success(f"สวัสดี, {user_data['username']}")
-        st.progress(user_data["exp"] / 100, text=f"Lv.{user_data['level']} | EXP: {user_data['exp']}/100")
-        if st.button("🚪 ออกจากระบบ"):
+        u_data = db["users"][st.session_state.current_user]
+        st.error(f"💀 นักรบ: {u_data['username']}")
+        st.warning(f"🔥 ความต่อเนื่อง: {u_data['streak']} วัน")
+        st.info(f"🩸 Iron Will (แต้มความถึก): {u_data.get('iron_will', 0)}")
+        st.progress(u_data["exp"] / 100, text=f"Lv.{u_data['level']} | EXP: {u_data['exp']}/100")
+        
+        if u_data.get("hell_week_active"):
+            st.error(f"🔥 HELL WEEK ทำงานอยู่! พลาด=กลับเวล 1 (หมดเขต: {u_data['hell_week_end']})")
+            
+        if st.button("🚪 ถอยทัพ"):
             st.session_state.current_user = None
             st.rerun()
 
 if st.session_state.current_user is None:
-    st.title("🎯 Discipline & Focus HQ")
-    st.info("👈 ศูนย์บัญชาการสำหรับคนเอาจริง ล็อกอินเพื่อเริ่มฝึกวินัย")
+    st.title("💀 THE REBIRTH PROTOCOL")
+    st.info("👈 ก้าวผ่านประตูนี้ เพื่อทิ้งความอ่อนแอไว้ข้างหลัง")
     st.stop()
 
-user_email = st.session_state.current_user
-username = db["users"][user_email]["username"]
+email = st.session_state.current_user
+user = db["users"][email]
+
+# คำนวณนาฬิกามรณะ
+birth_d = datetime.strptime(user["birthdate"], "%Y-%m-%d").date()
+days_lived = (today_date - birth_d).days
+total_days_80_years = 80 * 365
+days_left = total_days_80_years - days_lived
 
 # ==========================================
-# 3. หน้าต่างการทำงานหลัก
+# 3. แดชบอร์ดนรกแตก
 # ==========================================
-st.title(f"⚡ ศูนย์บัญชาการของ: {username}")
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📢 กลุ่ม & สถิติ", "🔒 งานส่วนตัว", "🌱 สร้างวินัย & โฟกัส", "🧠 ทบทวนตัวเอง", "🗄️ ประวัติ"])
+st.title("🔥 ศูนบัญชาการนักรบ (STAY HARD)")
+st.error(f'🗣️ "{random.choice(GOGGINS_QUOTES)}"')
 
-# ----------------- แถบที่ 1: กลุ่ม (Squad & Contracts) -----------------
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🕒 เวลา & ความแค้น", "🩸 ความด้านชา & กระจก", "⚔️ ภารกิจดิบ (กฎ 40%)", "🍪 โหลคุกกี้", "💀 จบวัน & โหมดนรก"])
+
+# ----------------- 1. นาฬิกา & บัญชีแค้น -----------------
 with tab1:
-    c1, c2 = st.columns(2)
-    
-    with c1:
-        st.markdown("### 📢 ประกาศงานกลุ่ม")
-        with st.form("squad_form", clear_on_submit=True):
-            s_name = st.text_input("ชื่องานกลุ่ม / โปรเจกต์:")
-            s_date = st.date_input("กำหนดส่ง:")
-            if st.form_submit_button("ประกาศงาน"):
-                if s_name:
-                    db["squad_tasks"].append({"id": str(uuid.uuid4()), "รายการ": s_name, "กำหนดส่ง": str(s_date), "ผู้ประกาศ": username, "เสร็จแล้ว": False})
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### 🕒 นาฬิกามรณะ (Death Clock)")
+        st.caption("สมมติว่าคุณมีอายุ 80 ปี นี่คือเวลาที่คุณเหลือบนโลก... อย่าเสียเวลา")
+        st.metric("⏳ จำนวนวันที่เหลืออยู่", f"{days_left:,} วัน")
+        st.progress(days_lived / total_days_80_years, text="หลอดพลังชีวิตของคุณที่หายไปแล้ว")
+        
+    with col2:
+        st.markdown("### ☠️ บัญชีแค้น (Prove Them Wrong)")
+        with st.form("hater_form", clear_on_submit=True):
+            hater_msg = st.text_input("ใครเคยดูถูก หรือพูดจาเหยียดหยามคุณว่ายังไงบ้าง?:")
+            if st.form_submit_button("จารึกลงบัญชีแค้น"):
+                if hater_msg:
+                    db["haters"][email].append(hater_msg)
                     save_db(db)
                     st.rerun()
-                    
-        squad_active = [t for t in db["squad_tasks"] if not t.get("เสร็จแล้ว")]
-        if squad_active:
-            for t in squad_active:
-                st.info(f"📌 **{t['รายการ']}** (ส่ง: {t['กำหนดส่ง']}) - แจ้งโดย: {t['ผู้ประกาศ']}")
-                if st.button(f"✅ เคลียร์งานนี้", key=f"sq_{t['id']}"):
-                    t["เสร็จแล้ว"] = True
-                    add_exp(user_email, 15) # เคลียร์งานกลุ่มได้ 15 EXP
-                    save_db(db)
-                    st.rerun()
+        
+        for h in db["haters"][email]:
+            st.error(f"🤬 \"{h}\"")
 
-    with c2:
-        st.markdown("### ⚖️ กระดานสัญญาใจ (Accountability)")
-        st.caption("ตั้งเป้าหมายโหดๆ พร้อมบทลงโทษถ้าทำไม่สำเร็จ ให้เพื่อนเป็นพยาน!")
-        with st.form("contract_form", clear_on_submit=True):
-            c_goal = st.text_input("ฉันขอสัญญาว่า จะทำ...")
-            c_penalty = st.text_input("ถ้าทำไม่สำเร็จ ฉันจะ... (บทลงโทษ):")
-            c_deadline = st.date_input("ภายในวันที่:")
-            if st.form_submit_button("✍️ ลงนามสัญญา"):
-                if c_goal and c_penalty:
-                    db["contracts"].append({"id": str(uuid.uuid4()), "ผู้สัญญา": username, "เป้าหมาย": c_goal, "บทลงโทษ": c_penalty, "กำหนด": str(c_deadline)})
-                    save_db(db)
-                    st.rerun()
-                    
-        for c in db["contracts"]:
-            st.error(f"🔥 **{c['ผู้สัญญา']}** สัญญาว่า: {c['เป้าหมาย']}\n\n⚠️ **บทลงโทษ:** {c['บทลงโทษ']} (ภายใน: {c['กำหนด']})")
-
-# ----------------- แถบที่ 2: งานส่วนตัว -----------------
+# ----------------- 2. ด้านชา & กระจก -----------------
 with tab2:
-    st.markdown("### 🔒 แผนงานส่วนตัว (งาน, ยูทูป, การเรียน)")
-    with st.form("priv_form", clear_on_submit=True):
-        p_name = st.text_input("สิ่งที่ต้องทำให้สำเร็จ:")
-        p_type = st.selectbox("หมวดหมู่:", ["ยูทูป/คอนเทนต์", "การเรียน/พัฒนาตนเอง", "โปรเจกต์ส่วนตัว", "อื่นๆ"])
-        p_date = st.date_input("กำหนดวัน:")
-        if st.form_submit_button("💾 เพิ่มเข้าแผนงาน"):
-            if p_name:
-                db["private_tasks"][user_email].append({"id": str(uuid.uuid4()), "รายการ": p_name, "หมวดหมู่": p_type, "กำหนดส่ง": str(p_date), "เสร็จแล้ว": False})
-                save_db(db)
-                st.rerun()
-
-    priv_active = [t for t in db["private_tasks"][user_email] if not t.get("เสร็จแล้ว")]
-    if priv_active:
-        df_priv = pd.DataFrame(priv_active).set_index("id")
-        edited_priv = st.data_editor(
-            df_priv[["เสร็จแล้ว", "หมวดหมู่", "รายการ", "กำหนดส่ง"]],
-            column_config={"เสร็จแล้ว": st.column_config.CheckboxColumn("✅ เสร็จแล้ว")},
-            disabled=["หมวดหมู่", "รายการ", "กำหนดส่ง"], use_container_width=True
-        )
-        for task_id, row in edited_priv.iterrows():
-            if row["เสร็จแล้ว"]:
-                for t in db["private_tasks"][user_email]:
-                    if t["id"] == task_id:
-                        t["เสร็จแล้ว"] = True
-                        add_exp(user_email, 10) # เคลียร์งานส่วนตัวได้ 10 EXP
-                        save_db(db)
-                        st.rerun()
-    else:
-        st.success("ไม่มีงานค้าง! คุณมีวินัยยอดเยี่ยมมาก")
-
-# ----------------- แถบที่ 3: สร้างวินัย & โฟกัส -----------------
-with tab3:
     cA, cB = st.columns(2)
-    
     with cA:
-        st.markdown("### 🌱 บันทึกนิสัยรายวัน (Habits)")
-        st.caption("พิมพ์สิ่งที่ต้องการฝึกเป็นนิสัย แล้วกดเช็คอิน (+5 EXP)")
-        with st.form("habit_form", clear_on_submit=True):
-            h_name = st.text_input("นิสัยที่อยากสร้าง (เช่น อ่านหนังสือ 20 หน้า):")
-            if st.form_submit_button("เพิ่มนิสัย"):
-                if h_name:
-                    db["habits"][user_email].append({"id": str(uuid.uuid4()), "ชื่อ": h_name, "ทำล่าสุด": ""})
+        st.markdown("### 🩸 สร้างความด้านชา (Callus Your Mind)")
+        st.caption("ทำสิ่งที่เกลียดเพื่อให้จิตใจแข็งแกร่ง (ได้แต้ม Iron Will)")
+        with st.form("callus_form", clear_on_submit=True):
+            c_task = st.text_input("วันนี้คุณทำสิ่งที่เกลียดอะไรไปแล้วบ้าง? (เช่น อาบน้ำเย็น, ตื่นตี 4):")
+            if st.form_submit_button("ฉันเอาชนะความเกลียดได้!"):
+                if c_task:
+                    db["callus"][email].append({"วันที่": today_str, "สิ่งที่ทำ": c_task})
+                    user["iron_will"] = user.get("iron_will", 0) + 1
+                    user["exp"] += 15
                     save_db(db)
                     st.rerun()
-                    
-        for h in db["habits"][user_email]:
-            col1, col2 = st.columns([3, 1])
-            col1.write(f"🔹 {h['ชื่อ']}")
-            if h["ทำล่าสุด"] == today:
-                col2.success("เสร็จแล้ว")
-            else:
-                if col2.button("เช็คอิน", key=f"hb_{h['id']}"):
-                    h["ทำล่าสุด"] = today
-                    add_exp(user_email, 5)
-                    save_db(db)
-                    st.rerun()
+        
+        today_callus = [c for c in db["callus"][email] if c["วันที่"] == today_str]
+        for c in today_callus:
+            st.success(f"🩸 {c['สิ่งที่ทำ']}")
 
     with cB:
-        st.markdown("### ⏳ บันทึกชั่วโมง Deep Work")
-        st.caption("การทำงานแบบไร้สิ่งรบกวน (ปิดมือถือ โฟกัส 100%)")
-        st.metric("ชั่วโมงโฟกัสสะสมของคุณ", f"{db['deep_work'][user_email]} ชั่วโมง")
+        st.markdown("### 🪞 กระจกสะท้อนความจริง")
+        with st.form("mirror_form", clear_on_submit=True):
+            excuse = st.text_input("ข้ออ้างในหัววันนี้คืออะไร?:")
+            destroy = st.text_input("จะบดขยี้มันยังไง?:")
+            if st.form_submit_button("ประกาศสงคราม!"):
+                if excuse and destroy:
+                    db["mirror"][email].append({"วันที่": today_str, "ข้ออ้าง": excuse, "การบดขยี้": destroy})
+                    save_db(db)
+                    st.rerun()
         
-        with st.form("dw_form", clear_on_submit=True):
-            dw_hours = st.number_input("วันนี้คุณทำ Deep Work ไปกี่ชั่วโมง?", min_value=0.5, step=0.5)
-            if st.form_submit_button("บันทึกเวลา"):
-                db["deep_work"][user_email] += dw_hours
-                add_exp(user_email, int(dw_hours * 20)) # 1 ชม. ได้ 20 EXP
-                save_db(db)
-                st.toast(f"สุดยอด! โฟกัสไป {dw_hours} ชม.", icon="🧠")
-                st.rerun()
+        today_mirrors = [m for m in db["mirror"][email] if m["วันที่"] == today_str]
+        for m in today_mirrors:
+            st.warning(f"🤡 ข้ออ้าง: {m['ข้ออ้าง']} ➡️ ⚔️ บดขยี้: {m['การบดขยี้']}")
 
-# ----------------- แถบที่ 4: ทบทวนตัวเอง (Reflection) -----------------
-with tab4:
-    st.markdown("### 🧠 Daily Reflection (ทบทวนตัวเองก่อนนอน)")
-    st.caption("คนสำเร็จมักทบทวนตัวเองเสมอ เพื่อพรุ่งนี้ที่ดีกว่า")
+# ----------------- 3. ภารกิจดิบ & กฎ 40% -----------------
+with tab3:
+    st.markdown("### ⚔️ ภารกิจวันนี้ (ห้ามมีคำว่าพรุ่งนี้)")
     
-    with st.form("reflect_form", clear_on_submit=True):
-        r_good = st.text_area("🌟 วันนี้ทำอะไรได้ดีบ้าง / สิ่งที่เรียนรู้:")
-        r_improve = st.text_area("🛠️ สิ่งที่ต้องปรับปรุง / พรุ่งนี้จะทำให้ดีขึ้นยังไง:")
-        if st.form_submit_button("บันทึกลงสมุด"):
-            if r_good or r_improve:
-                db["reflections"][user_email].append({"วันที่": today, "ข้อดี": r_good, "ปรับปรุง": r_improve})
-                add_exp(user_email, 10)
+    with st.form("mission_form", clear_on_submit=True):
+        m_name = st.text_input("ระบุภารกิจชี้ชะตา:")
+        if st.form_submit_button("เพิ่มภารกิจ"):
+            if m_name:
+                db["missions"][email].append({"id": str(uuid.uuid4()), "ภารกิจ": m_name, "เสร็จแล้ว": False})
                 save_db(db)
-                st.toast("บันทึกการเติบโตสำเร็จ!", icon="📈")
                 st.rerun()
                 
-    st.markdown("#### 📖 บันทึกย้อนหลังของคุณ")
-    for r in reversed(db["reflections"][user_email]):
-        with st.expander(f"📅 บันทึกวันที่: {r['วันที่']}"):
-            st.write(f"**ทำได้ดี:** {r['ข้อดี']}")
-            st.write(f"**ต้องปรับปรุง:** {r['ปรับปรุง']}")
+    active_missions = [m for m in db["missions"][email] if not m.get("เสร็จแล้ว")]
+    
+    if active_missions:
+        for m in active_missions:
+            with st.container():
+                st.write(f"❌ **{m['ภารกิจ']}**")
+                colA, colB = st.columns(2)
+                
+                # ปุ่มทำงานปกติ
+                if colA.button("✅ เสร็จแบบปกติ", key=f"norm_{m['id']}"):
+                    m["เสร็จแล้ว"] = True
+                    user["exp"] += 10
+                    if user["exp"] >= 100:
+                        user["level"] += 1
+                        user["exp"] -= 100
+                    save_db(db)
+                    st.rerun()
+                    
+                # ปุ่มกฎ 40%
+                if colB.button("🛑 กฎ 40% (ฝืนทำต่ออีก 10% ก่อนจบ)", type="primary", key=f"hard_{m['id']}"):
+                    m["เสร็จแล้ว"] = True
+                    user["exp"] += 25 # โบนัสเยอะกว่ามาก
+                    user["iron_will"] = user.get("iron_will", 0) + 1
+                    if user["exp"] >= 100:
+                        user["level"] += 1
+                        user["exp"] -= 100
+                    save_db(db)
+                    st.toast("คุณมันปีศาจ! ฝืนขีดจำกัดสำเร็จ!", icon="🔥")
+                    st.rerun()
+                st.divider()
+    else:
+        st.success("✅ ภารกิจเคลียร์หมดแล้ว!")
 
-# ----------------- แถบที่ 5: ประวัติและสถิติ -----------------
+# ----------------- 4. โหลคุกกี้ -----------------
+with tab4:
+    st.markdown("### 🍪 โหลคุกกี้แห่งชัยชนะ (Cookie Jar)")
+    with st.form("cookie_form", clear_on_submit=True):
+        c_victory = st.text_area("บันทึกความยากลำบากที่คุณเพิ่งชนะมาได้:")
+        if st.form_submit_button("ยัดใส่โหล"):
+            if c_victory:
+                db["cookie_jar"][email].append({"วันที่": today_str, "ชัยชนะ": c_victory})
+                save_db(db)
+                st.rerun()
+                
+    if st.button("ขอกำลังใจให้ตัวเองหน่อย"):
+        if db["cookie_jar"][email]:
+            random_cookie = random.choice(db["cookie_jar"][email])
+            st.success(f"💪 **อย่าลืมสิคุณคือคนที่:**\n\n\"{random_cookie['ชัยชนะ']}\" (เมื่อ {random_cookie['วันที่']})")
+        else:
+            st.error("โหลว่างเปล่า! ออกไปลุยเดี๋ยวนี้!")
+
+# ----------------- 5. จบวัน & โหมดนรก -----------------
 with tab5:
-    st.markdown("### 📊 สถิติความก้าวหน้า")
+    st.markdown("### 💀 ยืนยันจบวัน (End of Day)")
     
-    # ดึงสถิติ Level ของทุกคนในกลุ่มมาโชว์
-    st.markdown("#### 🏆 Leaderboard (จัดอันดับความมีวินัย)")
-    leaderboard = [{"ชื่อ": v["username"], "เลเวล": v["level"], "EXP": v["exp"], "ชั่วโมงโฟกัส": db["deep_work"].get(k, 0)} for k, v in db["users"].items()]
-    df_leaderboard = pd.DataFrame(leaderboard).sort_values(by=["เลเวล", "EXP"], ascending=[False, False])
-    st.dataframe(df_leaderboard, hide_index=True, use_container_width=True)
+    if user["cleared_yesterday"]:
+        st.success("🔥 คุณรายงานตัวจบวันไปแล้ว! ไปพักซะ พรุ่งนี้ต้องลุยใหม่!")
+    else:
+        if active_missions:
+            st.error("❌ ปุ่มถูกล็อก! ยังมีภารกิจค้างอยู่ กลับไปทำให้เสร็จ!!")
+        else:
+            if st.button("🔥 ยืนยันจบวัน! (รักษาสถิติ)"):
+                user["cleared_yesterday"] = True
+                user["streak"] += 1
+                bonus = 20 if user.get("hell_week_active") else 10
+                user["exp"] += bonus
+                save_db(db)
+                st.balloons()
+                st.rerun()
+                
+    st.divider()
+    st.markdown("### 🔥 HELL WEEK PROTOCOL (สัปดาห์นรก)")
+    st.caption("เปิดโหมดนี้ 7 วัน: ได้ EXP สองเท่า แต่ถ้าพลาดจบวันไม่ทัน เลเวลจะกลับไปเป็น 1 ทันที!")
     
-    st.markdown("#### 🗄️ ประวัติงานที่ทำสำเร็จแล้ว")
-    priv_hist = [t for t in db["private_tasks"][user_email] if t.get("เสร็จแล้ว")]
-    if priv_hist:
-        st.dataframe(pd.DataFrame(priv_hist)[["รายการ", "หมวดหมู่", "กำหนดส่ง"]], hide_index=True, use_container_width=True)
+    if user.get("hell_week_active"):
+        st.error(f"🔥 โหมดนรกกำลังทำงาน! สิ้นสุดวันที่: {user['hell_week_end']}")
+    else:
+        if st.button("🚨 เปิดโหมด HELL WEEK (คิดให้ดีก่อนกด)"):
+            user["hell_week_active"] = True
+            user["hell_week_end"] = str(today_date + timedelta(days=7))
+            save_db(db)
+            st.toast("ยินดีต้อนรับสู่นรก 7 วัน!", icon="💀")
+            st.rerun()
