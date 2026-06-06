@@ -8,34 +8,43 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบนรก (THE APOCALYPSE)
+# 1. ตั้งค่าระบบ (THE BRAIN WAR)
 # ==========================================
-st.set_page_config(page_title="THE APOCALYPSE HQ", layout="wide", page_icon="☢️")
-DB_FILE = "apocalypse_db.json"
-today_str = str(date.today())
+st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
+DB_FILE = "brain_war_db.json"
+today_date = date.today()
+today_str = str(today_date)
 
-HARDCORE_QUOTES = [
-    "มึงจะหยุดพักตอนไหนก็ได้ แต่ร่างทองของมึงมันไม่เคยหยุดเดิน!",
-    "โดพามีนขยะมันหลอกให้สมองมึงฟิน ทั้งที่ชีวิตมึงยังย่ำอยู่กับที่!",
-    "เลิกเพ้อเจ้อหาคนที่เขาไม่เห็นค่ามึง แล้วไปวิดพื้นซะ!",
-    "ความเจ็บปวดจากการมีวินัย ดีกว่าทรมานจากความเสียใจโว้ย!",
-    "มึงไม่ใช่คนธรรมดาแล้ว มึงคือเครื่องจักร เครื่องจักรไม่มีข้ออ้าง!"
+PUNISHMENTS = [
+    "ไปดันพื้น 50 ทีเดี๋ยวนี้! ห้ามพักจนกว่าจะครบ!",
+    "แพลงก์ 2 นาที! เอาความเจ็บปวดล้างสมองซะ!",
+    "ลุกไปอาบน้ำเย็นจัด 5 นาทีเดี๋ยวนี้ ไป!",
+    "กระโดดตบ 100 ครั้ง สลัดความขี้เกียจทิ้งไป!",
+    "ห้ามจับมือถือ 1 ชั่วโมงนับจากนี้! นั่งทบทวนความกากของตัวเอง!"
+]
+
+LAZY_VOICES = [
+    "🤡 เสียงขี้แพ้: 'พักเถอะมึง วันนี้เหนื่อยมาเยอะแล้ว...'",
+    "🤡 เสียงขี้แพ้: 'พรุ่งนี้ค่อยทำก็ได้น่า ไม่มีใครรู้หรอก...'",
+    "🤡 เสียงขี้แพ้: 'มึงทำไปก็สู้พวกคนรวยไม่ได้หรอก เลิกเถอะ...'",
+    "🤡 เสียงขี้แพ้: 'เล่นเกมแป๊บเดียวเอง ไม่เสียเวลาหรอกน่า...'"
+]
+
+SAVAGE_VOICES = [
+    "🦍 เสียงนักรบ: 'หุบปากไอ้สวะ! ร่างกายนี้กูเป็นคนคุม ลุยต่อ!'",
+    "🦍 เสียงนักรบ: 'มึงจะฟังสวะนั่น หรือจะลุกมาสร้างตำนานวะ!'",
+    "🦍 เสียงนักรบ: 'พรุ่งนี้พ่อง! มึงต้องทำเดี๋ยวนี้ ตายก็ต้องเสร็จ!'",
+    "🦍 เสียงนักรบ: 'ความสบายคือยาพิษ ลุกขึ้นมาสู้ดิวะไอ้หน้าโง่!'"
 ]
 
 AMBUSH_TASKS = [
-    "กฎก้าวสุดท้าย! ไปแพลงก์ 1 นาทีเดี๋ยวนี้!",
-    "คิดว่ารอดแล้วหรอ? วิดพื้น 20 ที ก่อนนอน!",
-    "ไปยืนสมาธินิ่งๆ กำหนดลมหายใจ 5 นาที ห้ามขยับ!",
-    "จดเป้าหมายของพรุ่งนี้ใส่กระดาษ 3 ข้อเดี๋ยวนี้!",
-    "ไปล้างหน้าด้วยน้ำเย็นจัดๆ แล้วค่อยมากดจบวัน!"
+    "กฎก้าวสุดท้าย! ไปแพลงก์ 1 นาทีก่อนนอน!",
+    "คิดว่ารอดแล้วหรอ? วิดพื้น 20 ที!",
+    "เขียนเป้าหมายพรุ่งนี้ 3 ข้อใส่กระดาษเดี๋ยวนี้!",
+    "ยืนสมาธิ 5 นาที ห้ามขยับ!"
 ]
 
-ANTI_SIMP_SLAPS = [
-    "ตื่นไอ้เวร! เขาไม่เอามึงหรอก ไปวิดพื้น 30 ทีเดี๋ยวนี้!",
-    "มึงเอาเวลาที่นั่งเพ้อ ไปสร้างตัวเองให้มันรวยก่อนดีกว่าไหมวะ?",
-    "เหงาหรอ? ไปวิ่งให้หอบแดกจนไม่มีเวลาคิดเรื่องพวกนี้ซะ!",
-    "เลิกเป็นไอ้ขี้แพ้เรียกร้องความสนใจได้แล้ว!"
-]
+ANTI_SIMP_SLAPS = ["เขาไม่เอามึงหรอก ไปวิดพื้น 30 ที!", "เอาเวลาเพ้อไปหาเงินซะ!", "เลิกเป็นทาสอารมณ์โง่ๆ ได้แล้ว!"]
 
 def hash_password(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
@@ -49,7 +58,7 @@ def load_db():
     
     defaults = {
         "users": {}, "missions": {}, "dark_room": {}, 
-        "anti_simp": {}, "dopamine_fails": {}
+        "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}
     }
     for k, v in defaults.items():
         if k not in data: data[k] = v
@@ -62,174 +71,161 @@ def save_db(data):
 db = load_db()
 
 # ==========================================
-# 2. ระบบกำเนิดเครื่องจักรสังหาร (Login)
+# 2. OVERLAY นรก (I'M A BITCH BUTTON)
+# ==========================================
+if "punishment_active" in st.session_state:
+    st.error("🚨 มึงกดปุ่มยอมรับความกระจอก! บททดสอบนรกเริ่มขึ้นแล้ว! 🚨")
+    st.title(f"🔥 คำสั่ง: {st.session_state.punishment_task}")
+    st.warning("หน้าเว็บทั้งหมดถูกล็อก! มึงไม่มีสิทธิ์ทำอย่างอื่นจนกว่ามึงจะชดใช้กรรมนี้เสร็จ!")
+    if st.button("🩸 กูทำเสร็จแล้ว! (ชดใช้กรรม)"):
+        del st.session_state.punishment_active
+        st.rerun()
+    st.stop() # หยุดการโหลดหน้าเว็บส่วนอื่นทั้งหมด!
+
+# ==========================================
+# 3. ระบบกำเนิด (Login / Register)
 # ==========================================
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
 with st.sidebar:
-    st.title("☢️ ประตูนรก (Apocalypse)")
+    st.title("🧠 สมรภูมิในสมอง")
     
     if st.session_state.current_user is None:
-        auth_mode = st.radio("เลือก:", ["เปิดระบบ (Login)", "ล้างสมองเกิดใหม่ (Register)"])
+        auth_mode = st.radio("เลือก:", ["ลุย (Login)", "เกิดใหม่ (Register)"])
         email_input = st.text_input("อีเมล:")
         pass_input = st.text_input("รหัสผ่าน:", type="password")
         
-        if auth_mode == "ล้างสมองเกิดใหม่ (Register)":
-            name_input = st.text_input("รหัสประจำตัว (ชื่อมึง):")
+        if auth_mode == "เกิดใหม่ (Register)":
+            name_input = st.text_input("ชื่อนักรบ:")
+            deadline_name = st.text_input("ชื่อวันชี้ชะตา (เช่น วันสอบ/วันส่งโปรเจกต์):")
+            deadline_date = st.date_input("กำหนดวันชี้ชะตา:")
             if st.button("ทิ้งความเป็นคนซะ!"):
-                if email_input and pass_input and name_input:
+                if email_input and pass_input and name_input and deadline_name:
                     if email_input in db["users"]:
-                        st.error("รหัสนี้มีคนใช้แล้ว!")
+                        st.error("รหัสซ้ำ!")
                     else:
                         db["users"][email_input] = {
                             "password": hash_password(pass_input), "username": name_input,
                             "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False,
-                            "ghost_exp": 0, "ambush_task": "", 
-                            "hater_letter": "ไอ้กระจอก มึงมันทำอะไรก็ไม่เคยสุดหรอก กูรอสมเพชมึงอยู่!",
+                            "ghost_exp": 0, "ambush_task": "", "failure_prob": 10,
+                            "deadline_name": deadline_name, "deadline_date": str(deadline_date),
+                            "hater_letter": "ไอ้กระจอก มึงทำไม่ได้หรอกกูรู้!",
                             "last_login": today_str, "cleared_yesterday": True
                         }
-                        for k in ["missions", "dark_room", "anti_simp", "dopamine_fails"]:
+                        for k in ["missions", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar"]:
                             db[k][email_input] = []
                         save_db(db)
-                        st.success("สมองมึงถูกล้างแล้ว ล็อกอินซะไอ้เครื่องจักร!")
+                        st.success("สมองมึงถูกล้างแล้ว ล็อกอินซะ!")
                 else:
                     st.warning("กรอกให้ครบ!")
                     
-        elif auth_mode == "เปิดระบบ (Login)":
-            if st.button("เดินเครื่อง!"):
+        elif auth_mode == "ลุย (Login)":
+            if st.button("เปิดสมอง!"):
                 if email_input in db["users"] and db["users"][email_input]["password"] == hash_password(pass_input):
                     user_data = db["users"][email_input]
-                    
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 # ผีเดินหน้าทุกวัน
-                        
                         if not user_data.get("cleared_yesterday", False):
-                            user_data["exp"] = 0
-                            user_data["level"] = max(1, user_data["level"] - 1)
-                            user_data["streak"] = 0
-                            user_data["blood_debt"] += 100 # อู้=หนี้เลือด 100
-                            
+                            user_data["exp"] = 0; user_data["level"] = max(1, user_data["level"] - 1)
+                            user_data["streak"] = 0; user_data["blood_debt"] += 100
+                            user_data["failure_prob"] = min(100, user_data["failure_prob"] + 20)
                         user_data["last_login"] = today_str
                         user_data["cleared_yesterday"] = False
                         save_db(db)
-                        
                     st.session_state.current_user = email_input
                     st.rerun()
                 else:
                     st.error("รหัสผิด!")
     else:
         u_data = db["users"][st.session_state.current_user]
-        st.error(f"⚙️ รหัส: {u_data['username']}")
-        st.warning(f"🔥 เดินเครื่องต่อเนื่อง: {u_data['streak']} วัน")
-        st.info(f"🩸 หนี้เลือดที่ต้องจ่าย: {u_data.get('blood_debt', 0)} ครั้ง")
+        st.error(f"⚔️ นักรบ: {u_data['username']}")
+        st.warning(f"🔥 สถิติไม่แพ้: {u_data['streak']} วัน")
         st.progress(u_data["exp"] / 100, text=f"Lv.{u_data['level']} | พลังงาน: {u_data['exp']}/100")
-        
-        if st.button("🚪 ปิดระบบ (หนีความจริง)"):
+        if st.button("🚪 ถอยทัพ (ปิดเว็บ)"):
             st.session_state.current_user = None
             st.rerun()
 
 if st.session_state.current_user is None:
-    st.title("☢️ THE APOCALYPSE (ไร้รัก ไร้กิเลส)")
-    st.info("👈 มึงกล้าพอก็ล็อกอินเข้ามา!")
+    st.title("🧠 THE BRAIN WAR (สงครามสองอนาคต)")
+    st.info("👈 ล็อกอินเข้ามา ถ้ามึงกล้าเผชิญหน้ากับสมองตัวเอง!")
     st.stop()
 
 email = st.session_state.current_user
 user = db["users"][email]
 
 # ==========================================
-# 3. แดชบอร์ดวันสิ้นโลก (Tabs)
+# 4. ปุ่มสับหน้า & COUNTDOWN TO REGRET
 # ==========================================
-st.title("🔥 ศูนย์บัญชาการเครื่องจักร")
-st.error(f'🗣️ "{random.choice(HARDCORE_QUOTES)}"')
+colTop1, colTop2 = st.columns([1, 4])
+with colTop1:
+    if st.button("🚨 I'M A BITCH 🚨\n(กูเริ่มขี้เกียจ)", type="primary", use_container_width=True):
+        st.session_state.punishment_active = True
+        st.session_state.punishment_task = random.choice(PUNISHMENTS)
+        st.rerun()
+        
+with colTop2:
+    target_date = datetime.strptime(user["deadline_date"], "%Y-%m-%d").date()
+    days_left = (target_date - today_date).days
+    st.markdown(f"### ⏳ COUNTDOWN TO REGRET: {user['deadline_name']}")
+    st.error(f"เหลือเวลาอีกแค่ **{days_left} วัน** เท่านั้น! เวลาที่มึงเอาแต่เพ้อ คือเวลาที่มึงกำลังส่งตัวเองลงนรก!")
 
 if user.get("in_cage"):
-    st.error("🚨 **มึงติดอยู่ในกรงไอ้ขี้แพ้!** ไปชดใช้หนี้เลือดให้หมดเดี๋ยวนี้ ถึงจะแหกกรงออกมาทำงานต่อได้!")
+    st.error("🚨 **มึงอยู่ในกรง!** จ่ายหนี้เลือดให้หมดถึงจะปลดล็อกตัวเองได้!")
 
-tab1, tab2, tab3, tab4 = st.tabs(["👻 ลานประหารกิเลส & ร่างทอง", "🩸 หนี้เลือด & กรงขัง", "⚔️ ภารกิจดิบ", "💀 จบวัน & ห้องมืด"])
+# ==========================================
+# 5. DUAL REALITY DASHBOARD (สงครามสองฝั่ง)
+# ==========================================
+st.divider()
+colLeft, colRight = st.columns(2)
 
-# ----------------- 1. ลานประหาร & ร่างทอง -----------------
-with tab1:
-    colA, colB = st.columns(2)
+# ----------------- ฝั่งซ้าย: ขุมนรก (The Bitch Zone) -----------------
+with colLeft:
+    st.markdown("## 🗑️ THE BITCH ZONE")
+    st.caption("ที่อยู่ของไอ้ร่างขยะที่มึงต้องฆ่า!")
+    st.warning(random.choice(LAZY_VOICES))
     
-    with colA:
-        st.markdown("### 💔 เครื่องสับความเพ้อเจ้อ (Anti-Simp)")
-        with st.form("anti_simp_form", clear_on_submit=True):
-            simp_text = st.text_input("กำลังคิดถึงเขา? เหงาหาคนคุย? สารภาพมา!:")
-            if st.form_submit_button("กูเผลอเพ้อเจ้อ!"):
-                if simp_text:
-                    slap_word = random.choice(ANTI_SIMP_SLAPS)
-                    db["anti_simp"][email].append({"วันที่": today_str, "ความเพ้อ": simp_text, "บทลงโทษ": slap_word})
-                    user["blood_debt"] += 30
-                    save_db(db)
-                    st.toast("โดนตบเรียกสติไป 1 ที!", icon="🖐️")
-                    st.rerun()
-                    
-        today_simp = [s for s in db["anti_simp"][email] if s["วันที่"] == today_str]
-        for s in today_simp:
-            st.error(f"🤡 เพ้อว่า: {s['ความเพ้อ']}\n\n💥 {s['บทลงโทษ']} (หนี้เลือด +30)")
-
-        st.divider()
-        st.markdown("### 🗑️ แท่นประหารโดพามีนขยะ")
-        st.caption("TikTok, หนังโป๊, เกม, ของหวาน... ถ้ามึงเผลอเสพมัน กดปุ่มประหารตัวเองซะ!")
-        if st.button("💀 กูแพ้กิเลส (แอบเสพโดพามีนขยะ)"):
-            db["dopamine_fails"][email].append(today_str)
-            user["exp"] = 0; user["level"] = max(1, user["level"] - 1)
-            user["blood_debt"] += 50; user["in_cage"] = True
-            save_db(db)
-            st.rerun()
-
-    with colB:
-        st.markdown("### 👻 ร่างทอง (Ghost of Potential)")
-        my_total_exp = ((user["level"] - 1) * 100) + user["exp"]
-        ghost_total_exp = user.get("ghost_exp", 0)
+    # 1. The Excuses Log
+    st.markdown("### 🤡 The Excuses Log")
+    st.metric("📉 โอกาสล้มเหลวในอนาคต (Failure Probability)", f"{user['failure_prob']}%")
+    if user['failure_prob'] > 50:
+        st.error("สภาพนี้มึงเตรียมตัวเป็นไอ้ขี้แพ้ตอนอายุ 20 ได้เลย!")
         
-        st.metric("พลังร่างทอง (Ghost EXP)", f"{ghost_total_exp} EXP")
-        st.metric("พลังของมึงตอนนี้", f"{my_total_exp} EXP", delta=f"{my_total_exp - ghost_total_exp} ตามหลังร่างทอง" if my_total_exp < ghost_total_exp else "มึงนำอยู่!")
-        
-        st.divider()
-        st.markdown("### ✉️ จดหมายจากศัตรู")
-        st.warning(f"📝 **มันด่ามึงว่า:**\n\n\"{user.get('hater_letter', '')}\"")
-        with st.expander("แก้ไขจดหมาย"):
-            with st.form("hater_letter_form"):
-                new_letter = st.text_area("ด่าตัวเองซะ:", value=user.get("hater_letter", ""))
-                if st.form_submit_button("บันทึก"):
-                    user["hater_letter"] = new_letter; save_db(db); st.rerun()
+    with st.form("excuse_form", clear_on_submit=True):
+        exc_text = st.text_input("ข้ออ้างขยะๆ วันนี้คืออะไร? (เช่น วันนี้เหนื่อย):")
+        if st.form_submit_button("บันทึกข้ออ้าง"):
+            if exc_text:
+                db["excuses"][email].append({"วันที่": today_str, "ข้ออ้าง": exc_text})
+                user["failure_prob"] = min(100, user["failure_prob"] + 10) # เพิ่ม % ล้มเหลว
+                save_db(db); st.rerun()
+                
+    # 2. Dopamine Trap (กิเลส & ความเพ้อ)
+    st.markdown("### 🕸️ Dopamine Trap & Anti-Simp")
+    st.error("ทุกครั้งที่มึงแพ้กิเลส มึงกำลังขายอนาคตให้ความฟิน 5 วินาที!")
+    with st.form("simp_form", clear_on_submit=True):
+        simp_text = st.text_input("เพ้อหาใคร? สารภาพมา!:")
+        if st.form_submit_button("กูเพ้อเจ้อ"):
+            db["anti_simp"][email].append(simp_text)
+            user["blood_debt"] += 30; user["failure_prob"] = min(100, user["failure_prob"] + 5)
+            save_db(db); st.toast(random.choice(ANTI_SIMP_SLAPS), icon="🖐️"); st.rerun()
+            
+    if st.button("💀 แท่นประหาร: กูแพ้ให้เกม/โซเชียล/หนังโป๊"):
+        db["dopamine_fails"][email].append(today_str)
+        user["exp"] = 0; user["blood_debt"] += 50; user["in_cage"] = True
+        user["failure_prob"] = min(100, user["failure_prob"] + 20)
+        save_db(db); st.rerun()
 
-# ----------------- 2. หนี้เลือด & กรงขัง -----------------
-with tab2:
-    cA, cB = st.columns(2)
-    with cA:
-        st.markdown("### 🩸 หนี้เลือด (Blood Debt)")
-        st.metric("🔥 หนี้เลือดที่ต้องชดใช้ด้วยหยาดเหงื่อ", f"{user.get('blood_debt', 0)} ครั้ง")
-        
-        with st.form("pay_debt_form", clear_on_submit=True):
-            pay_amount = st.number_input("วันนี้มึงวิดพื้น/ซิทอัพชดใช้ไปกี่ครั้ง?:", min_value=1)
-            if st.form_submit_button("กูจ่ายหนี้ด้วยเลือดแล้ว!"):
-                if user.get("blood_debt", 0) > 0:
-                    user["blood_debt"] = max(0, user["blood_debt"] - pay_amount)
-                    save_db(db); st.rerun()
-                else:
-                    st.warning("มึงไม่ได้ติดหนี้ ไปทำอย่างอื่น!")
-
-    with cB:
-        st.markdown("### ⛓️ กรงขังไอ้ขี้แพ้")
-        if user.get("in_cage"):
-            st.error("🚨 มึงอยู่ในกรง! วิธีออก: จ่ายหนี้เลือดให้เหลือ 0 แล้วกดปุ่มนี้!")
-            if user.get("blood_debt", 0) == 0:
-                if st.button("🔓 กูชดใช้กรรมหมดแล้ว ปล่อยกู!"):
-                    user["in_cage"] = False; save_db(db); st.rerun()
-            else:
-                st.warning("หนี้เลือดยังไม่หมด! มึงไม่มีสิทธิ์แหกกรง!")
-        else:
-            st.success("มึงยังมีอิสรภาพ จงใช้มันสร้างความยิ่งใหญ่!")
-
-# ----------------- 3. ภารกิจดิบ -----------------
-with tab3:
-    st.markdown("### ⚔️ ภารกิจเครื่องจักร (สั่งการแล้วต้องจบ)")
+# ----------------- ฝั่งขวา: วิหารนักรบ (The Savage Zone) -----------------
+with colRight:
+    st.markdown("## ⚔️ THE SAVAGE ZONE")
+    st.caption("ที่อยู่ของมหาบุรุษมึงในวัย 20 ปี!")
+    st.success(random.choice(SAVAGE_VOICES))
+    
+    # 1. The Daily Siege
+    st.markdown("### 🪵 The Daily Siege (ตารางรบ)")
     with st.form("mission_form", clear_on_submit=True):
-        m_name = st.text_input("ป้อนคำสั่งภารกิจของวันนี้:")
-        if st.form_submit_button("ป้อนคำสั่ง"):
+        m_name = st.text_input("ท่อนซุงที่มึงต้องแบกวันนี้:")
+        if st.form_submit_button("เพิ่มภารกิจ"):
             if m_name:
                 db["missions"][email].append({"id": str(uuid.uuid4()), "ภารกิจ": m_name, "เสร็จแล้ว": False})
                 save_db(db); st.rerun()
@@ -237,67 +233,87 @@ with tab3:
     active_missions = [m for m in db["missions"][email] if not m.get("เสร็จแล้ว")]
     if active_missions:
         for m in active_missions:
-            st.write(f"❌ **{m['ภารกิจ']}**")
-            c1, c2 = st.columns(2)
-            if c1.button("✅ ประมวลผลเสร็จสิ้น", key=f"n_{m['id']}"):
+            c1, c2 = st.columns([3, 1])
+            c1.write(f"❌ **{m['ภารกิจ']}**")
+            if c2.button("✅ Tick!", key=f"m_{m['id']}"):
                 m["เสร็จแล้ว"] = True
-                user["exp"] += 15
+                user["exp"] += 20
+                user["failure_prob"] = max(0, user["failure_prob"] - 5) # ลด % ล้มเหลว
                 if user["exp"] >= 100:
                     user["level"] += 1; user["exp"] -= 100
                 save_db(db); st.rerun()
-            if c2.button("🛑 ฝืนลิมิตเครื่องจักร (+EXPx2)", type="primary", key=f"h_{m['id']}"):
-                m["เสร็จแล้ว"] = True
-                user["exp"] += 30
-                if user["exp"] >= 100:
-                    user["level"] += 1; user["exp"] -= 100
-                save_db(db); st.rerun()
-            st.divider()
     else:
-        st.success("✅ คำสั่งทั้งหมดถูกประมวลผลเสร็จสิ้น!")
+        st.success("✅ ท่อนซุงวันนี้แบกหมดแล้ว!")
 
-# ----------------- 4. จบวัน & ห้องมืด -----------------
-with tab4:
-    col_1, col_2 = st.columns(2)
-    with col_1:
-        st.markdown("### 👁️ ห้องมืด (ความจริง)")
-        with st.form("dark_room_form", clear_on_submit=True):
-            insecurity = st.text_area("ปมด้อยหรือสันดานเสียของมึงคืออะไร?:")
-            if st.form_submit_button("ยอมรับความกาก"):
-                if insecurity:
-                    db["dark_room"][email].append({"วันที่": today_str, "ข้อความ": insecurity})
-                    save_db(db); st.rerun()
-        if db["dark_room"][email]:
-            st.warning(f"ล่าสุด: {db['dark_room'][email][-1]['ข้อความ']}")
+    # 2. The Cookie Jar
+    st.markdown("### 🍪 คลังแสงความสำเร็จ (Cookie Jar)")
+    st.caption("อัปโหลดหลักฐานหรือจดบันทึกความสำเร็จที่มึงทำได้ เพื่อดูตอนที่อยากยอมแพ้")
+    with st.form("cookie_form", clear_on_submit=True):
+        c_victory = st.text_area("วันนี้มึงชนะความอ่อนแอเรื่องอะไร?:")
+        if st.form_submit_button("ยัดใส่คลังแสง"):
+            if c_victory:
+                db["cookie_jar"][email].append({"วันที่": today_str, "ชัยชนะ": c_victory})
+                save_db(db); st.rerun()
+    if db["cookie_jar"][email]:
+        st.info(f"🏆 ชัยชนะล่าสุด: {db['cookie_jar'][email][-1]['ชัยชนะ']}")
 
-    with col_2:
-        st.markdown("### 💀 ยืนยันจบวัน (ปิดระบบ)")
+# ==========================================
+# 6. หนี้เลือด & วิญญาณร่างทอง
+# ==========================================
+st.divider()
+c_bot1, c_bot2 = st.columns(2)
+with c_bot1:
+    st.markdown("### 👻 ร่างทอง (Ghost)")
+    my_exp = ((user["level"] - 1) * 100) + user["exp"]
+    st.metric("พลังร่างทอง (มันไม่เคยหยุดเดิน)", f"{user['ghost_exp']} EXP")
+    st.metric("พลังของมึง", f"{my_exp} EXP", delta=f"{my_exp - user['ghost_exp']} ตามหลังร่างทอง" if my_exp < user['ghost_exp'] else "นำอยู่!")
+
+with c_bot2:
+    st.markdown("### 🩸 หนี้เลือด (Blood Debt)")
+    st.metric("หนี้วิดพื้นที่ต้องจ่าย", f"{user.get('blood_debt', 0)} ที")
+    if user.get("blood_debt", 0) > 0:
+        if st.button("กูวิดพื้นใช้หนี้หมดแล้ว! (ปลดกรง)"):
+            user["blood_debt"] = 0; user["in_cage"] = False
+            save_db(db); st.rerun()
+
+# ==========================================
+# 7. THE JUDGMENT FEED (ระบบพิพากษาก่อนนอน)
+# ==========================================
+st.divider()
+st.markdown("## ⚖️ THE JUDGMENT FEED (พิพากษาก่อนนอน)")
+
+if user.get("ambush_task", "") != "":
+    st.error(f"🚨 **โดนซุ่มโจมตี! (กฎก้าวสุดท้าย)** 🚨\n\nคำสั่ง: **{user['ambush_task']}**")
+    if st.button("🔥 กูทำเสร็จแล้ว! (ข้ามศพกูไปก่อนเถอะ)"):
+        user["ambush_task"] = ""
+        user["exp"] += 20; save_db(db); st.rerun()
         
-        if user.get("ambush_task", "") != "":
-            st.error(f"🚨 **โดนซุ่มโจมตี! (กฎก้าวสุดท้าย)** 🚨\n\nระบบสั่งให้มึง: **{user['ambush_task']}**")
-            if st.button("🔥 กูทำเสร็จแล้ว! (ข้ามศพกูไปก่อนเถอะ)"):
-                user["ambush_task"] = ""
-                user["exp"] += 20; save_db(db); st.rerun()
+elif user.get("cleared_yesterday"):
+    st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
+else:
+    if active_missions:
+        st.error("❌ มึงกำลังหักหลังตัวเอง! งานใน The Daily Siege ยังไม่เสร็จ!")
+    elif user.get("in_cage") or user.get("blood_debt", 0) > 0:
+        st.error("❌ มึงติดหนี้เลือด/ติดกรงอยู่! ไปรับกรรมซะก่อน!")
+    else:
+        st.warning("ตอบคำถามกูก่อนปิดเว็บ: วันนี้มึงใส่เต็ม 100% หรือมึงใช้พลังแค่ 40%?")
+        j_col1, j_col2 = st.columns(2)
+        
+        with j_col1:
+            if st.button("📉 สู้ไม่เต็มที่ (แค่ 40%)"):
+                st.error("👁️ สภาพมึงตอนอายุ 20 คือไอ้ขี้แพ้ตาโบ๋ นั่งมองคนอื่นประสบความสำเร็จ! มึงโดนริบ 30 EXP!")
+                user["exp"] -= 30
+                user["cleared_yesterday"] = True
+                user["failure_prob"] = min(100, user["failure_prob"] + 10)
+                save_db(db)
+                # ไม่ใช้ rerun ทันที เพื่อให้เห็นคำด่าก่อน
                 
-        elif user.get("cleared_yesterday"):
-            st.success("🔥 วันนี้มึงทำหน้าที่จบแล้ว ปิดหน้าจอแล้วไปนอน!")
-            
-        else:
-            active_missions = [m for m in db["missions"][email] if not m.get("เสร็จแล้ว")]
-            if active_missions:
-                st.error("❌ งานมึงยังไม่เสร็จ! เครื่องจักรไม่มีสิทธิ์หยุด!")
-            elif user.get("in_cage"):
-                st.error("❌ มึงยังอยู่ในกรงไอ้ขี้แพ้! แหกกรงมาก่อน!")
-            elif user.get("blood_debt", 0) > 0:
-                st.error(f"❌ มึงยังติดหนี้เลือด {user['blood_debt']} ครั้ง! ไปชดใช้กรรมซะ!")
-            else:
-                if st.button("🔥 ประมวลผลสำเร็จทุกอย่าง (กดเพื่อจบวัน)"):
-                    if random.random() < 0.2:
-                        user["ambush_task"] = random.choice(AMBUSH_TASKS)
-                        save_db(db); st.rerun()
-                    else:
-                        user["cleared_yesterday"] = True
-                        user["streak"] += 1
-                        user["exp"] += 15
-                        save_db(db)
-                        st.balloons()
-                        st.rerun()
+        with j_col2:
+            if st.button("🔥 กูใช้พลังทั้งหมด 100%!"):
+                if random.random() < 0.2: # 20% โดนซุ่มโจมตี
+                    user["ambush_task"] = random.choice(AMBUSH_TASKS)
+                    save_db(db); st.rerun()
+                else:
+                    user["cleared_yesterday"] = True
+                    user["streak"] += 1; user["exp"] += 25
+                    save_db(db); st.balloons(); st.rerun()
