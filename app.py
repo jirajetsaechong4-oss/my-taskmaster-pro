@@ -7,10 +7,12 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL)
+# 1. ตั้งค่าระบบ (THE BUG CRUSHER V.15.1)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
-FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/"
+
+FIREBASE_URL =  "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/"
+
 today_date = date.today()
 today_str = str(today_date)
 
@@ -45,12 +47,16 @@ AMBUSH_TASKS = [
 
 ANTI_SIMP_SLAPS = ["เขาไม่เอามึงหรอก ไปวิดพื้น 30 ที!", "เอาเวลาเพ้อไปหาเงินซะ!", "เลิกเป็นทาสอารมณ์โง่ๆ ได้แล้ว!"]
 
+# 🔥 ตัวแปลงอีเมลให้ Firebase ยอมรับ
+def get_safe_email(email):
+    return email.replace(".", "-").replace("@", "-")
+
 def hash_password(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
 def load_db():
     if FIREBASE_URL == "ใส่ลิงก์FIREBASEของมึงตรงนี้" or FIREBASE_URL == "":
-        st.error("🚨 ไอ้เวร! มึงยังไม่ได้เอาลิงก์ Firebase มาใส่ในโค้ดบรรทัดที่ 16! กลับไปแก้เดี๋ยวนี้!")
+        st.error("🚨 ไอ้เวร! มึงยังไม่ได้เอาลิงก์ Firebase มาใส่ในโค้ด! กลับไปแก้เดี๋ยวนี้!")
         st.stop()
         
     try:
@@ -106,10 +112,11 @@ with st.sidebar:
             deadline_date = st.date_input("กำหนดวันชี้ชะตา:")
             if st.button("ทิ้งความเป็นคนซะ!"):
                 if email_input and pass_input and name_input and deadline_name:
-                    if email_input in db["users"]:
-                        st.error("รหัสซ้ำ!")
+                    safe_email = get_safe_email(email_input) # แปลงอีเมล
+                    if safe_email in db["users"]:
+                        st.error("อีเมลนี้ถูกใช้ไปแล้ว!")
                     else:
-                        db["users"][email_input] = {
+                        db["users"][safe_email] = {
                             "password": hash_password(pass_input), "username": name_input,
                             "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False,
                             "ghost_exp": 0, "ambush_task": "", "failure_prob": 10,
@@ -118,16 +125,21 @@ with st.sidebar:
                             "last_login": today_str, "cleared_yesterday": True
                         }
                         for k in ["missions", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar"]:
-                            db[k][email_input] = []
+                            db[k][safe_email] = []
                         save_db(db)
-                        st.success("ลงทะเบียนวิญญาณอมตะสำเร็จ! ล็อกอินซะ!")
+                        st.success("🔥 ลงทะเบียนวิญญาณอมตะสำเร็จ! ล็อกอินซะ!")
                 else:
-                    st.warning("กรอกให้ครบ!")
+                    st.warning("กรอกให้ครบทุกช่องดิโว้ย!")
                     
         elif auth_mode == "ลุย (Login)":
             if st.button("เปิดสมอง!"):
-                if email_input in db["users"] and db["users"][email_input]["password"] == hash_password(pass_input):
-                    user_data = db["users"][email_input]
+                safe_email = get_safe_email(email_input)
+                if safe_email not in db["users"]:
+                    st.error("❌ ไม่พบบัญชีนี้! มึงยังไม่ได้สมัคร หรือพิมพ์ผิด!")
+                elif db["users"][safe_email]["password"] != hash_password(pass_input):
+                    st.error("❌ รหัสผ่านผิด! ความจำเสื่อมรึไง!")
+                else:
+                    user_data = db["users"][safe_email]
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
                         if not user_data.get("cleared_yesterday", False):
@@ -137,12 +149,11 @@ with st.sidebar:
                         user_data["last_login"] = today_str
                         user_data["cleared_yesterday"] = False
                         save_db(db)
-                    st.session_state.current_user = email_input
+                    st.session_state.current_user = safe_email
                     st.rerun()
-                else:
-                    st.error("รหัสผิด!")
     else:
-        u_data = db["users"][st.session_state.current_user]
+        safe_email = st.session_state.current_user
+        u_data = db["users"][safe_email]
         st.error(f"⚔️ นักรบ: {u_data['username']}")
         st.warning(f"🔥 สถิติไม่แพ้: {u_data['streak']} วัน")
         st.progress(u_data["exp"] / 100, text=f"Lv.{u_data['level']} | พลังงาน: {u_data['exp']}/100")
@@ -155,8 +166,8 @@ if st.session_state.current_user is None:
     st.info("👈 ล็อกอินเข้ามา ฐานข้อมูลนี้เก็บวิญญาณมึงไว้เป็นอมตะแล้ว!")
     st.stop()
 
-email = st.session_state.current_user
-user = db["users"][email]
+safe_email = st.session_state.current_user
+user = db["users"][safe_email]
 
 # ==========================================
 # 4. ปุ่มสับหน้า & COUNTDOWN TO REGRET
@@ -200,7 +211,7 @@ with colLeft:
         exc_text = st.text_input("ข้ออ้างขยะๆ วันนี้คืออะไร?:")
         if st.form_submit_button("บันทึกข้ออ้าง"):
             if exc_text:
-                db["excuses"][email].append({"วันที่": today_str, "ข้ออ้าง": exc_text})
+                db["excuses"][safe_email].append({"วันที่": today_str, "ข้ออ้าง": exc_text})
                 user["failure_prob"] = min(100, user["failure_prob"] + 10)
                 save_db(db); st.rerun()
                 
@@ -208,12 +219,12 @@ with colLeft:
     with st.form("simp_form", clear_on_submit=True):
         simp_text = st.text_input("เพ้อหาใคร? สารภาพมา!:")
         if st.form_submit_button("กูเพ้อเจ้อ"):
-            db["anti_simp"][email].append(simp_text)
+            db["anti_simp"][safe_email].append(simp_text)
             user["blood_debt"] += 30; user["failure_prob"] = min(100, user["failure_prob"] + 5)
             save_db(db); st.toast(random.choice(ANTI_SIMP_SLAPS), icon="🖐️"); st.rerun()
             
     if st.button("💀 แท่นประหาร: กูแพ้ให้เกม/โซเชียล/หนังโป๊"):
-        db["dopamine_fails"][email].append(today_str)
+        db["dopamine_fails"][safe_email].append(today_str)
         user["exp"] = 0; user["blood_debt"] += 50; user["in_cage"] = True
         user["failure_prob"] = min(100, user["failure_prob"] + 20)
         save_db(db); st.rerun()
@@ -228,10 +239,10 @@ with colRight:
         m_name = st.text_input("ท่อนซุงที่มึงต้องแบกวันนี้:")
         if st.form_submit_button("เพิ่มภารกิจ"):
             if m_name:
-                db["missions"][email].append({"id": str(uuid.uuid4()), "ภารกิจ": m_name, "เสร็จแล้ว": False})
+                db["missions"][safe_email].append({"id": str(uuid.uuid4()), "ภารกิจ": m_name, "เสร็จแล้ว": False})
                 save_db(db); st.rerun()
                 
-    active_missions = [m for m in db["missions"][email] if not m.get("เสร็จแล้ว")]
+    active_missions = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
     if active_missions:
         for m in active_missions:
             c1, c2 = st.columns([3, 1])
@@ -251,10 +262,10 @@ with colRight:
         c_victory = st.text_area("วันนี้มึงชนะความอ่อนแอเรื่องอะไร?:")
         if st.form_submit_button("ยัดใส่คลังแสง"):
             if c_victory:
-                db["cookie_jar"][email].append({"วันที่": today_str, "ชัยชนะ": c_victory})
+                db["cookie_jar"][safe_email].append({"วันที่": today_str, "ชัยชนะ": c_victory})
                 save_db(db); st.rerun()
-    if db["cookie_jar"][email]:
-        st.info(f"🏆 ชัยชนะล่าสุด: {db['cookie_jar'][email][-1]['ชัยชนะ']}")
+    if db["cookie_jar"][safe_email]:
+        st.info(f"🏆 ชัยชนะล่าสุด: {db['cookie_jar'][safe_email][-1]['ชัยชนะ']}")
 
 # ==========================================
 # 6. หนี้เลือด & วิญญาณร่างทอง
