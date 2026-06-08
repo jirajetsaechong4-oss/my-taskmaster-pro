@@ -7,11 +7,11 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE BUG CRUSHER V.15.1)
+# 1. ตั้งค่าระบบ (THE FIREBASE SHIELD V.15.2)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
-FIREBASE_URL =  "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/"
+FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 
 today_date = date.today()
 today_str = str(today_date)
@@ -47,7 +47,6 @@ AMBUSH_TASKS = [
 
 ANTI_SIMP_SLAPS = ["เขาไม่เอามึงหรอก ไปวิดพื้น 30 ที!", "เอาเวลาเพ้อไปหาเงินซะ!", "เลิกเป็นทาสอารมณ์โง่ๆ ได้แล้ว!"]
 
-# 🔥 ตัวแปลงอีเมลให้ Firebase ยอมรับ
 def get_safe_email(email):
     return email.replace(".", "-").replace("@", "-")
 
@@ -112,7 +111,7 @@ with st.sidebar:
             deadline_date = st.date_input("กำหนดวันชี้ชะตา:")
             if st.button("ทิ้งความเป็นคนซะ!"):
                 if email_input and pass_input and name_input and deadline_name:
-                    safe_email = get_safe_email(email_input) # แปลงอีเมล
+                    safe_email = get_safe_email(email_input)
                     if safe_email in db["users"]:
                         st.error("อีเมลนี้ถูกใช้ไปแล้ว!")
                     else:
@@ -167,6 +166,13 @@ if st.session_state.current_user is None:
     st.stop()
 
 safe_email = st.session_state.current_user
+
+# ===== 🛡️ FIREBASE SHIELD (ป้องกันการโดนลบข้อมูลลิสต์ว่าง) =====
+for k in ["missions", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar"]:
+    if safe_email not in db[k] or db[k][safe_email] is None:
+        db[k][safe_email] = []
+# =========================================================
+
 user = db["users"][safe_email]
 
 # ==========================================
