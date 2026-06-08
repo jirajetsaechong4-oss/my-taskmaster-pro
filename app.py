@@ -7,10 +7,11 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE FIREBASE SHIELD V.15.2)
+# 1. ตั้งค่าระบบ (THE CHRONICLES V.15.3)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
+# ⚠️ เอาลิงก์ของมึงมาใส่ตรงนี้เหมือนเดิม ห้ามลืมเครื่องหมาย " "
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 
 today_date = date.today()
@@ -167,11 +168,11 @@ if st.session_state.current_user is None:
 
 safe_email = st.session_state.current_user
 
-# ===== 🛡️ FIREBASE SHIELD (ป้องกันการโดนลบข้อมูลลิสต์ว่าง) =====
+# ===== 🛡️ FIREBASE SHIELD =====
 for k in ["missions", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar"]:
     if safe_email not in db[k] or db[k][safe_email] is None:
         db[k][safe_email] = []
-# =========================================================
+# ===============================
 
 user = db["users"][safe_email]
 
@@ -245,7 +246,7 @@ with colRight:
         m_name = st.text_input("ท่อนซุงที่มึงต้องแบกวันนี้:")
         if st.form_submit_button("เพิ่มภารกิจ"):
             if m_name:
-                db["missions"][safe_email].append({"id": str(uuid.uuid4()), "ภารกิจ": m_name, "เสร็จแล้ว": False})
+                db["missions"][safe_email].append({"id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, "เสร็จแล้ว": False})
                 save_db(db); st.rerun()
                 
     active_missions = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
@@ -332,3 +333,38 @@ else:
                     user["cleared_yesterday"] = True
                     user["streak"] += 1; user["exp"] += 25
                     save_db(db); st.balloons(); st.rerun()
+
+# ==========================================
+# 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG)
+# ==========================================
+st.divider()
+st.markdown("## 📜 พงศาวดารความทรงจำ (HISTORY LOG)")
+st.caption("อดีตคือกระจกสะท้อนสันดาน! มาดูกันว่าที่ผ่านมามึงเป็นนักรบหรือไอ้กระจอก!")
+
+tab1, tab2, tab3 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 ภารกิจทั้งหมด"])
+
+with tab1:
+    if db["cookie_jar"][safe_email]:
+        for item in reversed(db["cookie_jar"][safe_email]):
+            st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
+    else:
+        st.write("ยังไม่มีความสำเร็จอะไรเลย ไปทำซะ!")
+
+with tab2:
+    if db["excuses"][safe_email]:
+        for item in reversed(db["excuses"][safe_email]):
+            st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
+    else:
+        st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
+
+with tab3:
+    if db["missions"][safe_email]:
+        for item in reversed(db["missions"][safe_email]):
+            status = "✅ เสร็จแล้ว" if item.get("เสร็จแล้ว") else "❌ ยังดองอยู่"
+            # ใช้สีแยกให้เห็นชัดๆ ว่าทำเสร็จหรือดองงาน
+            if item.get("เสร็จแล้ว"):
+                st.info(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} 👉 {status}")
+            else:
+                st.warning(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} 👉 {status}")
+    else:
+        st.write("ยังไม่มีประวัติการแบกซุง!")
