@@ -1,17 +1,16 @@
 import streamlit as st
 import pandas as pd
 from datetime import date, datetime, timedelta
-import json
-import os
+import requests
 import uuid
 import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE BRAIN WAR)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
-DB_FILE = "brain_war_db.json"
+FIREBASE_URL = https://console.firebase.google.com/u/0/project/mytaskpro-f7328/database/mytaskpro-f7328-default-rtdb/data/~2F
 today_date = date.today()
 today_str = str(today_date)
 
@@ -50,23 +49,28 @@ def hash_password(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
 def load_db():
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    else:
-        data = {}
+    if FIREBASE_URL == "ใส่ลิงก์FIREBASEของมึงตรงนี้" or FIREBASE_URL == "":
+        st.error("🚨 ไอ้เวร! มึงยังไม่ได้เอาลิงก์ Firebase มาใส่ในโค้ดบรรทัดที่ 16! กลับไปแก้เดี๋ยวนี้!")
+        st.stop()
+        
+    try:
+        res = requests.get(f"{FIREBASE_URL}/db.json")
+        if res.status_code == 200 and res.json() is not None:
+            data = res.json()
+            defaults = {"users": {}, "missions": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}}
+            for k, v in defaults.items():
+                if k not in data: data[k] = v
+            return data
+    except:
+        pass
     
-    defaults = {
-        "users": {}, "missions": {}, "dark_room": {}, 
-        "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}
-    }
-    for k, v in defaults.items():
-        if k not in data: data[k] = v
-    return data
+    return {"users": {}, "missions": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}}
 
 def save_db(data):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    try:
+        requests.put(f"{FIREBASE_URL}/db.json", json=data)
+    except:
+        st.error("🚨 เซฟข้อมูลลงฐานข้อมูลอมตะไม่สำเร็จ! เช็คเน็ตมึงด้วย!")
 
 db = load_db()
 
@@ -80,7 +84,7 @@ if "punishment_active" in st.session_state:
     if st.button("🩸 กูทำเสร็จแล้ว! (ชดใช้กรรม)"):
         del st.session_state.punishment_active
         st.rerun()
-    st.stop() # หยุดการโหลดหน้าเว็บส่วนอื่นทั้งหมด!
+    st.stop() 
 
 # ==========================================
 # 3. ระบบกำเนิด (Login / Register)
@@ -116,7 +120,7 @@ with st.sidebar:
                         for k in ["missions", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar"]:
                             db[k][email_input] = []
                         save_db(db)
-                        st.success("สมองมึงถูกล้างแล้ว ล็อกอินซะ!")
+                        st.success("ลงทะเบียนวิญญาณอมตะสำเร็จ! ล็อกอินซะ!")
                 else:
                     st.warning("กรอกให้ครบ!")
                     
@@ -125,7 +129,7 @@ with st.sidebar:
                 if email_input in db["users"] and db["users"][email_input]["password"] == hash_password(pass_input):
                     user_data = db["users"][email_input]
                     if user_data["last_login"] != today_str:
-                        user_data["ghost_exp"] += 25 # ผีเดินหน้าทุกวัน
+                        user_data["ghost_exp"] += 25 
                         if not user_data.get("cleared_yesterday", False):
                             user_data["exp"] = 0; user_data["level"] = max(1, user_data["level"] - 1)
                             user_data["streak"] = 0; user_data["blood_debt"] += 100
@@ -148,7 +152,7 @@ with st.sidebar:
 
 if st.session_state.current_user is None:
     st.title("🧠 THE BRAIN WAR (สงครามสองอนาคต)")
-    st.info("👈 ล็อกอินเข้ามา ถ้ามึงกล้าเผชิญหน้ากับสมองตัวเอง!")
+    st.info("👈 ล็อกอินเข้ามา ฐานข้อมูลนี้เก็บวิญญาณมึงไว้เป็นอมตะแล้ว!")
     st.stop()
 
 email = st.session_state.current_user
@@ -165,43 +169,42 @@ with colTop1:
         st.rerun()
         
 with colTop2:
-    target_date = datetime.strptime(user["deadline_date"], "%Y-%m-%d").date()
-    days_left = (target_date - today_date).days
-    st.markdown(f"### ⏳ COUNTDOWN TO REGRET: {user['deadline_name']}")
-    st.error(f"เหลือเวลาอีกแค่ **{days_left} วัน** เท่านั้น! เวลาที่มึงเอาแต่เพ้อ คือเวลาที่มึงกำลังส่งตัวเองลงนรก!")
+    try:
+        target_date = datetime.strptime(user["deadline_date"], "%Y-%m-%d").date()
+        days_left = (target_date - today_date).days
+        st.markdown(f"### ⏳ COUNTDOWN TO REGRET: {user['deadline_name']}")
+        st.error(f"เหลือเวลาอีกแค่ **{days_left} วัน** เท่านั้น! เวลาที่มึงเอาแต่เพ้อ คือเวลาที่มึงกำลังส่งตัวเองลงนรก!")
+    except:
+        pass
 
 if user.get("in_cage"):
     st.error("🚨 **มึงอยู่ในกรง!** จ่ายหนี้เลือดให้หมดถึงจะปลดล็อกตัวเองได้!")
 
 # ==========================================
-# 5. DUAL REALITY DASHBOARD (สงครามสองฝั่ง)
+# 5. DUAL REALITY DASHBOARD
 # ==========================================
 st.divider()
 colLeft, colRight = st.columns(2)
 
-# ----------------- ฝั่งซ้าย: ขุมนรก (The Bitch Zone) -----------------
 with colLeft:
     st.markdown("## 🗑️ THE BITCH ZONE")
     st.caption("ที่อยู่ของไอ้ร่างขยะที่มึงต้องฆ่า!")
     st.warning(random.choice(LAZY_VOICES))
     
-    # 1. The Excuses Log
     st.markdown("### 🤡 The Excuses Log")
-    st.metric("📉 โอกาสล้มเหลวในอนาคต (Failure Probability)", f"{user['failure_prob']}%")
+    st.metric("📉 โอกาสล้มเหลวในอนาคต", f"{user['failure_prob']}%")
     if user['failure_prob'] > 50:
         st.error("สภาพนี้มึงเตรียมตัวเป็นไอ้ขี้แพ้ตอนอายุ 20 ได้เลย!")
         
     with st.form("excuse_form", clear_on_submit=True):
-        exc_text = st.text_input("ข้ออ้างขยะๆ วันนี้คืออะไร? (เช่น วันนี้เหนื่อย):")
+        exc_text = st.text_input("ข้ออ้างขยะๆ วันนี้คืออะไร?:")
         if st.form_submit_button("บันทึกข้ออ้าง"):
             if exc_text:
                 db["excuses"][email].append({"วันที่": today_str, "ข้ออ้าง": exc_text})
-                user["failure_prob"] = min(100, user["failure_prob"] + 10) # เพิ่ม % ล้มเหลว
+                user["failure_prob"] = min(100, user["failure_prob"] + 10)
                 save_db(db); st.rerun()
                 
-    # 2. Dopamine Trap (กิเลส & ความเพ้อ)
     st.markdown("### 🕸️ Dopamine Trap & Anti-Simp")
-    st.error("ทุกครั้งที่มึงแพ้กิเลส มึงกำลังขายอนาคตให้ความฟิน 5 วินาที!")
     with st.form("simp_form", clear_on_submit=True):
         simp_text = st.text_input("เพ้อหาใคร? สารภาพมา!:")
         if st.form_submit_button("กูเพ้อเจ้อ"):
@@ -215,13 +218,11 @@ with colLeft:
         user["failure_prob"] = min(100, user["failure_prob"] + 20)
         save_db(db); st.rerun()
 
-# ----------------- ฝั่งขวา: วิหารนักรบ (The Savage Zone) -----------------
 with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE")
     st.caption("ที่อยู่ของมหาบุรุษมึงในวัย 20 ปี!")
     st.success(random.choice(SAVAGE_VOICES))
     
-    # 1. The Daily Siege
     st.markdown("### 🪵 The Daily Siege (ตารางรบ)")
     with st.form("mission_form", clear_on_submit=True):
         m_name = st.text_input("ท่อนซุงที่มึงต้องแบกวันนี้:")
@@ -238,16 +239,14 @@ with colRight:
             if c2.button("✅ Tick!", key=f"m_{m['id']}"):
                 m["เสร็จแล้ว"] = True
                 user["exp"] += 20
-                user["failure_prob"] = max(0, user["failure_prob"] - 5) # ลด % ล้มเหลว
+                user["failure_prob"] = max(0, user["failure_prob"] - 5)
                 if user["exp"] >= 100:
                     user["level"] += 1; user["exp"] -= 100
                 save_db(db); st.rerun()
     else:
         st.success("✅ ท่อนซุงวันนี้แบกหมดแล้ว!")
 
-    # 2. The Cookie Jar
     st.markdown("### 🍪 คลังแสงความสำเร็จ (Cookie Jar)")
-    st.caption("อัปโหลดหลักฐานหรือจดบันทึกความสำเร็จที่มึงทำได้ เพื่อดูตอนที่อยากยอมแพ้")
     with st.form("cookie_form", clear_on_submit=True):
         c_victory = st.text_area("วันนี้มึงชนะความอ่อนแอเรื่องอะไร?:")
         if st.form_submit_button("ยัดใส่คลังแสง"):
@@ -277,7 +276,7 @@ with c_bot2:
             save_db(db); st.rerun()
 
 # ==========================================
-# 7. THE JUDGMENT FEED (ระบบพิพากษาก่อนนอน)
+# 7. THE JUDGMENT FEED 
 # ==========================================
 st.divider()
 st.markdown("## ⚖️ THE JUDGMENT FEED (พิพากษาก่อนนอน)")
@@ -306,11 +305,10 @@ else:
                 user["cleared_yesterday"] = True
                 user["failure_prob"] = min(100, user["failure_prob"] + 10)
                 save_db(db)
-                # ไม่ใช้ rerun ทันที เพื่อให้เห็นคำด่าก่อน
                 
         with j_col2:
             if st.button("🔥 กูใช้พลังทั้งหมด 100%!"):
-                if random.random() < 0.2: # 20% โดนซุ่มโจมตี
+                if random.random() < 0.2: 
                     user["ambush_task"] = random.choice(AMBUSH_TASKS)
                     save_db(db); st.rerun()
                 else:
