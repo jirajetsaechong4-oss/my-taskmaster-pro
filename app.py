@@ -10,7 +10,7 @@ import random
 # 1. ตั้งค่าระบบ (THE IMMORTAL SOUL)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
-FIREBASE_URL = https://console.firebase.google.com/u/0/project/mytaskpro-f7328/database/mytaskpro-f7328-default-rtdb/data/~2F
+FIREBASE_URL = https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/
 today_date = date.today()
 today_str = str(today_date)
 
