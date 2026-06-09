@@ -7,11 +7,10 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE CHRONICLES V.15.3)
+# 1. ตั้งค่าระบบ (THE VISIONARY V.15.4)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
-# ⚠️ เอาลิงก์ของมึงมาใส่ตรงนี้เหมือนเดิม ห้ามลืมเครื่องหมาย " "
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 
 today_date = date.today()
@@ -195,6 +194,13 @@ with colTop2:
     except:
         pass
 
+# ==========================================
+# 🎯 คำสาบานหน้าแท่นประหาร (MY ULTIMATE GOAL)
+# ==========================================
+st.divider()
+st.markdown("## 🎯 คำสาบานหน้าแท่นประหาร (MY ULTIMATE GOAL)")
+st.error("🔥 **\"กูจะปั้นช่อง YouTube ให้ทะลุ 10 ล้านวิว! กูจะสร้างชีวิตที่กูเป็นคนคุมเกมเอง จะไม่ยอมเป็นทาสความขี้เกียจ และจะไม่ยอมเป็นไอ้ขี้แพ้ที่ทำได้แค่นั่งมองคนอื่นสำเร็จ! ถ้ากูยอมแพ้ กูยอมตายซะดีกว่า!\"** 🔥")
+
 if user.get("in_cage"):
     st.error("🚨 **มึงอยู่ในกรง!** จ่ายหนี้เลือดให้หมดถึงจะปลดล็อกตัวเองได้!")
 
@@ -361,7 +367,6 @@ with tab3:
     if db["missions"][safe_email]:
         for item in reversed(db["missions"][safe_email]):
             status = "✅ เสร็จแล้ว" if item.get("เสร็จแล้ว") else "❌ ยังดองอยู่"
-            # ใช้สีแยกให้เห็นชัดๆ ว่าทำเสร็จหรือดองงาน
             if item.get("เสร็จแล้ว"):
                 st.info(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} 👉 {status}")
             else:
