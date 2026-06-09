@@ -11,6 +11,7 @@ import random
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
+# ⚠️ เอาลิงก์ของมึงมาใส่ตรงนี้เหมือนเดิม ห้ามลืมเครื่องหมาย " "
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 
 today_date = date.today()
