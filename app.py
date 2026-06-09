@@ -341,3 +341,39 @@ else:
                 if random.random() < 0.2: user["ambush_task"] = random.choice(AMBUSH_TASKS)
                 else: user["cleared_yesterday"] = True; user["streak"] += 1; user["exp"] += 25
                 save_db(db); st.rerun()
+# ==========================================
+# 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG)
+# ==========================================
+st.divider()
+st.markdown("## 📜 พงศาวดารความทรงจำ (HISTORY LOG)")
+st.caption("อดีตคือกระจกสะท้อนสันดาน! มาดูกันว่าที่ผ่านมามึงเป็นนักรบหรือไอ้กระจอก!")
+
+tab1, tab2, tab3, tab4 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 ภารกิจทั้งหมด", "📊 ดัชนีวินัย (สถิติ)"])
+
+with tab1:
+    if db["cookie_jar"].get(safe_email):
+        for item in reversed(db["cookie_jar"][safe_email]): 
+            st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
+    else: st.write("ยังไม่มีความสำเร็จอะไรเลย ไปทำซะ!")
+
+with tab2:
+    if db["excuses"].get(safe_email):
+        for item in reversed(db["excuses"][safe_email]): 
+            st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
+    else: st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
+
+with tab3:
+    if db["missions"].get(safe_email):
+        for item in reversed(db["missions"][safe_email]):
+            status = "✅ เสร็จแล้ว" if item.get("เสร็จแล้ว") else "❌ ยังดองอยู่"
+            st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
+    else: st.write("ยังไม่มีประวัติการแบกซุง!")
+
+with tab4:
+    win_count = len(db["cookie_jar"].get(safe_email, []))
+    fail_count = len(db["excuses"].get(safe_email, []))
+    st.write(f"📈 จำนวนครั้งที่ชนะใจตัวเอง: **{win_count}** ครั้ง")
+    st.write(f"📉 จำนวนครั้งที่พ่ายแพ้ปล่อยข้ออ้าง: **{fail_count}** ครั้ง")
+    if win_count + fail_count > 0:
+        chart_data = pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Savage (ชนะ)", "Bitch (ข้ออ้าง)"])
+        st.bar_chart(chart_data)
