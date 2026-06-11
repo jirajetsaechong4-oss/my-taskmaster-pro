@@ -5,9 +5,10 @@ import requests
 import uuid
 import hashlib
 import random
+import extra_streamlit_components as stx
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE EMPEROR'S DOMAIN V.15.6)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.15.8)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -37,6 +38,12 @@ SAVAGE_VOICES = [
     "🦍 เสียงนักรบ: 'หุบปากไอ้สวะ! ร่างกายนี้กูเป็นคนคุม ลุยต่อ!'",
     "🦍 เสียงนักรบ: 'มึงจะฟังสวะนั่น หรือจะลุกมาสร้างตำนานวะ!'",
     "🦍 เสียงนักรบ: 'ความสบายคือยาพิษ ลุกขึ้นมาสู้ดิวะไอ้หน้าโง่!'"
+]
+
+AMBUSH_TASKS = [
+    "กฎก้าวสุดท้าย! ไปแพลงก์ 1 นาทีก่อนนอน!",
+    "คิดว่ารอดแล้วหรอ? วิดพื้น 20 ที!",
+    "เขียนเป้าหมายพรุ่งนี้ 3 ข้อใส่กระดาษเดี๋ยวนี้!"
 ]
 
 def get_safe_email(email): return email.replace(".", "-").replace("@", "-")
@@ -75,6 +82,13 @@ def save_db(data):
 
 db = load_db()
 
+# 🍪 ระบบจัดการความจำ (COOKIE MANAGER)
+@st.cache_resource(experimental_allow_widgets=True)
+def get_manager():
+    return stx.CookieManager()
+
+cookie_manager = get_manager()
+
 # ==========================================
 # 2. OVERLAY นรก (PUNISHMENT ACTIVE)
 # ==========================================
@@ -86,9 +100,28 @@ if "punishment_active" in st.session_state:
     st.stop() 
 
 # ==========================================
-# 3. ระบบกำเนิด (Login / Register)
+# 3. ระบบกำเนิด (Login / Register / Auto-Login)
 # ==========================================
-if "current_user" not in st.session_state: st.session_state.current_user = None
+if "current_user" not in st.session_state: 
+    st.session_state.current_user = None
+
+# ตรวจสอบคุกกี้เพื่อล็อกอินอัตโนมัติ
+saved_email = cookie_manager.get(cookie="warrior_email")
+if saved_email and st.session_state.current_user is None:
+    if saved_email in db["users"]:
+        st.session_state.current_user = saved_email
+        user_data = db["users"][saved_email]
+        if user_data["last_login"] != today_str:
+            user_data["ghost_exp"] += 25 
+            unpaid_bounties = [m for m in db.get("missions", {}).get(saved_email, []) if m.get("bounty") and not m.get("เสร็จแล้ว")]
+            if unpaid_bounties or not user_data.get("cleared_yesterday", False):
+                penalty = 100 + (len(unpaid_bounties) * 100)
+                user_data["exp"] = 0; user_data["level"] = max(1, user_data["level"] - 1)
+                user_data["streak"] = 0; user_data["blood_debt"] += penalty
+                user_data["failure_prob"] = min(100, user_data["failure_prob"] + 20)
+            user_data["last_login"] = today_str; user_data["cleared_yesterday"] = False
+            save_db(db)
+        st.rerun()
 
 with st.sidebar:
     st.title("🧠 สมรภูมิในสมอง")
@@ -110,18 +143,21 @@ with st.sidebar:
                             "ghost_exp": 0, "ambush_task": "", "failure_prob": 10,
                             "last_login": today_str, "cleared_yesterday": True
                         }
-                        save_db(db); st.success("🔥 ลงทะเบียนสำเร็จ! ล็อกอินซะ!")
+                        save_db(db); st.success("🔥 ลงทะเบียนสำเร็จ! ไปล็อกอินซะ!")
                 else: st.warning("กรอกให้ครบ!")
+                
         elif auth_mode == "ลุย (Login)":
             if st.button("เปิดสมอง!"):
                 safe_email = get_safe_email(email_input)
                 if safe_email not in db["users"]: st.error("❌ ไม่พบบัญชีนี้!")
                 elif db["users"][safe_email]["password"] != hash_password(pass_input): st.error("❌ รหัสผ่านผิด!")
                 else:
+                    # 🍪 ฝังคุกกี้ให้จำบัญชีนี้ไปอีก 30 วัน!
+                    cookie_manager.set("warrior_email", safe_email, expires_at=datetime.now() + timedelta(days=30))
+                    
                     user_data = db["users"][safe_email]
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
-                        # ตรวจสอบว่ามีงานเดิมพันที่ดองไว้ไหม
                         unpaid_bounties = [m for m in db.get("missions", {}).get(safe_email, []) if m.get("bounty") and not m.get("เสร็จแล้ว")]
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
                             penalty = 100 + (len(unpaid_bounties) * 100)
@@ -137,7 +173,6 @@ with st.sidebar:
         st.error(f"⚔️ นักรบ: {u_data['username']}")
         st.info(f"🛡️ ฉายา: {get_title(u_data['level'])}")
         
-        # 🩻 รอยแผลเป็นนักรบ
         scars = len(db.get("dopamine_fails", {}).get(safe_email, []))
         st.markdown(f"🩻 **รอยแผลเป็นความพ่ายแพ้: {scars} รอย**")
         
@@ -147,7 +182,8 @@ with st.sidebar:
         st.divider()
         monk_mode = st.toggle("🧘‍♂️ โหมดจำศีล (Monk Mode)\nซ่อนกิเลสทั้งหมด โฟกัสแค่งาน!")
         
-        if st.button("🚪 ถอยทัพ (ปิดเว็บ)"):
+        if st.button("🚪 ถอยทัพ (ปิดเว็บ / ออกจากระบบ)"):
+            cookie_manager.delete("warrior_email") # ลบคุกกี้ทิ้ง
             st.session_state.current_user = None; st.rerun()
 
 if st.session_state.current_user is None:
@@ -218,7 +254,7 @@ st.divider()
 if monk_mode:
     st.markdown("## 🧘‍♂️ MONK MODE ACTIVE: สมาธิขั้นสุด!")
     st.info("โซนขยะถูกล็อก! ก้มหน้าก้มตาแบกซุงของมึงซะ!")
-    colLeft, colRight = st.columns([0.01, 1]) # ซ่อนฝั่งซ้าย
+    colLeft, colRight = st.columns([0.01, 1]) 
 else:
     colLeft, colRight = st.columns(2)
 
@@ -252,7 +288,7 @@ with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE (นักรบฝั่งขวา)")
     st.success(random.choice(SAVAGE_VOICES))
     
-    st.markdown("### 🪵 The Daily Siege (ตารางรบแบบมีระดับความสำคัญ)")
+    st.markdown("### 🪵 The Daily Siege (ตารางรบ)")
     with st.form("mission_form", clear_on_submit=True):
         m_name = st.text_input("ท่อนซุงที่ต้องแบกวันนี้:")
         m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
@@ -264,7 +300,6 @@ with colRight:
                 save_db(db); st.rerun()
                 
     active_missions = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
-    # เรียงลำดับงานตามความสำคัญ
     active_missions.sort(key=lambda x: get_priority_score(x.get("ประเภท", "")))
     
     if active_missions:
@@ -275,15 +310,12 @@ with colRight:
             if c2.button("✅ Tick!", key=f"m_{m['id']}"):
                 m["เสร็จแล้ว"] = True
                 exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
-                if m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 # โคตรโหด
+                if m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
                 user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
                 if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                 save_db(db); st.balloons(); st.rerun()
     else: st.success("✅ วันนี้มึงแบกซุงหมดแล้ว มหาบุรุษฝั่งขวาภูมิใจในตัวมึง!")
 
-    # ==========================================
-    # 💰 คลังสมบัตินักรบ (Financial Tracker)
-    # ==========================================
     st.markdown("### 💰 คลังสมบัตินักรบ (สร้างทุนทำยูทูป/ฝัน)")
     c_fin1, c_fin2 = st.columns([2, 1])
     with c_fin1:
@@ -341,39 +373,37 @@ else:
                 if random.random() < 0.2: user["ambush_task"] = random.choice(AMBUSH_TASKS)
                 else: user["cleared_yesterday"] = True; user["streak"] += 1; user["exp"] += 25
                 save_db(db); st.rerun()
+
 # ==========================================
 # 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG)
 # ==========================================
 st.divider()
-st.markdown("## 📜 พงศาวดารความทรงจำ (HISTORY LOG)")
-st.caption("อดีตคือกระจกสะท้อนสันดาน! มาดูกันว่าที่ผ่านมามึงเป็นนักรบหรือไอ้กระจอก!")
+if not monk_mode:
+    st.markdown("## 📜 พงศาวดารความทรงจำ (HISTORY LOG)")
+    tab1, tab2, tab3, tab4 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 ภารกิจทั้งหมด", "📊 ดัชนีวินัย (สถิติ)"])
 
-tab1, tab2, tab3, tab4 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 ภารกิจทั้งหมด", "📊 ดัชนีวินัย (สถิติ)"])
+    with tab1:
+        if db["cookie_jar"].get(safe_email):
+            for item in reversed(db["cookie_jar"][safe_email]): st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
+        else: st.write("ยังไม่มีความสำเร็จอะไรเลย ไปทำซะ!")
 
-with tab1:
-    if db["cookie_jar"].get(safe_email):
-        for item in reversed(db["cookie_jar"][safe_email]): 
-            st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
-    else: st.write("ยังไม่มีความสำเร็จอะไรเลย ไปทำซะ!")
+    with tab2:
+        if db["excuses"].get(safe_email):
+            for item in reversed(db["excuses"][safe_email]): st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
+        else: st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
 
-with tab2:
-    if db["excuses"].get(safe_email):
-        for item in reversed(db["excuses"][safe_email]): 
-            st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
-    else: st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
+    with tab3:
+        if db["missions"].get(safe_email):
+            for item in reversed(db["missions"][safe_email]):
+                status = "✅ เสร็จแล้ว" if item.get("เสร็จแล้ว") else "❌ ยังดองอยู่"
+                st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
+        else: st.write("ยังไม่มีประวัติการแบกซุง!")
 
-with tab3:
-    if db["missions"].get(safe_email):
-        for item in reversed(db["missions"][safe_email]):
-            status = "✅ เสร็จแล้ว" if item.get("เสร็จแล้ว") else "❌ ยังดองอยู่"
-            st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
-    else: st.write("ยังไม่มีประวัติการแบกซุง!")
-
-with tab4:
-    win_count = len(db["cookie_jar"].get(safe_email, []))
-    fail_count = len(db["excuses"].get(safe_email, []))
-    st.write(f"📈 จำนวนครั้งที่ชนะใจตัวเอง: **{win_count}** ครั้ง")
-    st.write(f"📉 จำนวนครั้งที่พ่ายแพ้ปล่อยข้ออ้าง: **{fail_count}** ครั้ง")
-    if win_count + fail_count > 0:
-        chart_data = pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Savage (ชนะ)", "Bitch (ข้ออ้าง)"])
-        st.bar_chart(chart_data)
+    with tab4:
+        win_count = len(db["cookie_jar"].get(safe_email, []))
+        fail_count = len(db["excuses"].get(safe_email, []))
+        st.write(f"📈 จำนวนครั้งที่ชนะใจตัวเอง: **{win_count}** ครั้ง")
+        st.write(f"📉 จำนวนครั้งที่พ่ายแพ้ปล่อยข้ออ้าง: **{fail_count}** ครั้ง")
+        if win_count + fail_count > 0:
+            chart_data = pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Savage (ชนะ)", "Bitch (ข้ออ้าง)"])
+            st.bar_chart(chart_data)
