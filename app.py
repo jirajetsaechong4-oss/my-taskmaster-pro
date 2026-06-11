@@ -137,22 +137,16 @@ with st.sidebar:
                     else:
                         db["users"][safe_email] = {
                             "password": hash_password(pass_input), "username": name_input,
-                            "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False,
-                            "ghost_exp": 0, "ambush_task": "", "failure_prob": 10,
-                            "last_login": today_str, "cleared_yesterday": True
-                        }
-                        save_db(db); st.success("🔥 ลงทะเบียนสำเร็จ! ไปล็อกอินซะ!")
-                else: st.warning("กรอกให้ครบ!")
-                
-        elif auth_mode == "ลุย (Login)":
+                            elif auth_mode == "ลุย (Login)":
             if st.button("เปิดสมอง!"):
                 safe_email = get_safe_email(email_input)
                 if safe_email not in db["users"]: st.error("❌ ไม่พบบัญชีนี้!")
                 elif db["users"][safe_email]["password"] != hash_password(pass_input): st.error("❌ รหัสผ่านผิด!")
                 else:
-                    # 🍪 ฝังคุกกี้ให้จำบัญชีนี้ไปอีก 30 วัน!
-                   cookie_manager.set("warrior_email", safe_email, key="warrior_cookie", expires_at=datetime.now() + timedelta(days=999))
+                    # 🍪 ฝังคุกกี้ให้จำบัญชีนี้ไปอีก 999 วัน!
+                    cookie_manager.set("warrior_email", safe_email, key="warrior_cookie", expires_at=datetime.now() + timedelta(days=999))
                     
+                    # บรรทัดนี้ต้องเยื้องเท่ากับคำสั่งด้านบน (ตรงนี้คือตำแหน่งที่ถูกต้อง)
                     user_data = db["users"][safe_email]
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
@@ -163,6 +157,8 @@ with st.sidebar:
                             user_data["streak"] = 0; user_data["blood_debt"] += penalty
                             user_data["failure_prob"] = min(100, user_data["failure_prob"] + 20)
                         user_data["last_login"] = today_str; user_data["cleared_yesterday"] = False
+                        save_db(db)
+                    st.session_state.current_user = safe_email; st.rerun()
                         save_db(db)
                     st.session_state.current_user = safe_email; st.rerun()
     else:
