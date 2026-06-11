@@ -8,11 +8,11 @@ import random
 import extra_streamlit_components as stx
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.15.8)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.15.9 - ULTIMATE)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
-# ⚠️ เอาลิงก์ของมึงมาใส่ตรงนี้เหมือนเดิม ห้ามลืมเครื่องหมาย " "
+# ⚠️ ลิงก์ Firebase ของมึง (กูใส่ให้แล้ว)
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 
 today_date = date.today()
@@ -62,8 +62,8 @@ def get_priority_score(task_type):
     return 4
 
 def load_db():
-    if FIREBASE_URL == "ใส่ลิงก์FIREBASEของมึงตรงนี้" or FIREBASE_URL == "":
-        st.error("🚨 ไอ้เวร! มึงยังไม่ได้เอาลิงก์ Firebase มาใส่ในโค้ด! กลับไปแก้เดี๋ยวนี้!")
+    if FIREBASE_URL == "" or FIREBASE_URL is None:
+        st.error("🚨 ไอ้เวร! ลิงก์ Firebase หายไปไหน กลับไปแก้เดี๋ยวนี้!")
         st.stop()
     try:
         res = requests.get(f"{FIREBASE_URL}/db.json")
@@ -82,7 +82,7 @@ def save_db(data):
 
 db = load_db()
 
-# 🍪 ระบบจัดการความจำ (COOKIE MANAGER)
+# 🍪 ระบบจัดการความจำ (COOKIE MANAGER - แก้บัคแล้ว)
 if "cookie_manager" not in st.session_state:
     st.session_state.cookie_manager = stx.CookieManager()
 cookie_manager = st.session_state.cookie_manager
@@ -302,16 +302,24 @@ with colRight:
     
     if active_missions:
         for m in active_missions:
-            c1, c2 = st.columns([3, 1])
+            # 🛠️ ปุ่มลบอยู่ตรงนี้! แบ่งเป็น 3 ช่อง (ชื่อภารกิจ, ปุ่มเสร็จ, ปุ่มลบ)
+            c1, c2, c3 = st.columns([6, 2, 2]) 
             is_bounty = "⚔️[เดิมพัน] " if m.get("bounty") else ""
             c1.write(f"**{m.get('ประเภท','')}** | {is_bounty}{m['ภารกิจ']}")
-            if c2.button("✅ Tick!", key=f"m_{m['id']}"):
+            
+            # ปุ่มกดยืนยันว่าทำเสร็จแล้ว
+            if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
                 m["เสร็จแล้ว"] = True
                 exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
                 if m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
                 user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
                 if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                 save_db(db); st.balloons(); st.rerun()
+                
+            # ปุ่มลบงาน (ถ้าพิมพ์ผิด หรือเปลี่ยนใจ)
+            if c3.button("🗑️ ลบ", key=f"del_m_{m['id']}"):
+                db["missions"][safe_email].remove(m)
+                save_db(db); st.rerun()
     else: st.success("✅ วันนี้มึงแบกซุงหมดแล้ว มหาบุรุษฝั่งขวาภูมิใจในตัวมึง!")
 
     st.markdown("### 💰 คลังสมบัตินักรบ (สร้างทุนทำยูทูป/ฝัน)")
@@ -334,7 +342,7 @@ with colRight:
                 finance['current'] += add_amt; save_db(db); st.rerun()
 
 # ==========================================
-# 6. หนี้เลือด & THE JUDGMENT FEED
+# 6. หหนี้เลือด & THE JUDGMENT FEED
 # ==========================================
 st.divider()
 c_bot1, c_bot2 = st.columns(2)
