@@ -12,7 +12,6 @@ import extra_streamlit_components as stx
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
-# ⚠️ ลิงก์ Firebase ของมึง (กูใส่ให้แล้ว)
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 
 today_date = date.today()
@@ -82,7 +81,7 @@ def save_db(data):
 
 db = load_db()
 
-# 🍪 ระบบจัดการความจำ (COOKIE MANAGER - แก้บัคแล้ว)
+# 🍪 ระบบจัดการความจำ (COOKIE MANAGER)
 if "cookie_manager" not in st.session_state:
     st.session_state.cookie_manager = stx.CookieManager()
 cookie_manager = st.session_state.cookie_manager
@@ -128,25 +127,50 @@ with st.sidebar:
         email_input = st.text_input("อีเมล:")
         pass_input = st.text_input("รหัสผ่าน:", type="password")
         
+        # ==========================================
+        # ✅ แก้ตรงนี้: บล็อก Register ที่หายไป
+        # ==========================================
         if auth_mode == "เกิดใหม่ (Register)":
             name_input = st.text_input("ชื่อนักรบ:")
             if st.button("ทิ้งความเป็นคนซะ!"):
                 if email_input and pass_input and name_input:
                     safe_email = get_safe_email(email_input)
-                    if safe_email in db["users"]: st.error("อีเมลนี้ถูกใช้ไปแล้ว!")
+                    if safe_email in db["users"]:
+                        st.error("อีเมลนี้ถูกใช้ไปแล้ว!")
                     else:
                         db["users"][safe_email] = {
-                            "password": hash_password(pass_input), "username": name_input,
-                            elif auth_mode == "ลุย (Login)":
+                            "password": hash_password(pass_input),
+                            "username": name_input,
+                            "level": 1,
+                            "exp": 0,
+                            "ghost_exp": 0,
+                            "streak": 0,
+                            "blood_debt": 0,
+                            "failure_prob": 0,
+                            "last_login": today_str,
+                            "cleared_yesterday": False,
+                            "in_cage": False,
+                            "ambush_task": ""
+                        }
+                        save_db(db)
+                        st.session_state.current_user = safe_email
+                        st.rerun()
+                else:
+                    st.error("กรอกให้ครบทุกช่องก่อนดิวะ!")
+
+        # ==========================================
+        # ✅ แก้ตรงนี้: บล็อก Login indent ถูกต้องแล้ว
+        # ==========================================
+        elif auth_mode == "ลุย (Login)":
             if st.button("เปิดสมอง!"):
                 safe_email = get_safe_email(email_input)
-                if safe_email not in db["users"]: st.error("❌ ไม่พบบัญชีนี้!")
-                elif db["users"][safe_email]["password"] != hash_password(pass_input): st.error("❌ รหัสผ่านผิด!")
+                if safe_email not in db["users"]:
+                    st.error("❌ ไม่พบบัญชีนี้!")
+                elif db["users"][safe_email]["password"] != hash_password(pass_input):
+                    st.error("❌ รหัสผ่านผิด!")
                 else:
                     # 🍪 ฝังคุกกี้ให้จำบัญชีนี้ไปอีก 999 วัน!
                     cookie_manager.set("warrior_email", safe_email, key="warrior_cookie", expires_at=datetime.now() + timedelta(days=999))
-                    
-                    # บรรทัดนี้ต้องเยื้องเท่ากับคำสั่งด้านบน (ตรงนี้คือตำแหน่งที่ถูกต้อง)
                     user_data = db["users"][safe_email]
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
@@ -158,9 +182,8 @@ with st.sidebar:
                             user_data["failure_prob"] = min(100, user_data["failure_prob"] + 20)
                         user_data["last_login"] = today_str; user_data["cleared_yesterday"] = False
                         save_db(db)
-                    st.session_state.current_user = safe_email; st.rerun()
-                        save_db(db)
-                    st.session_state.current_user = safe_email; st.rerun()
+                    st.session_state.current_user = safe_email
+                    st.rerun()
     else:
         safe_email = st.session_state.current_user
         u_data = db["users"][safe_email]
@@ -177,7 +200,7 @@ with st.sidebar:
         monk_mode = st.toggle("🧘‍♂️ โหมดจำศีล (Monk Mode)\nซ่อนกิเลสทั้งหมด โฟกัสแค่งาน!")
         
         if st.button("🚪 ถอยทัพ (ปิดเว็บ / ออกจากระบบ)"):
-            cookie_manager.delete("warrior_email") # ลบคุกกี้ทิ้ง
+            cookie_manager.delete("warrior_email")
             st.session_state.current_user = None; st.rerun()
 
 if st.session_state.current_user is None:
@@ -298,12 +321,10 @@ with colRight:
     
     if active_missions:
         for m in active_missions:
-            # 🛠️ ปุ่มลบอยู่ตรงนี้! แบ่งเป็น 3 ช่อง (ชื่อภารกิจ, ปุ่มเสร็จ, ปุ่มลบ)
             c1, c2, c3 = st.columns([6, 2, 2]) 
             is_bounty = "⚔️[เดิมพัน] " if m.get("bounty") else ""
             c1.write(f"**{m.get('ประเภท','')}** | {is_bounty}{m['ภารกิจ']}")
             
-            # ปุ่มกดยืนยันว่าทำเสร็จแล้ว
             if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
                 m["เสร็จแล้ว"] = True
                 exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
@@ -312,7 +333,6 @@ with colRight:
                 if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                 save_db(db); st.balloons(); st.rerun()
                 
-            # ปุ่มลบงาน (ถ้าพิมพ์ผิด หรือเปลี่ยนใจ)
             if c3.button("🗑️ ลบ", key=f"del_m_{m['id']}"):
                 db["missions"][safe_email].remove(m)
                 save_db(db); st.rerun()
@@ -338,7 +358,7 @@ with colRight:
                 finance['current'] += add_amt; save_db(db); st.rerun()
 
 # ==========================================
-# 6. หหนี้เลือด & THE JUDGMENT FEED
+# 6. หนี้เลือด & THE JUDGMENT FEED
 # ==========================================
 st.divider()
 c_bot1, c_bot2 = st.columns(2)
@@ -361,6 +381,7 @@ if user.get("ambush_task", "") != "":
         user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
+    active_missions = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
     if active_missions: st.error("❌ มึงกำลังหักหลังตัวเอง! งานยังไม่เสร็จ!")
     elif user.get("in_cage") or user.get("blood_debt", 0) > 0: st.error("❌ มึงติดหนี้เลือดอยู่!")
     else:
