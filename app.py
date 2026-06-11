@@ -151,7 +151,7 @@ with st.sidebar:
                 elif db["users"][safe_email]["password"] != hash_password(pass_input): st.error("❌ รหัสผ่านผิด!")
                 else:
                     # 🍪 ฝังคุกกี้ให้จำบัญชีนี้ไปอีก 30 วัน!
-                    cookie_manager.set("warrior_email", safe_email, expires_at=datetime.now() + timedelta(days=30))
+                   cookie_manager.set("warrior_email", safe_email, key="warrior_cookie", expires_at=datetime.now() + timedelta(days=999))
                     
                     user_data = db["users"][safe_email]
                     if user_data["last_login"] != today_str:
