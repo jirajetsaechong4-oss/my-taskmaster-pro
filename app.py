@@ -83,11 +83,9 @@ def save_db(data):
 db = load_db()
 
 # 🍪 ระบบจัดการความจำ (COOKIE MANAGER)
-@st.cache_resource
-def get_manager():
-    return stx.CookieManager()
-
-cookie_manager = get_manager()
+if "cookie_manager" not in st.session_state:
+    st.session_state.cookie_manager = stx.CookieManager()
+cookie_manager = st.session_state.cookie_manager
 
 # ==========================================
 # 2. OVERLAY นรก (PUNISHMENT ACTIVE)
