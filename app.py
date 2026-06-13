@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.17 - MASTER OF EXECUTION)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.18 - MASTER OF EXECUTION)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -46,7 +46,6 @@ AMBUSH_TASKS = [
 ]
 
 def get_safe_email(email): return email.replace(".", "-").replace("@", "-")
-def hash_password(password): return hashlib.sha256(str.encode(password)).hexdigest()
 
 def get_title(level):
     if level < 3: return "🤡 ไอ้ลูกหมาขี้ขลาด"
@@ -68,7 +67,6 @@ def load_db():
         res = requests.get(f"{FIREBASE_URL}/db.json")
         if res.status_code == 200 and res.json() is not None:
             data = res.json()
-            # เพิ่ม backlog ใน default
             defaults = {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}}
             for k, v in defaults.items():
                 if k not in data: data[k] = v
@@ -93,10 +91,9 @@ if "punishment_active" in st.session_state:
     st.stop() 
 
 # ==========================================
-# 3. ระบบล็อกอินด่วน (Fast Login - ไม่ใช้ Password)
+# 3. ระบบล็อกอิน
 # ==========================================
-if "current_user" not in st.session_state: 
-    st.session_state.current_user = None
+if "current_user" not in st.session_state: st.session_state.current_user = None
 
 with st.sidebar:
     st.title("🧠 สมรภูมิในสมอง")
@@ -111,32 +108,34 @@ with st.sidebar:
             if st.button("ทิ้งความเป็นคนซะ!"):
                 if email_input and name_input:
                     safe_email = get_safe_email(email_input)
-                    if safe_email in db.get("users", {}): 
-                        st.error("อีเมล/ID นี้มีในระบบแล้ว!")
+                    if safe_email in db.get("users", {}): st.error("อีเมล/ID นี้มีในระบบแล้ว!")
                     else:
                         db["users"][safe_email] = {
-                            "username": name_input,
-                            "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False,
+                            "username": name_input, "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False,
                             "ghost_exp": 0, "ambush_task": "", "failure_prob": 10,
-                            "last_login": today_str, "cleared_yesterday": True
+                            "last_login": today_str, "cleared_yesterday": True,
+                            "target_name": "ทำ 10 ล้านวิว YouTube Shorts", 
+                            "target_date": str(today_date + timedelta(days=90))
                         }
                         save_db(db); st.success("🔥 ลงทะเบียนสำเร็จ! ไปที่ 'ล็อกอินด่วน' ได้เลย!")
                 else: st.warning("กรอกชื่อกับอีเมลให้ครบ!")
                 
         elif auth_mode == "⚡ ล็อกอินด่วน":
-            if not db.get("users"):
-                st.warning("ยังไม่มีนักรบในระบบ ไปสร้างนักรบใหม่ก่อน!")
+            if not db.get("users"): st.warning("ยังไม่มีนักรบในระบบ ไปสร้างนักรบใหม่ก่อน!")
             else:
                 user_options = {f"{data['username']}": email for email, data in db["users"].items()}
                 selected_display = st.selectbox("เลือกบัญชีของคุณ:", list(user_options.keys()))
                 
                 if st.button("🔥 เปิดสมอง! (เข้าสู่ระบบ)"):
                     safe_email = user_options[selected_display]
-                    
                     user_data = db["users"][safe_email]
+                    
+                    if "target_name" not in user_data: 
+                        user_data["target_name"] = "ทำ 10 ล้านวิว YouTube Shorts"
+                        user_data["target_date"] = str(today_date + timedelta(days=90))
+
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
-                        # เช็คหนี้จากภารกิจของเมื่อวาน (ไม่นับ Backlog)
                         unpaid_bounties = [m for m in db.get("missions", {}).get(safe_email, []) if m.get("bounty") and not m.get("เสร็จแล้ว")]
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
                             penalty = 100 + (len(unpaid_bounties) * 100)
@@ -146,8 +145,7 @@ with st.sidebar:
                         user_data["last_login"] = today_str; user_data["cleared_yesterday"] = False
                         save_db(db)
                     
-                    st.session_state.current_user = safe_email
-                    st.rerun()
+                    st.session_state.current_user = safe_email; st.rerun()
     else:
         safe_email = st.session_state.current_user
         u_data = db["users"][safe_email]
@@ -156,68 +154,69 @@ with st.sidebar:
         
         scars = len(db.get("dopamine_fails", {}).get(safe_email, []))
         st.markdown(f"🩻 **รอยแผลเป็นความพ่ายแพ้: {scars} รอย**")
-        
         st.warning(f"🔥 สถิติไม่แพ้: {u_data['streak']} วัน")
         st.progress(u_data["exp"] / 100, text=f"Lv.{u_data['level']} | EXP: {u_data['exp']}/100")
-        
         st.divider()
-        monk_mode = st.toggle("🧘‍♂️ โหมดจำศีล (Monk Mode)\nซ่อนกิเลสทั้งหมด โฟกัสแค่งาน!")
-        
+        monk_mode = st.toggle("🧘‍♂️ โหมดจำศีล (Monk Mode)")
         if st.button("🚪 ถอยทัพ (ออกจากระบบ)"):
             st.session_state.current_user = None; st.rerun()
 
 if st.session_state.current_user is None:
-    st.title("🧠 THE BRAIN WAR (สงครามสองอนาคต)")
-    st.info("👈 กดเลือกชื่อตัวเองด้านซ้ายมือ แล้วกดปุ่ม 'เปิดสมอง!' เพื่อเข้าใช้งานทันที!")
+    st.title("🧠 THE BRAIN WAR")
+    st.info("👈 เลือกชื่อตัวเองแล้วกดปุ่ม 'เปิดสมอง!' เพื่อเข้าใช้งาน!")
     st.stop()
 
 safe_email = st.session_state.current_user
 
-# ===== 🛡️ FIREBASE SHIELD =====
 for k in ["missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance"]:
     if safe_email not in db[k] or db[k][safe_email] is None: 
         if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0, "current": 0}
         else: db[k][safe_email] = []
-# ===============================
 
 user = db["users"][safe_email]
 finance = db["finance"][safe_email]
 
-# ===== 🚨 CHECK OVERDUE BACKLOG (เช็คงานดองเน่า) =====
+# ===== 🚨 CHECK OVERDUE BACKLOG =====
 overdue_count = 0
 valid_backlog = []
 for task in db["backlog"][safe_email]:
     try:
         dl_date = datetime.strptime(task["deadline"], "%Y-%m-%d").date()
-        if dl_date < today_date:
-            overdue_count += 1
-        else:
-            valid_backlog.append(task)
-    except:
-        valid_backlog.append(task)
+        if dl_date < today_date: overdue_count += 1
+        else: valid_backlog.append(task)
+    except: valid_backlog.append(task)
 
 if overdue_count > 0:
     db["backlog"][safe_email] = valid_backlog
     user["failure_prob"] = min(100, user["failure_prob"] + (10 * overdue_count))
-    user["blood_debt"] += (50 * overdue_count)
-    user["in_cage"] = True
+    user["blood_debt"] += (50 * overdue_count); user["in_cage"] = True
     save_db(db)
-    st.error(f"🚨 ไอ้หน้าโง่! มึงดองงานในสมุดจดจนหมดเวลาไป {overdue_count} งาน! ระบบลงโทษเพิ่มโอกาสล้มเหลวและยัดหนี้เลือดมึงแล้ว!")
+    st.error(f"🚨 ไอ้หน้าโง่! ดองงานจนเลยเวลาไป {overdue_count} งาน! ระบบยัดหนี้เลือดมึงแล้ว!")
 
 # ==========================================
-# 🎯 เป้าหมาย & ปุ่มสับระเบิดพลัง
+# 🎯 ส่วนหัว: ปลุกพลัง & ระบบนับถอยหลังอนาคต (FUTURE COUNTDOWN)
 # ==========================================
+try: t_date = datetime.strptime(user["target_date"], "%Y-%m-%d").date()
+except: t_date = today_date + timedelta(days=90)
+days_left = (t_date - today_date).days
+
 colTop1, colTop2, colTop3 = st.columns([1, 1, 3])
 with colTop1:
     if st.button("🎰 วงล้อชดใช้กรรม\n(กูเริ่มขี้เกียจ)", type="primary", use_container_width=True):
         st.session_state.punishment_active = True
-        st.session_state.punishment_task = random.choice(PUNISHMENTS)
-        st.rerun()
+        st.session_state.punishment_task = random.choice(PUNISHMENTS); st.rerun()
 with colTop2:
     if st.button("⚡ คาถาระเบิดพลัง\n(เรียกสติเดี่ยวนี้)", use_container_width=True):
-        st.toast(f"🔊 ตื่นดิวะ! ไปทำอันนี้เดี๋ยวนี้: {random.choice(PUNISHMENTS)}", icon="🦍")
+        st.toast(f"🔊 ตื่นดิวะ! {random.choice(PUNISHMENTS)}", icon="🦍")
 with colTop3:
-    st.error("🔥 **คำสาบาน:** กูจะปั้นช่อง YouTube ให้ทะลุ 10 ล้านวิว! กูจะสร้างชีวิตที่กูคุมเกมเอง จะไม่ยอมเป็นทาสความขี้เกียจ ถ้ากูยอมแพ้ กูยอมตายซะดีกว่า!")
+    # ⏳ แสดง COUNTDOWN ชี้ชะตาที่นี่
+    st.error(f"⏳ **นับถอยหลังชี้ชะตา:** {user.get('target_name', 'เป้าหมายสูงสุด')} ในอีก **{days_left}** วัน!")
+    with st.popover("⚙️ ตั้งค่านับถอยหลัง"):
+        new_t_name = st.text_input("เป้าหมายสูงสุด (เช่น 10ล้านวิว):", user.get("target_name", ""))
+        new_t_date = st.date_input("วันกำหนดชี้ชะตา (Deadline ใหญ่):", t_date)
+        if st.button("บันทึกเป้าหมายชี้ชะตา"):
+            user["target_name"] = new_t_name; user["target_date"] = str(new_t_date)
+            save_db(db); st.rerun()
 
 if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!** วิดพื้นจ่ายหนี้เลือดซะ!")
 
@@ -227,10 +226,8 @@ if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!**
 st.divider()
 if monk_mode:
     st.markdown("## 🧘‍♂️ MONK MODE ACTIVE: สมาธิขั้นสุด!")
-    st.info("โซนขยะถูกล็อก! ก้มหน้าก้มตาแบกซุงของมึงซะ!")
     colLeft, colRight = st.columns([0.01, 1]) 
-else:
-    colLeft, colRight = st.columns(2)
+else: colLeft, colRight = st.columns(2)
 
 with colLeft:
     if not monk_mode:
@@ -252,80 +249,28 @@ with colLeft:
 
         st.markdown("### 🩸 บัญชีแค้น (THE HATER'S WALL)")
         with st.form("hater_form", clear_on_submit=True):
-            h_text = st.text_input("คำดูถูก/คำสบประมาทที่มึงเคยเจอ:")
+            h_text = st.text_input("คำดูถูกที่มึงเจอ:")
             if st.form_submit_button("ฝังความแค้น"):
                 if h_text: db["haters"][safe_email].append(h_text); save_db(db); st.rerun()
-        if db["haters"][safe_email]:
-            st.error(f"🤬 คำดูถูกเตือนใจ: \"{random.choice(db['haters'][safe_email])}\"")
+        if db["haters"][safe_email]: st.error(f"🤬 คำดูถูก: \"{random.choice(db['haters'][safe_email])}\"")
 
 with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE (นักรบฝั่งขวา)")
     st.success(random.choice(SAVAGE_VOICES))
     
-    # === สร้าง TABS เพื่อแยก สมุดจด กับ ภารกิจวันนี้ ===
-    tab_missions, tab_backlog = st.tabs(["🔥 ภารกิจวันนี้ (พร้อมลุย)", "📝 สมุดจดงาน (รอเวลา)"])
+    # === สร้าง TABS 3 อัน: ภารกิจวันนี้, สมุดจดงาน, และ โหลคุกกี้ ===
+    tab_missions, tab_backlog, tab_cookie = st.tabs(["🔥 ภารกิจวันนี้", "📝 สมุดจดงาน", "🍪 โหลคุกกี้"])
     
     # ----------------------------------------------------
-    # TAB 1: สมุดจดงาน (Backlog)
-    # ----------------------------------------------------
-    with tab_backlog:
-        st.markdown("### 📝 สมุดจดงาน (Task Backlog)")
-        st.info("จดงานทิ้งไว้ที่นี่ ถ้ายังไม่ทำวันนี้จะไม่ได้ EXP แต่ถ้าเลย Deadline แล้วยังไม่ดึงไปทำ มึงโดนลงโทษแน่!")
-        with st.form("backlog_form", clear_on_submit=True):
-            b_name = st.text_input("หัวข้องาน/ไอเดียยูทูป:")
-            b_detail = st.text_area("รายละเอียด/Note (ถ้ามี):")
-            b_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
-            b_deadline = st.date_input("วันกำหนดส่ง (Deadline):")
-            
-            if st.form_submit_button("💾 บันทึกลงสมุด"):
-                if b_name:
-                    db["backlog"][safe_email].append({
-                        "id": str(uuid.uuid4()), 
-                        "ภารกิจ": b_name, 
-                        "รายละเอียด": b_detail,
-                        "ประเภท": b_type, 
-                        "deadline": str(b_deadline)
-                    })
-                    save_db(db); st.rerun()
-                    
-        if db["backlog"][safe_email]:
-            for b_task in sorted(db["backlog"][safe_email], key=lambda x: x["deadline"]):
-                with st.container(border=True):
-                    c1, c2 = st.columns([3, 1])
-                    c1.write(f"**{b_task['ประเภท']}** | 📝 {b_task['ภารกิจ']}")
-                    c1.caption(f"📅 Deadline: {b_task['deadline']} | รายละเอียด: {b_task.get('รายละเอียด', '-')}")
-                    
-                    if c2.button("⚡ ดึงเข้าทำวันนี้!", key=f"pull_{b_task['id']}", type="primary"):
-                        # ย้ายเข้า missions
-                        db["missions"][safe_email].append({
-                            "id": b_task["id"],
-                            "วันที่": today_str,
-                            "ภารกิจ": b_task["ภารกิจ"],
-                            "ประเภท": b_task["ประเภท"],
-                            "bounty": False, 
-                            "เสร็จแล้ว": False
-                        })
-                        db["backlog"][safe_email].remove(b_task)
-                        save_db(db); st.rerun()
-                    
-                    if c2.button("🗑️ ลบทิ้ง", key=f"del_b_{b_task['id']}"):
-                        db["backlog"][safe_email].remove(b_task)
-                        save_db(db); st.rerun()
-        else:
-            st.success("สมุดจดว่างเปล่า ไม่มีงานค้าง!")
-
-    # ----------------------------------------------------
-    # TAB 2: ภารกิจวันนี้ (Daily Missions)
+    # TAB 1: ภารกิจวันนี้ (Daily Missions)
     # ----------------------------------------------------
     with tab_missions:
         st.markdown("### 🪵 The Daily Siege (ตารางรบวันนี้)")
-        
-        # กล่องสำหรับคนอยากเพิ่มงานด่วนแบบไม่ต้องผ่านสมุดจด
         with st.expander("➕ เพิ่มงานด่วนวันนี้ (ไม่ผ่านสมุด)"):
             with st.form("mission_form", clear_on_submit=True):
                 m_name = st.text_input("ท่อนซุงที่ต้องแบกวันนี้:")
                 m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
-                m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: ได้ EXPx2 แต่ถ้าอู้โดนหนี้เลือด 100 ที!)")
+                m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: พลาดโดนหนี้ 100 ที)")
                 if st.form_submit_button("เพิ่มภารกิจ"):
                     if m_name:
                         db["missions"][safe_email].append({"id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, "ประเภท": m_type, "bounty": m_bounty, "เสร็จแล้ว": False})
@@ -351,15 +296,72 @@ with colRight:
                 if c3.button("🗑️ ลบ", key=f"del_m_{m['id']}"):
                     db["missions"][safe_email].remove(m)
                     save_db(db); st.rerun()
-        else: st.success("✅ วันนี้มึงทำภารกิจที่ดึงมาหมดแล้ว มหาบุรุษฝั่งขวาภูมิใจในตัวมึง!")
+        else: st.success("✅ วันนี้เคลียร์หมดแล้ว เยี่ยมมากไอ้เสือ!")
+
+    # ----------------------------------------------------
+    # TAB 2: สมุดจดงาน (Backlog)
+    # ----------------------------------------------------
+    with tab_backlog:
+        st.markdown("### 📝 สมุดจดงาน (Task Backlog)")
+        with st.form("backlog_form", clear_on_submit=True):
+            b_name = st.text_input("หัวข้องาน/ไอเดียยูทูป:")
+            b_detail = st.text_area("รายละเอียด/Note (ถ้ามี):")
+            b_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
+            b_deadline = st.date_input("วันกำหนดส่ง (Deadline):")
+            
+            if st.form_submit_button("💾 บันทึกลงสมุด"):
+                if b_name:
+                    db["backlog"][safe_email].append({
+                        "id": str(uuid.uuid4()), "ภารกิจ": b_name, "รายละเอียด": b_detail,
+                        "ประเภท": b_type, "deadline": str(b_deadline)
+                    })
+                    save_db(db); st.rerun()
+                    
+        if db["backlog"][safe_email]:
+            for b_task in sorted(db["backlog"][safe_email], key=lambda x: x["deadline"]):
+                with st.container(border=True):
+                    c1, c2 = st.columns([3, 1])
+                    c1.write(f"**{b_task['ประเภท']}** | 📝 {b_task['ภารกิจ']}")
+                    c1.caption(f"📅 Deadline: {b_task['deadline']} | รายละเอียด: {b_task.get('รายละเอียด', '-')}")
+                    
+                    if c2.button("⚡ ดึงทำวันนี้", key=f"pull_{b_task['id']}", type="primary"):
+                        db["missions"][safe_email].append({
+                            "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
+                            "ประเภท": b_task["ประเภท"], "bounty": False, "เสร็จแล้ว": False
+                        })
+                        db["backlog"][safe_email].remove(b_task)
+                        save_db(db); st.rerun()
+                    
+                    if c2.button("🗑️ ลบ", key=f"del_b_{b_task['id']}"):
+                        db["backlog"][safe_email].remove(b_task); save_db(db); st.rerun()
+        else: st.success("สมุดจดว่างเปล่า!")
+
+    # ----------------------------------------------------
+    # TAB 3: โหลคุกกี้ (Cookie Jar) 🍪
+    # ----------------------------------------------------
+    with tab_cookie:
+        st.markdown("### 🍪 THE COOKIE JAR (โหลเก็บความภูมิใจ)")
+        st.info("เวลาที่มึงท้อ หมดไฟ ให้กลับมาเปิดโหลนี้ดูว่ามึงเคยชนะอะไรมาบ้าง!")
+        with st.form("cookie_form", clear_on_submit=True):
+            win_text = st.text_input("วันนี้มึงชนะใจตัวเองเรื่องอะไรได้บ้าง? (เรื่องเล็กๆ ก็ได้):")
+            if st.form_submit_button("เก็บชัยชนะลงโหล!"):
+                if win_text:
+                    db["cookie_jar"][safe_email].append({"วันที่": today_str, "ชัยชนะ": win_text})
+                    user["exp"] += 5 # ให้รางวัลกำลังใจ 5 EXP
+                    save_db(db); st.success("✅ เก็บชัยชนะลงโหลเรียบร้อย! มึงแม่งสุดยอด!"); st.rerun()
+        
+        # แสดง 5 อันล่าสุดให้ชื่นใจ
+        if db["cookie_jar"][safe_email]:
+            st.markdown("**ความสำเร็จล่าสุดของมึง:**")
+            for c in reversed(db["cookie_jar"][safe_email][-5:]):
+                st.success(f"🏆 **[{c['วันที่']}]** {c['ชัยชนะ']}")
 
     st.divider()
-    st.markdown("### 💰 คลังสมบัตินักรบ (สร้างทุนทำยูทูป/ฝัน)")
+    st.markdown("### 💰 คลังสมบัตินักรบ (ทุนสร้างฝัน)")
     c_fin1, c_fin2 = st.columns([2, 1])
     with c_fin1:
         st.write(f"**เป้าหมาย:** {finance.get('goal_name', 'ยังไม่ตั้ง')}")
-        cur = finance.get('current', 0)
-        tgt = finance.get('goal_amount', 1)
+        cur = finance.get('current', 0); tgt = finance.get('goal_amount', 1)
         prog = min(cur / tgt, 1.0) if tgt > 0 else 0
         st.progress(prog, text=f"มีแล้ว: {cur} / {tgt} บาท ({int(prog*100)}%)")
     with c_fin2:
@@ -369,7 +371,7 @@ with colRight:
             if st.button("ตั้งเป้าหมาย"):
                 finance['goal_name'] = new_g_name; finance['goal_amount'] = new_g_amt; save_db(db); st.rerun()
             st.divider()
-            add_amt = st.number_input("บวก/ลด เงิน (ใส่ติดลบเพื่อจ่าย):", value=0)
+            add_amt = st.number_input("บวก/ลด เงิน:", value=0)
             if st.button("บันทึกเงิน"):
                 finance['current'] += add_amt; save_db(db); st.rerun()
 
@@ -397,7 +399,6 @@ if user.get("ambush_task", "") != "":
         user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
-    # ⚠️ ระบบพิพากษา เช็คแค่งานใน "ภารกิจวันนี้" เท่านั้น! ไม่สนสมุดจด
     active_missions = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
     if active_missions: st.error("❌ มึงกำลังหักหลังตัวเอง! ภารกิจวันนี้มึงยังทำไม่เสร็จ!")
     elif user.get("in_cage") or user.get("blood_debt", 0) > 0: st.error("❌ มึงติดหนี้เลือดอยู่!")
