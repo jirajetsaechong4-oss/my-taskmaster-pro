@@ -262,7 +262,7 @@ with colRight:
     tab_missions, tab_backlog, tab_cookie = st.tabs(["🔥 ภารกิจวันนี้", "📝 สมุดจดงาน", "🍪 โหลคุกกี้"])
     
     # ----------------------------------------------------
-    # TAB 1: ภารกิจวันนี้ (Daily Missions)
+    # TAB 1: ภารกิจวันนี้ (Daily Missions) + งานรอตรวจ
     # ----------------------------------------------------
     with tab_missions:
         st.markdown("### 🪵 The Daily Siege (ตารางรบวันนี้)")
@@ -273,15 +273,23 @@ with colRight:
                 m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: พลาดโดนหนี้ 100 ที)")
                 if st.form_submit_button("เพิ่มภารกิจ"):
                     if m_name:
-                        db["missions"][safe_email].append({"id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, "ประเภท": m_type, "bounty": m_bounty, "เสร็จแล้ว": False})
+                        db["missions"][safe_email].append({
+                            "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, 
+                            "ประเภท": m_type, "bounty": m_bounty, "เสร็จแล้ว": False, "รอตรวจ": False
+                        })
                         save_db(db); st.rerun()
                     
-        active_missions = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
-        active_missions.sort(key=lambda x: get_priority_score(x.get("ประเภท", "")))
+        # ดึงงานที่ยังไม่เสร็จทั้งหมด
+        raw_active = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
+        # แยกงานที่ยังต้องทำ กับ งานที่รอตรวจ
+        todo_missions = [m for m in raw_active if not m.get("รอตรวจ", False)]
+        pending_missions = [m for m in raw_active if m.get("รอตรวจ", False)]
         
-        if active_missions:
-            for m in active_missions:
-                c1, c2, c3 = st.columns([6, 2, 2]) 
+        todo_missions.sort(key=lambda x: get_priority_score(x.get("ประเภท", "")))
+        
+        if todo_missions:
+            for m in todo_missions:
+                c1, c2, c3, c4 = st.columns([4, 2, 2, 1]) 
                 is_bounty = "⚔️[เดิมพัน] " if m.get("bounty") else ""
                 c1.write(f"**{m.get('ประเภท','')}** | {is_bounty}{m['ภารกิจ']}")
                 
@@ -292,11 +300,34 @@ with colRight:
                     user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
                     if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                     save_db(db); st.balloons(); st.rerun()
+                
+                if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
+                    m["รอตรวจ"] = True
+                    save_db(db); st.rerun()
                     
-                if c3.button("🗑️ ลบ", key=f"del_m_{m['id']}"):
+                if c4.button("🗑️", key=f"del_m_{m['id']}"):
                     db["missions"][safe_email].remove(m)
                     save_db(db); st.rerun()
-        else: st.success("✅ วันนี้เคลียร์หมดแล้ว เยี่ยมมากไอ้เสือ!")
+        else: st.success("✅ วันนี้เคลียร์ภารกิจหลักหมดแล้ว เยี่ยมมากไอ้เสือ!")
+
+        # --- ส่วนแสดงงานที่รอตรวจสอบ ---
+        if pending_missions:
+            st.divider()
+            st.markdown("### ⏳ งานที่รอการตรวจสอบ / พร้อมส่ง")
+            for m in pending_missions:
+                c1, c2, c3 = st.columns([5, 2, 2])
+                c1.caption(f"⏳ {m['ภารกิจ']}")
+                if c2.button("✅ ตรวจผ่าน (รับ EXP)", key=f"appr_{m['id']}"):
+                    m["เสร็จแล้ว"] = True
+                    m["รอตรวจ"] = False
+                    exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
+                    if m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
+                    user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
+                    if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
+                    save_db(db); st.balloons(); st.rerun()
+                if c3.button("⏪ ดึงกลับมาทำ", key=f"revert_{m['id']}"):
+                    m["รอตรวจ"] = False
+                    save_db(db); st.rerun()
 
     # ----------------------------------------------------
     # TAB 2: สมุดจดงาน (Backlog)
@@ -327,7 +358,7 @@ with colRight:
                     if c2.button("⚡ ดึงทำวันนี้", key=f"pull_{b_task['id']}", type="primary"):
                         db["missions"][safe_email].append({
                             "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
-                            "ประเภท": b_task["ประเภท"], "bounty": False, "เสร็จแล้ว": False
+                            "ประเภท": b_task["ประเภท"], "bounty": False, "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         db["backlog"][safe_email].remove(b_task)
                         save_db(db); st.rerun()
@@ -399,8 +430,8 @@ if user.get("ambush_task", "") != "":
         user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
-    active_missions = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
-    if active_missions: st.error("❌ มึงกำลังหักหลังตัวเอง! ภารกิจวันนี้มึงยังทำไม่เสร็จ!")
+    active_for_judgment = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False)]
+    if active_for_judgment: st.error("❌ มึงกำลังหักหลังตัวเอง! ภารกิจวันนี้มึงยังทำไม่เสร็จ!")
     elif user.get("in_cage") or user.get("blood_debt", 0) > 0: st.error("❌ มึงติดหนี้เลือดอยู่!")
     else:
         st.warning("วันนี้มึงใส่เต็ม 100% หรือมึงใช้พลังแค่ 40%?")
@@ -436,7 +467,9 @@ if not monk_mode:
     with tab3:
         if db["missions"].get(safe_email):
             for item in reversed(db["missions"][safe_email]):
-                status = "✅ เสร็จแล้ว" if item.get("เสร็จแล้ว") else "❌ ยังดองอยู่"
+                if item.get("เสร็จแล้ว"): status = "✅ เสร็จแล้ว"
+                elif item.get("รอตรวจ", False): status = "⏳ รอตรวจ/พร้อมส่ง"
+                else: status = "❌ ยังดองอยู่"
                 st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
         else: st.write("ยังไม่มีประวัติการแบกซุง!")
 
