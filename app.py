@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.18 - MASTER OF EXECUTION)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.19 - THE IRON CRUCIBLE)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -67,12 +67,12 @@ def load_db():
         res = requests.get(f"{FIREBASE_URL}/db.json")
         if res.status_code == 200 and res.json() is not None:
             data = res.json()
-            defaults = {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}}
+            defaults = {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {}}
             for k, v in defaults.items():
                 if k not in data: data[k] = v
             return data
     except: pass
-    return {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}}
+    return {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {}}
 
 def save_db(data):
     try: requests.put(f"{FIREBASE_URL}/db.json", json=data)
@@ -168,7 +168,8 @@ if st.session_state.current_user is None:
 
 safe_email = st.session_state.current_user
 
-for k in ["missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance"]:
+# Update loop to include iron_habits
+for k in ["missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance", "iron_habits"]:
     if safe_email not in db[k] or db[k][safe_email] is None: 
         if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0, "current": 0}
         else: db[k][safe_email] = []
@@ -258,24 +259,29 @@ with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE (นักรบฝั่งขวา)")
     st.success(random.choice(SAVAGE_VOICES))
     
-    # === สร้าง TABS 3 อัน: ภารกิจวันนี้, สมุดจดงาน, และ โหลคุกกี้ ===
-    tab_missions, tab_backlog, tab_cookie = st.tabs(["🔥 ภารกิจวันนี้", "📝 สมุดจดงาน", "🍪 โหลคุกกี้"])
+    # === สร้าง TABS 4 อัน (เพิ่มวินัยเหล็กเข้ามา) ===
+    tab_missions, tab_habits, tab_backlog, tab_cookie = st.tabs(["🔥 ภารกิจวันนี้", "⛓️ วินัยเหล็ก", "📝 สมุดจดงาน", "🍪 โหลคุกกี้"])
     
     # ----------------------------------------------------
-    # TAB 1: ภารกิจวันนี้ (Daily Missions) + งานรอตรวจ
+    # TAB 1: ภารกิจวันนี้ (Daily Missions) + BOSS FIGHT + สับท่อนซุง
     # ----------------------------------------------------
     with tab_missions:
         st.markdown("### 🪵 The Daily Siege (ตารางรบวันนี้)")
         with st.expander("➕ เพิ่มงานด่วนวันนี้ (ไม่ผ่านสมุด)"):
             with st.form("mission_form", clear_on_submit=True):
                 m_name = st.text_input("ท่อนซุงที่ต้องแบกวันนี้:")
+                m_is_boss = st.checkbox("💀 ตั้งเป็น THE BOSS FIGHT (งานกลืนกบประจำวัน! หนี=หนี้เลือด x3)")
                 m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
                 m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: พลาดโดนหนี้ 100 ที)")
+                m_subtasks_text = st.text_area("🔪 สับท่อนซุง (ใส่ชื่อย่อยทีละบรรทัด, ไม่บังคับ):")
+                
                 if st.form_submit_button("เพิ่มภารกิจ"):
                     if m_name:
+                        subtasks = [{"name": s.strip(), "done": False} for s in m_subtasks_text.split('\n') if s.strip()]
                         db["missions"][safe_email].append({
                             "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, 
-                            "ประเภท": m_type, "bounty": m_bounty, "เสร็จแล้ว": False, "รอตรวจ": False
+                            "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
+                            "subtasks": subtasks, "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         save_db(db); st.rerun()
                     
@@ -285,29 +291,46 @@ with colRight:
         todo_missions = [m for m in raw_active if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active if m.get("รอตรวจ", False)]
         
-        todo_missions.sort(key=lambda x: get_priority_score(x.get("ประเภท", "")))
+        # จัดเรียง: Boss ขึ้นก่อนเสมอ ตามด้วยความสำคัญ
+        todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, get_priority_score(x.get("ประเภท", ""))))
         
         if todo_missions:
             for m in todo_missions:
-                c1, c2, c3, c4 = st.columns([4, 2, 2, 1]) 
-                is_bounty = "⚔️[เดิมพัน] " if m.get("bounty") else ""
-                c1.write(f"**{m.get('ประเภท','')}** | {is_bounty}{m['ภารกิจ']}")
-                
-                if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
-                    m["เสร็จแล้ว"] = True
-                    exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
-                    if m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
-                    user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
-                    if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
-                    save_db(db); st.balloons(); st.rerun()
-                
-                if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
-                    m["รอตรวจ"] = True
-                    save_db(db); st.rerun()
+                with st.container(border=True):
+                    c1, c2, c3, c4 = st.columns([4, 2, 2, 1]) 
+                    is_bounty = "⚔️[เดิมพัน] " if m.get("bounty") else ""
+                    is_boss = "💀 **[BOSS FIGHT]** " if m.get("is_boss") else ""
+                    c1.write(f"**{m.get('ประเภท','')}** | {is_boss}{is_bounty}{m['ภารกิจ']}")
                     
-                if c4.button("🗑️", key=f"del_m_{m['id']}"):
-                    db["missions"][safe_email].remove(m)
-                    save_db(db); st.rerun()
+                    all_done = True
+                    if m.get("subtasks"):
+                        st.caption("🔪 งานย่อย (ต้องทำครบก่อนถึงจะกดส่งได้):")
+                        for i, stask in enumerate(m["subtasks"]):
+                            checked = st.checkbox(stask["name"], value=stask["done"], key=f"st_{m['id']}_{i}")
+                            if checked != stask["done"]:
+                                m["subtasks"][i]["done"] = checked
+                                save_db(db); st.rerun()
+                        all_done = all(stask["done"] for stask in m["subtasks"])
+
+                    if all_done:
+                        if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
+                            m["เสร็จแล้ว"] = True
+                            exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
+                            if m.get("is_boss"): exp_gain = 100
+                            elif m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
+                            user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
+                            if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
+                            save_db(db); st.balloons(); st.rerun()
+                        
+                        if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
+                            m["รอตรวจ"] = True
+                            save_db(db); st.rerun()
+                    else:
+                        c2.caption("🔒 สับงานย่อยให้หมด!")
+                        
+                    if c4.button("🗑️", key=f"del_m_{m['id']}"):
+                        db["missions"][safe_email].remove(m)
+                        save_db(db); st.rerun()
         else: st.success("✅ วันนี้เคลียร์ภารกิจหลักหมดแล้ว เยี่ยมมากไอ้เสือ!")
 
         # --- ส่วนแสดงงานที่รอตรวจสอบ ---
@@ -316,12 +339,14 @@ with colRight:
             st.markdown("### ⏳ งานที่รอการตรวจสอบ / พร้อมส่ง")
             for m in pending_missions:
                 c1, c2, c3 = st.columns([5, 2, 2])
-                c1.caption(f"⏳ {m['ภารกิจ']}")
+                is_boss = "💀 " if m.get("is_boss") else ""
+                c1.caption(f"⏳ {is_boss}{m['ภารกิจ']}")
                 if c2.button("✅ ตรวจผ่าน (รับ EXP)", key=f"appr_{m['id']}"):
                     m["เสร็จแล้ว"] = True
                     m["รอตรวจ"] = False
                     exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
-                    if m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
+                    if m.get("is_boss"): exp_gain = 100
+                    elif m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
                     user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
                     if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                     save_db(db); st.balloons(); st.rerun()
@@ -330,21 +355,53 @@ with colRight:
                     save_db(db); st.rerun()
 
     # ----------------------------------------------------
-    # TAB 2: สมุดจดงาน (Backlog)
+    # TAB 2: วินัยเหล็ก (THE IRON HABITS)
+    # ----------------------------------------------------
+    with tab_habits:
+        st.markdown("### ⛓️ THE IRON HABITS (วินัยเหล็กรายวัน)")
+        st.info("สิ่งที่มึงต้องทำทุกวัน ห้ามมีข้ออ้าง พลาด 1 ครั้ง Streak ขาดทันที!")
+        with st.form("habit_form", clear_on_submit=True):
+            h_name = st.text_input("สร้างวินัยเหล็กใหม่ (เช่น ตื่นตี 5, อ่านหนังสือ 10 หน้า):")
+            if st.form_submit_button("เพิ่มวินัยเหล็ก"):
+                if h_name:
+                    db["iron_habits"][safe_email].append({"id": str(uuid.uuid4()), "name": h_name, "last_done_date": ""})
+                    save_db(db); st.rerun()
+                    
+        if db["iron_habits"][safe_email]:
+            for h in db["iron_habits"][safe_email]:
+                c1, c2, c3 = st.columns([5, 3, 1])
+                c1.write(f"⛓️ **{h['name']}**")
+                if h.get("last_done_date") == today_str:
+                    c2.success("✅ ทำแล้ววันนี้")
+                else:
+                    if c2.button("🔥 กูทำสำเร็จ!", key=f"h_done_{h['id']}"):
+                        h["last_done_date"] = today_str
+                        user["exp"] += 5
+                        save_db(db); st.balloons(); st.rerun()
+                if c3.button("🗑️", key=f"del_h_{h['id']}"):
+                    db["iron_habits"][safe_email].remove(h)
+                    save_db(db); st.rerun()
+        else:
+            st.success("ยังไม่มีวินัยเหล็ก! สร้างมันขึ้นมาซะ!")
+
+    # ----------------------------------------------------
+    # TAB 3: สมุดจดงาน (Backlog)
     # ----------------------------------------------------
     with tab_backlog:
         st.markdown("### 📝 สมุดจดงาน (Task Backlog)")
         with st.form("backlog_form", clear_on_submit=True):
             b_name = st.text_input("หัวข้องาน/ไอเดียยูทูป:")
             b_detail = st.text_area("รายละเอียด/Note (ถ้ามี):")
+            b_subtasks_text = st.text_area("🔪 ซอยงานย่อย (Enter ขึ้นบรรทัดใหม่, ไม่บังคับ):")
             b_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
             b_deadline = st.date_input("วันกำหนดส่ง (Deadline):")
             
             if st.form_submit_button("💾 บันทึกลงสมุด"):
                 if b_name:
+                    b_subtasks = [{"name": s.strip(), "done": False} for s in b_subtasks_text.split('\n') if s.strip()]
                     db["backlog"][safe_email].append({
                         "id": str(uuid.uuid4()), "ภารกิจ": b_name, "รายละเอียด": b_detail,
-                        "ประเภท": b_type, "deadline": str(b_deadline)
+                        "subtasks": b_subtasks, "ประเภท": b_type, "deadline": str(b_deadline)
                     })
                     save_db(db); st.rerun()
                     
@@ -358,7 +415,8 @@ with colRight:
                     if c2.button("⚡ ดึงทำวันนี้", key=f"pull_{b_task['id']}", type="primary"):
                         db["missions"][safe_email].append({
                             "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
-                            "ประเภท": b_task["ประเภท"], "bounty": False, "เสร็จแล้ว": False, "รอตรวจ": False
+                            "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False,
+                            "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         db["backlog"][safe_email].remove(b_task)
                         save_db(db); st.rerun()
@@ -368,7 +426,7 @@ with colRight:
         else: st.success("สมุดจดว่างเปล่า!")
 
     # ----------------------------------------------------
-    # TAB 3: โหลคุกกี้ (Cookie Jar) 🍪
+    # TAB 4: โหลคุกกี้ (Cookie Jar) 🍪
     # ----------------------------------------------------
     with tab_cookie:
         st.markdown("### 🍪 THE COOKIE JAR (โหลเก็บความภูมิใจ)")
@@ -431,8 +489,24 @@ if user.get("ambush_task", "") != "":
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
     active_for_judgment = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False)]
-    if active_for_judgment: st.error("❌ มึงกำลังหักหลังตัวเอง! ภารกิจวันนี้มึงยังทำไม่เสร็จ!")
-    elif user.get("in_cage") or user.get("blood_debt", 0) > 0: st.error("❌ มึงติดหนี้เลือดอยู่!")
+    incomplete_bosses = [m for m in active_for_judgment if m.get("is_boss")]
+    incomplete_habits = [h for h in db["iron_habits"][safe_email] if h.get("last_done_date") != today_str]
+
+    if incomplete_bosses:
+        st.error("💀 ไอ้สวะ! มึงดองงาน BOSS FIGHT! แท่นพิพากษาสั่งลงโทษหนัก!")
+        if st.button("🩸 ยอมรับความกาก (รับหนี้เลือด 300 ที!)"):
+            user["blood_debt"] += 300
+            user["failure_prob"] = min(100, user["failure_prob"] + 30)
+            user["in_cage"] = True
+            user["cleared_yesterday"] = True
+            save_db(db); st.rerun()
+    elif active_for_judgment: 
+        st.error("❌ มึงกำลังหักหลังตัวเอง! ภารกิจวันนี้มึงยังทำไม่เสร็จ!")
+    elif incomplete_habits:
+        st.error(f"⛓️ วินัยเหล็กมึงขาด! มึงยังไม่ได้ทำ: " + ", ".join([h['name'] for h in incomplete_habits]))
+        st.warning("กลับไปแท็บ '⛓️ วินัยเหล็ก' แล้วไปทำให้เสร็จซะ ถึงจะปิดวันได้!")
+    elif user.get("in_cage") or user.get("blood_debt", 0) > 0: 
+        st.error("❌ มึงติดหนี้เลือดอยู่ ชดใช้กรรมซะก่อนถึงจะปิดวันได้!")
     else:
         st.warning("วันนี้มึงใส่เต็ม 100% หรือมึงใช้พลังแค่ 40%?")
         j_col1, j_col2 = st.columns(2)
