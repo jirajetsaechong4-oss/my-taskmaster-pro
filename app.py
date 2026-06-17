@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.19 - THE IRON CRUCIBLE)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.20 - THE MIND BENDER)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -67,12 +67,22 @@ def load_db():
         res = requests.get(f"{FIREBASE_URL}/db.json")
         if res.status_code == 200 and res.json() is not None:
             data = res.json()
-            defaults = {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {}}
+            defaults = {
+                "users": {}, "missions": {}, "backlog": {}, "dark_room": {}, 
+                "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, 
+                "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {},
+                "exams": {}, "beat_yesterday": {}, "limit_breaks": {}
+            }
             for k, v in defaults.items():
                 if k not in data: data[k] = v
             return data
     except: pass
-    return {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {}}
+    return {
+        "users": {}, "missions": {}, "backlog": {}, "dark_room": {}, 
+        "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, 
+        "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {},
+        "exams": {}, "beat_yesterday": {}, "limit_breaks": {}
+    }
 
 def save_db(data):
     try: requests.put(f"{FIREBASE_URL}/db.json", json=data)
@@ -168,10 +178,11 @@ if st.session_state.current_user is None:
 
 safe_email = st.session_state.current_user
 
-# Update loop to include iron_habits
-for k in ["missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance", "iron_habits"]:
+# Update loop to include new DB endpoints
+for k in ["missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance", "iron_habits", "exams", "beat_yesterday", "limit_breaks"]:
     if safe_email not in db[k] or db[k][safe_email] is None: 
         if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0, "current": 0}
+        elif k in ["exams", "beat_yesterday"]: db[k][safe_email] = {}
         else: db[k][safe_email] = []
 
 user = db["users"][safe_email]
@@ -259,11 +270,11 @@ with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE (นักรบฝั่งขวา)")
     st.success(random.choice(SAVAGE_VOICES))
     
-    # === สร้าง TABS 4 อัน (เพิ่มวินัยเหล็กเข้ามา) ===
-    tab_missions, tab_habits, tab_backlog, tab_cookie = st.tabs(["🔥 ภารกิจวันนี้", "⛓️ วินัยเหล็ก", "📝 สมุดจดงาน", "🍪 โหลคุกกี้"])
+    # === สร้าง TABS 5 อัน (เพิ่มลานประลองปัญญา) ===
+    tab_missions, tab_habits, tab_backlog, tab_cookie, tab_academic = st.tabs(["🔥 ภารกิจวันนี้", "⛓️ วินัยเหล็ก", "📝 สมุดจดงาน", "🍪 โหลคุกกี้", "📚 ลานประลองปัญญา"])
     
     # ----------------------------------------------------
-    # TAB 1: ภารกิจวันนี้ (Daily Missions) + BOSS FIGHT + สับท่อนซุง
+    # TAB 1: ภารกิจวันนี้ (Daily Missions)
     # ----------------------------------------------------
     with tab_missions:
         st.markdown("### 🪵 The Daily Siege (ตารางรบวันนี้)")
@@ -285,13 +296,10 @@ with colRight:
                         })
                         save_db(db); st.rerun()
                     
-        # ดึงงานที่ยังไม่เสร็จทั้งหมด
         raw_active = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
-        # แยกงานที่ยังต้องทำ กับ งานที่รอตรวจ
         todo_missions = [m for m in raw_active if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active if m.get("รอตรวจ", False)]
         
-        # จัดเรียง: Boss ขึ้นก่อนเสมอ ตามด้วยความสำคัญ
         todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, get_priority_score(x.get("ประเภท", ""))))
         
         if todo_missions:
@@ -333,7 +341,6 @@ with colRight:
                         save_db(db); st.rerun()
         else: st.success("✅ วันนี้เคลียร์ภารกิจหลักหมดแล้ว เยี่ยมมากไอ้เสือ!")
 
-        # --- ส่วนแสดงงานที่รอตรวจสอบ ---
         if pending_missions:
             st.divider()
             st.markdown("### ⏳ งานที่รอการตรวจสอบ / พร้อมส่ง")
@@ -436,14 +443,112 @@ with colRight:
             if st.form_submit_button("เก็บชัยชนะลงโหล!"):
                 if win_text:
                     db["cookie_jar"][safe_email].append({"วันที่": today_str, "ชัยชนะ": win_text})
-                    user["exp"] += 5 # ให้รางวัลกำลังใจ 5 EXP
+                    user["exp"] += 5
                     save_db(db); st.success("✅ เก็บชัยชนะลงโหลเรียบร้อย! มึงแม่งสุดยอด!"); st.rerun()
         
-        # แสดง 5 อันล่าสุดให้ชื่นใจ
         if db["cookie_jar"][safe_email]:
             st.markdown("**ความสำเร็จล่าสุดของมึง:**")
             for c in reversed(db["cookie_jar"][safe_email][-5:]):
                 st.success(f"🏆 **[{c['วันที่']}]** {c['ชัยชนะ']}")
+
+    # ----------------------------------------------------
+    # TAB 5: ลานประลองปัญญา (EXAM & BEAT YESTERDAY) 📚
+    # ----------------------------------------------------
+    with tab_academic:
+        st.markdown("### 📚 ลานประลองปัญญา (THE ACADEMIC BATTLEFIELD)")
+        st.info("ที่นี่ไม่ได้วัดแค่กล้ามเนื้อ แต่วัดความคมของสมองมึงด้วย!")
+
+        # --- 1. บันทึกคะแนนสอบ ---
+        st.markdown("#### 📝 ประวัติคะแนนสอบ (มึงก้าวหน้าหรือถอยหลัง?)")
+        with st.form("exam_form", clear_on_submit=True):
+            e_subj = st.text_input("ชื่อวิชา / เรื่องที่ทดสอบ:")
+            e_score = st.number_input("คะแนนที่ได้ล่าสุด:", min_value=0.0, step=0.1)
+            if st.form_submit_button("บันทึกคะแนนสอบ"):
+                if e_subj:
+                    if e_subj not in db["exams"][safe_email]:
+                        db["exams"][safe_email][e_subj] = []
+                    
+                    history = db["exams"][safe_email][e_subj]
+                    
+                    if len(history) > 0:
+                        last_score = history[-1]
+                        if e_score > last_score:
+                            user["exp"] += 30
+                            st.success(f"🔥 โคตรเถื่อน! มึงเก่งขึ้นกว่าครั้งที่แล้ว ({last_score} -> {e_score}) รับ 30 EXP!")
+                        elif e_score < last_score:
+                            user["blood_debt"] += 50
+                            user["failure_prob"] = min(100, user["failure_prob"] + 10)
+                            st.error(f"🤡 กระจอกจัด! คะแนนมึงร่วง ({last_score} -> {e_score}) แท่นพิพากษาสั่งยัดหนี้เลือด 50 ที!")
+                        else:
+                            st.warning("คะแนนเท่าเดิม... อย่าหยุดพัฒนาสิวะไอ้เวร!")
+                    
+                    db["exams"][safe_email][e_subj].append(e_score)
+                    save_db(db)
+                    st.rerun()
+
+        if db["exams"][safe_email]:
+            cols = st.columns(3)
+            idx = 0
+            for subj, scores in db["exams"][safe_email].items():
+                if len(scores) > 0:
+                    latest = scores[-1]
+                    delta = round(latest - scores[-2], 2) if len(scores) > 1 else None
+                    cols[idx % 3].metric(label=f"📖 {subj}", value=latest, delta=delta)
+                    idx += 1
+
+        st.divider()
+
+        # --- 2. เอาชนะตัวเองเมื่อวาน ---
+        st.markdown("#### 🥊 ชกกับเงา (BEAT YESTERDAY'S SELF)")
+        st.write("เลือกมา 1 อย่างที่มึงจะใช้วัดผลความทุ่มเท (เช่น จำนวนหน้า, จำนวนข้อ, นาทีที่โฟกัส)")
+        
+        yesterday_str = str(today_date - timedelta(days=1))
+        
+        with st.form("beat_yesterday_form"):
+            by_metric = st.text_input("สิ่งที่มึงใช้วัด (เช่น ข้อสอบที่ทำ, หน้าหนังสือ):", value=db["beat_yesterday"][safe_email].get("metric_name", ""))
+            by_val = st.number_input("จำนวนที่ทำได้วันนี้:", min_value=0)
+            if st.form_submit_button("ทุบสถิติตัวเอง"):
+                if by_metric:
+                    db["beat_yesterday"][safe_email]["metric_name"] = by_metric
+                    if "history" not in db["beat_yesterday"][safe_email]:
+                        db["beat_yesterday"][safe_email]["history"] = {}
+                    
+                    y_val = db["beat_yesterday"][safe_email]["history"].get(yesterday_str, 0)
+                    
+                    if by_val > y_val:
+                        user["exp"] += 20
+                        st.success(f"🔥 มึงชนะไอ้ขี้แพ้เมื่อวานได้แล้ว! ({y_val} -> {by_val})")
+                    elif by_val == y_val:
+                        st.warning("มึงแค่เสมอตัวกับเมื่อวาน! พรุ่งนี้ต้องดีกว่านี้!")
+                    else:
+                        user["blood_debt"] += 30
+                        st.error(f"🚨 วันนี้มึงกากกว่าเมื่อวาน! ({y_val} -> {by_val}) รับหนี้เลือดไป 30 ที!")
+                        
+                    db["beat_yesterday"][safe_email]["history"][today_str] = by_val
+                    save_db(db)
+                    st.rerun()
+
+        if "history" in db["beat_yesterday"].get(safe_email, {}) and db["beat_yesterday"][safe_email].get("metric_name"):
+            st.caption(f"สถิติ: **{db['beat_yesterday'][safe_email]['metric_name']}**")
+            y_val = db["beat_yesterday"][safe_email]["history"].get(yesterday_str, 0)
+            t_val = db["beat_yesterday"][safe_email]["history"].get(today_str, 0)
+            st.metric(label="เปรียบเทียบวันนี้ vs เมื่อวาน", value=t_val, delta=t_val - y_val)
+
+        st.divider()
+
+        # --- 3. ฟีเจอร์แถม: THE 40% RULE ---
+        st.markdown("#### 🩸 กฎ 40% (THE 40% RULE)")
+        st.info("ตอนที่มึงคิดว่าร่างกายหรือสมองมึงรับไม่ไหวแล้ว... ความจริงมึงเพิ่งใช้ขีดจำกัดไปแค่ 40% เท่านั้น! กดปุ่มนี้เมื่อมึงฝืนทำต่อจากจุดที่อยากยอมแพ้ที่สุด!")
+        if st.button("🔥 กูเกือบยอมแพ้แล้ว แต่กูฝืนทะลุขีดจำกัดได้!", use_container_width=True):
+            if today_str not in db["limit_breaks"][safe_email]:
+                db["limit_breaks"][safe_email].append(today_str)
+                user["exp"] += 50
+                user["failure_prob"] = max(0, user["failure_prob"] - 15)
+                save_db(db)
+                st.balloons()
+                st.success("🦍 พลังใจมึงมันระดับสัตว์ประหลาด! เอา EXP ไป 50 และลดโอกาสล้มเหลวลง 15%!")
+            else:
+                st.warning("วันนี้มึงทะลุขีดจำกัดไปแล้ว! เก็บแรงไว้ลุยพรุ่งนี้บ้างไอ้บ้าพลัง!")
 
     st.divider()
     st.markdown("### 💰 คลังสมบัตินักรบ (ทุนสร้างฝัน)")
