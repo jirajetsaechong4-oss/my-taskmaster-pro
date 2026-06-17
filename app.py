@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.20 - THE GHOST KILLER)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.19 - THE IRON CRUCIBLE)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -67,12 +67,12 @@ def load_db():
         res = requests.get(f"{FIREBASE_URL}/db.json")
         if res.status_code == 200 and res.json() is not None:
             data = res.json()
-            defaults = {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {}, "exams": {}}
+            defaults = {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {}}
             for k, v in defaults.items():
                 if k not in data: data[k] = v
             return data
     except: pass
-    return {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {}, "exams": {}}
+    return {"users": {}, "missions": {}, "backlog": {}, "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, "finance": {}, "iron_habits": {}}
 
 def save_db(data):
     try: requests.put(f"{FIREBASE_URL}/db.json", json=data)
@@ -96,7 +96,7 @@ if "punishment_active" in st.session_state:
 if "current_user" not in st.session_state: st.session_state.current_user = None
 
 with st.sidebar:
-    st.title("🧠 สมรภูมิในสมอง V.20")
+    st.title("🧠 สมรภูมิในสมอง")
     if st.session_state.current_user is None:
         auth_mode = st.radio("เลือกโหมด:", ["⚡ ล็อกอินด่วน", "➕ สร้างนักรบใหม่"])
         st.divider()
@@ -115,8 +115,7 @@ with st.sidebar:
                             "ghost_exp": 0, "ambush_task": "", "failure_prob": 10,
                             "last_login": today_str, "cleared_yesterday": True,
                             "target_name": "ทำ 10 ล้านวิว YouTube Shorts", 
-                            "target_date": str(today_date + timedelta(days=90)),
-                            "today_gained": 0, "yesterday_gained": 0
+                            "target_date": str(today_date + timedelta(days=90))
                         }
                         save_db(db); st.success("🔥 ลงทะเบียนสำเร็จ! ไปที่ 'ล็อกอินด่วน' ได้เลย!")
                 else: st.warning("กรอกชื่อกับอีเมลให้ครบ!")
@@ -132,17 +131,10 @@ with st.sidebar:
                     user_data = db["users"][safe_email]
                     
                     if "target_name" not in user_data: 
-                        user_data["target_name"] = "เป้าหมายสูงสุด"
+                        user_data["target_name"] = "ทำ 10 ล้านวิว YouTube Shorts"
                         user_data["target_date"] = str(today_date + timedelta(days=90))
-                    
-                    if "today_gained" not in user_data: user_data["today_gained"] = 0
-                    if "yesterday_gained" not in user_data: user_data["yesterday_gained"] = 0
 
                     if user_data["last_login"] != today_str:
-                        # อัปเดตเพื่อเปรียบเทียบกับร่างเงาเมื่อวาน
-                        user_data["yesterday_gained"] = user_data.get("today_gained", 0)
-                        user_data["today_gained"] = 0
-                        
                         user_data["ghost_exp"] += 25 
                         unpaid_bounties = [m for m in db.get("missions", {}).get(safe_email, []) if m.get("bounty") and not m.get("เสร็จแล้ว")]
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
@@ -170,29 +162,20 @@ with st.sidebar:
             st.session_state.current_user = None; st.rerun()
 
 if st.session_state.current_user is None:
-    st.title("🧠 THE BRAIN WAR V.20: THE GHOST KILLER")
+    st.title("🧠 THE BRAIN WAR")
     st.info("👈 เลือกชื่อตัวเองแล้วกดปุ่ม 'เปิดสมอง!' เพื่อเข้าใช้งาน!")
     st.stop()
 
 safe_email = st.session_state.current_user
 
-# Update loop to include exams
-for k in ["missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance", "iron_habits", "exams"]:
+# Update loop to include iron_habits
+for k in ["missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance", "iron_habits"]:
     if safe_email not in db[k] or db[k][safe_email] is None: 
         if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0, "current": 0}
-        elif k == "exams": db[k][safe_email] = {}
         else: db[k][safe_email] = []
 
 user = db["users"][safe_email]
 finance = db["finance"][safe_email]
-
-# Helper function to add EXP and track today's gain
-def add_exp(amount):
-    user["exp"] += amount
-    user["today_gained"] = user.get("today_gained", 0) + amount
-    if user["exp"] >= 100: 
-        user["level"] += 1
-        user["exp"] -= 100
 
 # ===== 🚨 CHECK OVERDUE BACKLOG =====
 overdue_count = 0
@@ -227,6 +210,7 @@ with colTop2:
     if st.button("⚡ คาถาระเบิดพลัง\n(เรียกสติเดี่ยวนี้)", use_container_width=True):
         st.toast(f"🔊 ตื่นดิวะ! {random.choice(PUNISHMENTS)}", icon="🦍")
 with colTop3:
+    # ⏳ แสดง COUNTDOWN ชี้ชะตาที่นี่
     st.error(f"⏳ **นับถอยหลังชี้ชะตา:** {user.get('target_name', 'เป้าหมายสูงสุด')} ในอีก **{days_left}** วัน!")
     with st.popover("⚙️ ตั้งค่านับถอยหลัง"):
         new_t_name = st.text_input("เป้าหมายสูงสุด (เช่น 10ล้านวิว):", user.get("target_name", ""))
@@ -264,23 +248,22 @@ with colLeft:
             user["exp"] = 0; user["blood_debt"] += 50; user["in_cage"] = True
             user["failure_prob"] = min(100, user["failure_prob"] + 20); save_db(db); st.rerun()
 
-        st.markdown("### 🪞 กระจกพิพากษาสันดาน (ACCOUNTABILITY MIRROR)")
-        with st.form("mirror_form", clear_on_submit=True):
-            suck_text = st.text_input("วันนี้มึงทำตัวกากเรื่องอะไร?:")
-            fix_text = st.text_input("พรุ่งนี้มึงจะแก้แค้นความกากนี้ยังไง?:")
-            if st.form_submit_button("ส่องกระจกดูความกาก!"):
-                if suck_text and fix_text:
-                    st.error(f"จำคำพูดมึงไว้ให้ดี! พรุ่งนี้มึงต้อง {fix_text}")
+        st.markdown("### 🩸 บัญชีแค้น (THE HATER'S WALL)")
+        with st.form("hater_form", clear_on_submit=True):
+            h_text = st.text_input("คำดูถูกที่มึงเจอ:")
+            if st.form_submit_button("ฝังความแค้น"):
+                if h_text: db["haters"][safe_email].append(h_text); save_db(db); st.rerun()
+        if db["haters"][safe_email]: st.error(f"🤬 คำดูถูก: \"{random.choice(db['haters'][safe_email])}\"")
 
 with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE (นักรบฝั่งขวา)")
     st.success(random.choice(SAVAGE_VOICES))
     
-    # === สร้าง TABS 5 อัน (เพิ่มสมรภูมิสอบ) ===
-    tab_missions, tab_habits, tab_exams, tab_backlog, tab_cookie = st.tabs(["🔥 ภารกิจวันนี้", "⛓️ วินัยเหล็ก", "📊 สมรภูมิสอบ", "📝 สมุดจดงาน", "🍪 โหลคุกกี้"])
+    # === สร้าง TABS 4 อัน (เพิ่มวินัยเหล็กเข้ามา) ===
+    tab_missions, tab_habits, tab_backlog, tab_cookie = st.tabs(["🔥 ภารกิจวันนี้", "⛓️ วินัยเหล็ก", "📝 สมุดจดงาน", "🍪 โหลคุกกี้"])
     
     # ----------------------------------------------------
-    # TAB 1: ภารกิจวันนี้ (Daily Missions)
+    # TAB 1: ภารกิจวันนี้ (Daily Missions) + BOSS FIGHT + สับท่อนซุง
     # ----------------------------------------------------
     with tab_missions:
         st.markdown("### 🪵 The Daily Siege (ตารางรบวันนี้)")
@@ -302,9 +285,13 @@ with colRight:
                         })
                         save_db(db); st.rerun()
                     
+        # ดึงงานที่ยังไม่เสร็จทั้งหมด
         raw_active = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
+        # แยกงานที่ยังต้องทำ กับ งานที่รอตรวจ
         todo_missions = [m for m in raw_active if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active if m.get("รอตรวจ", False)]
+        
+        # จัดเรียง: Boss ขึ้นก่อนเสมอ ตามด้วยความสำคัญ
         todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, get_priority_score(x.get("ประเภท", ""))))
         
         if todo_missions:
@@ -331,8 +318,8 @@ with colRight:
                             exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
                             if m.get("is_boss"): exp_gain = 100
                             elif m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
-                            add_exp(exp_gain)
-                            user["failure_prob"] = max(0, user["failure_prob"] - 5)
+                            user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
+                            if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                             save_db(db); st.balloons(); st.rerun()
                         
                         if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
@@ -346,6 +333,7 @@ with colRight:
                         save_db(db); st.rerun()
         else: st.success("✅ วันนี้เคลียร์ภารกิจหลักหมดแล้ว เยี่ยมมากไอ้เสือ!")
 
+        # --- ส่วนแสดงงานที่รอตรวจสอบ ---
         if pending_missions:
             st.divider()
             st.markdown("### ⏳ งานที่รอการตรวจสอบ / พร้อมส่ง")
@@ -359,8 +347,8 @@ with colRight:
                     exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
                     if m.get("is_boss"): exp_gain = 100
                     elif m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
-                    add_exp(exp_gain)
-                    user["failure_prob"] = max(0, user["failure_prob"] - 5)
+                    user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
+                    if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                     save_db(db); st.balloons(); st.rerun()
                 if c3.button("⏪ ดึงกลับมาทำ", key=f"revert_{m['id']}"):
                     m["รอตรวจ"] = False
@@ -371,6 +359,7 @@ with colRight:
     # ----------------------------------------------------
     with tab_habits:
         st.markdown("### ⛓️ THE IRON HABITS (วินัยเหล็กรายวัน)")
+        st.info("สิ่งที่มึงต้องทำทุกวัน ห้ามมีข้ออ้าง พลาด 1 ครั้ง Streak ขาดทันที!")
         with st.form("habit_form", clear_on_submit=True):
             h_name = st.text_input("สร้างวินัยเหล็กใหม่ (เช่น ตื่นตี 5, อ่านหนังสือ 10 หน้า):")
             if st.form_submit_button("เพิ่มวินัยเหล็ก"):
@@ -387,70 +376,16 @@ with colRight:
                 else:
                     if c2.button("🔥 กูทำสำเร็จ!", key=f"h_done_{h['id']}"):
                         h["last_done_date"] = today_str
-                        add_exp(5)
+                        user["exp"] += 5
                         save_db(db); st.balloons(); st.rerun()
                 if c3.button("🗑️", key=f"del_h_{h['id']}"):
                     db["iron_habits"][safe_email].remove(h)
                     save_db(db); st.rerun()
+        else:
+            st.success("ยังไม่มีวินัยเหล็ก! สร้างมันขึ้นมาซะ!")
 
     # ----------------------------------------------------
-    # TAB 3: สมรภูมิสอบ (THE ACADEMIC WARZONE) 📊
-    # ----------------------------------------------------
-    with tab_exams:
-        st.markdown("### 📊 สมรภูมิคะแนนสอบ (THE ACADEMIC WARZONE)")
-        st.info("เอาชนะคะแนนรอบก่อนให้ได้! ถ้าคะแนนลดลง มึงจะโดนลงทัณฑ์ด้วยหนี้เลือด!")
-        
-        with st.form("exam_form", clear_on_submit=True):
-            c_ex1, c_ex2, c_ex3 = st.columns([2, 1, 1])
-            subj = c_ex1.text_input("วิชาที่สอบ:")
-            score = c_ex2.number_input("คะแนนที่ได้:", min_value=0.0)
-            full_score = c_ex3.number_input("คะแนนเต็ม:", min_value=1.0)
-            
-            if st.form_submit_button("🔥 บันทึกผลสอบ"):
-                if subj:
-                    if subj not in db["exams"][safe_email]: db["exams"][safe_email][subj] = []
-                    
-                    prev_scores = db["exams"][safe_email][subj]
-                    prev_pct = (prev_scores[-1]['score'] / prev_scores[-1]['full']) * 100 if prev_scores else None
-                    cur_pct = (score / full_score) * 100
-                    
-                    db["exams"][safe_email][subj].append({"date": today_str, "score": score, "full": full_score})
-                    
-                    if prev_pct is not None:
-                        if cur_pct < prev_pct:
-                            user["blood_debt"] += 100
-                            user["in_cage"] = True
-                            st.error(f"🚨 ไอ้กาก! คะแนนมึงลดลงจากเดิม! รับหนี้เลือดไป 100 ที!")
-                        elif cur_pct >= prev_pct:
-                            add_exp(50)
-                            st.success(f"🔥 เยี่ยมมากไอ้เสือ! คะแนนพัฒนาขึ้น! รับไป 50 EXP!")
-                    else:
-                        st.success("บันทึกคะแนนฐานตั้งต้นสำเร็จ! รอบหน้าห้ามลดเด็ดขาด!")
-                    
-                    save_db(db); st.rerun()
-        
-        # แสดงผลคะแนนแยกวิชา
-        if db["exams"].get(safe_email):
-            st.divider()
-            for subject, scores in db["exams"][safe_email].items():
-                if len(scores) > 0:
-                    latest = scores[-1]
-                    prev = scores[-2] if len(scores) > 1 else None
-                    lat_pct = (latest['score'] / latest['full']) * 100
-                    prev_pct = (prev['score'] / prev['full']) * 100 if prev else None
-                    
-                    delta_str = f"{(lat_pct - prev_pct):.2f}% เทียบรอบก่อน" if prev else "สอบครั้งแรก"
-                    
-                    with st.expander(f"📖 วิชา: {subject} | ล่าสุด: {lat_pct:.1f}%"):
-                        st.metric("เปอร์เซ็นต์ล่าสุด", f"{latest['score']}/{latest['full']} ({lat_pct:.2f}%)", delta_str)
-                        
-                        # สร้างกราฟโชว์พัฒนาการ
-                        chart_data = [{"วันที่": s["date"], "เปอร์เซ็นต์ (%)": (s["score"]/s["full"])*100} for s in scores]
-                        df_chart = pd.DataFrame(chart_data).set_index("วันที่")
-                        st.line_chart(df_chart)
-
-    # ----------------------------------------------------
-    # TAB 4: สมุดจดงาน (Backlog)
+    # TAB 3: สมุดจดงาน (Backlog)
     # ----------------------------------------------------
     with tab_backlog:
         st.markdown("### 📝 สมุดจดงาน (Task Backlog)")
@@ -488,19 +423,23 @@ with colRight:
                     
                     if c2.button("🗑️ ลบ", key=f"del_b_{b_task['id']}"):
                         db["backlog"][safe_email].remove(b_task); save_db(db); st.rerun()
+        else: st.success("สมุดจดว่างเปล่า!")
 
     # ----------------------------------------------------
-    # TAB 5: โหลคุกกี้ (Cookie Jar) 🍪
+    # TAB 4: โหลคุกกี้ (Cookie Jar) 🍪
     # ----------------------------------------------------
     with tab_cookie:
         st.markdown("### 🍪 THE COOKIE JAR (โหลเก็บความภูมิใจ)")
+        st.info("เวลาที่มึงท้อ หมดไฟ ให้กลับมาเปิดโหลนี้ดูว่ามึงเคยชนะอะไรมาบ้าง!")
         with st.form("cookie_form", clear_on_submit=True):
             win_text = st.text_input("วันนี้มึงชนะใจตัวเองเรื่องอะไรได้บ้าง? (เรื่องเล็กๆ ก็ได้):")
             if st.form_submit_button("เก็บชัยชนะลงโหล!"):
                 if win_text:
                     db["cookie_jar"][safe_email].append({"วันที่": today_str, "ชัยชนะ": win_text})
-                    add_exp(5)
+                    user["exp"] += 5 # ให้รางวัลกำลังใจ 5 EXP
                     save_db(db); st.success("✅ เก็บชัยชนะลงโหลเรียบร้อย! มึงแม่งสุดยอด!"); st.rerun()
+        
+        # แสดง 5 อันล่าสุดให้ชื่นใจ
         if db["cookie_jar"][safe_email]:
             st.markdown("**ความสำเร็จล่าสุดของมึง:**")
             for c in reversed(db["cookie_jar"][safe_email][-5:]):
@@ -526,17 +465,14 @@ with colRight:
                 finance['current'] += add_amt; save_db(db); st.rerun()
 
 # ==========================================
-# 6. หนี้เลือด, GHOST KILLER & THE JUDGMENT FEED
+# 6. หนี้เลือด & THE JUDGMENT FEED
 # ==========================================
 st.divider()
 c_bot1, c_bot2 = st.columns(2)
 with c_bot1:
-    st.markdown("### 🥊 ปะทะร่างเงา (VS YESTERDAY)")
-    st.info("ทำให้ได้มากกว่าที่ทำเมื่อวาน! ถ้าเลขติดลบ แปลว่าวันนี้มึงขี้เกียจลง!")
-    t_gain = user.get("today_gained", 0)
-    y_gain = user.get("yesterday_gained", 0)
-    st.metric("🔥 EXP ที่เก็บได้วันนี้", f"{t_gain} EXP", delta=f"{t_gain - y_gain} เทียบกับเมื่อวาน")
-    
+    my_exp = ((user["level"] - 1) * 100) + user["exp"]
+    st.metric("พลังร่างทอง (มันไม่เคยหยุดเดิน)", f"{user['ghost_exp']} EXP")
+    st.metric("พลังของมึงปัจจุบัน", f"{my_exp} EXP", delta=f"{my_exp - user['ghost_exp']} เทียบร่างทอง")
 with c_bot2:
     st.markdown("### 🩸 หนี้เลือด (Blood Debt)")
     st.metric("หนี้วิดพื้นที่ต้องจ่าย", f"{user.get('blood_debt', 0)} ที")
@@ -549,7 +485,7 @@ st.markdown("<h2>⚖️ THE JUDGMENT FEED (พิพากษาก่อนน�
 if user.get("ambush_task", "") != "":
     st.error(f"🚨 **โดนซุ่มโจมตี!** คำสั่ง: **{user['ambush_task']}**")
     if st.button("🔥 กูทำเสร็จแล้ว!"):
-        user["ambush_task"] = ""; add_exp(20); save_db(db); st.rerun()
+        user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
     active_for_judgment = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False)]
@@ -568,6 +504,7 @@ else:
         st.error("❌ มึงกำลังหักหลังตัวเอง! ภารกิจวันนี้มึงยังทำไม่เสร็จ!")
     elif incomplete_habits:
         st.error(f"⛓️ วินัยเหล็กมึงขาด! มึงยังไม่ได้ทำ: " + ", ".join([h['name'] for h in incomplete_habits]))
+        st.warning("กลับไปแท็บ '⛓️ วินัยเหล็ก' แล้วไปทำให้เสร็จซะ ถึงจะปิดวันได้!")
     elif user.get("in_cage") or user.get("blood_debt", 0) > 0: 
         st.error("❌ มึงติดหนี้เลือดอยู่ ชดใช้กรรมซะก่อนถึงจะปิดวันได้!")
     else:
@@ -580,7 +517,41 @@ else:
         with j_col2:
             if st.button("🔥 กูใช้พลังทั้งหมด 100%!"):
                 if random.random() < 0.2: user["ambush_task"] = random.choice(AMBUSH_TASKS)
-                else: 
-                    user["cleared_yesterday"] = True; user["streak"] += 1
-                    add_exp(25)
+                else: user["cleared_yesterday"] = True; user["streak"] += 1; user["exp"] += 25
                 save_db(db); st.rerun()
+
+# ==========================================
+# 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG)
+# ==========================================
+st.divider()
+if not monk_mode:
+    st.markdown("## 📜 พงศาวดารความทรงจำ (HISTORY LOG)")
+    tab1, tab2, tab3, tab4 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 ภารกิจทั้งหมด", "📊 ดัชนีวินัย (สถิติ)"])
+
+    with tab1:
+        if db["cookie_jar"].get(safe_email):
+            for item in reversed(db["cookie_jar"][safe_email]): st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
+        else: st.write("ยังไม่มีความสำเร็จอะไรเลย ไปทำซะ!")
+
+    with tab2:
+        if db["excuses"].get(safe_email):
+            for item in reversed(db["excuses"][safe_email]): st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
+        else: st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
+
+    with tab3:
+        if db["missions"].get(safe_email):
+            for item in reversed(db["missions"][safe_email]):
+                if item.get("เสร็จแล้ว"): status = "✅ เสร็จแล้ว"
+                elif item.get("รอตรวจ", False): status = "⏳ รอตรวจ/พร้อมส่ง"
+                else: status = "❌ ยังดองอยู่"
+                st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
+        else: st.write("ยังไม่มีประวัติการแบกซุง!")
+
+    with tab4:
+        win_count = len(db["cookie_jar"].get(safe_email, []))
+        fail_count = len(db["excuses"].get(safe_email, []))
+        st.write(f"📈 จำนวนครั้งที่ชนะใจตัวเอง: **{win_count}** ครั้ง")
+        st.write(f"📉 จำนวนครั้งที่พ่ายแพ้ปล่อยข้ออ้าง: **{fail_count}** ครั้ง")
+        if win_count + fail_count > 0:
+            chart_data = pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Savage (ชนะ)", "Bitch (ข้ออ้าง)"])
+            st.bar_chart(chart_data)
