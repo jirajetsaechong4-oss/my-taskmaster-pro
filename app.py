@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.21 - THE STRATEGIC WARLORD)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.22 - THE ORDER OF DOOM)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -124,6 +124,7 @@ with st.sidebar:
                             "username": name_input, "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False,
                             "ghost_exp": 0, "ambush_task": "", "failure_prob": 10,
                             "last_login": today_str, "cleared_yesterday": True,
+                            "order_locked": False,
                             "target_name": "ทำ 10 ล้านวิว YouTube Shorts", 
                             "target_date": str(today_date + timedelta(days=90))
                         }
@@ -146,6 +147,7 @@ with st.sidebar:
 
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
+                        user_data["order_locked"] = False # ขึ้นวันใหม่ ปลดล็อกแผนรบให้ตั้งใหม่
                         unpaid_bounties = [m for m in db.get("missions", {}).get(safe_email, []) if m.get("bounty") and not m.get("เสร็จแล้ว")]
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
                             penalty = 100 + (len(unpaid_bounties) * 100)
@@ -281,7 +283,6 @@ with colRight:
                 m_is_boss = st.checkbox("💀 ตั้งเป็น THE BOSS FIGHT (งานกลืนกบประจำวัน! หนี=หนี้เลือด x3)")
                 m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
                 m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: พลาดโดนหนี้ 100 ที)")
-                m_custom_order = st.number_input("🔢 จัดลำดับความสำคัญเอง (เลขน้อยขึ้นก่อน เช่น 1, 2, 3):", min_value=1, value=5, step=1)
                 m_subtasks_text = st.text_area("🔪 สับท่อนซุง (ใส่ชื่อย่อยทีละบรรทัด, ไม่บังคับ):")
                 
                 if st.form_submit_button("เพิ่มภารกิจ"):
@@ -290,7 +291,7 @@ with colRight:
                         db["missions"][safe_email].append({
                             "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, 
                             "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
-                            "custom_order": m_custom_order,
+                            "custom_order": 99, # ค่าเริ่มต้นคิวท้ายสุด
                             "subtasks": subtasks, "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         save_db(db); st.rerun()
@@ -299,26 +300,46 @@ with colRight:
         todo_missions = [m for m in raw_active if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active if m.get("รอตรวจ", False)]
         
-        # 🔥 เรียงลำดับตาม: Boss ก่อน -> ลำดับตัวเลขกำหนดเอง (custom_order) -> ระดับความสำคัญเดิม
-        todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, x.get("custom_order", 5), get_priority_score(x.get("ประเภท", ""))))
+        # เรียงลำดับตาม: Boss ก่อน -> ลำดับตัวเลขแผนรบ (custom_order) -> ระดับความสำคัญเดิม
+        todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, x.get("custom_order", 99), get_priority_score(x.get("ประเภท", ""))))
         
+        # 🔥 ฟีเจอร์ "จัดลำดับคิวแผนรบและสั่งล็อกตาย"
+        if todo_missions:
+            if not user.get("order_locked", False):
+                with st.expander("🔢 ⚡ วางแผนทัพ: จัดลำดับการรบวันนี้ (ล็อกแล้วห้ามแก้ไข!)"):
+                    with st.form("lock_order_form"):
+                        st.write("ถ้างานมันเยอะจนไม่รู้จะเริ่มทำอะไรก่อน พิมพ์เลขคิวรันให้ตัวเองซะ (เลขน้อยขึ้นก่อน เช่น 1, 2, 3...) เสร็จแล้วกดล็อกชะตากรรม!")
+                        updated_orders = {}
+                        for m in todo_missions:
+                            is_boss_str = "💀 [BOSS] " if m.get("is_boss") else ""
+                            updated_orders[m["id"]] = st.number_input(f"กำหนดคิวของภารกิจ: {is_boss_str}{m['ภารกิจ']}", min_value=1, value=int(m.get("custom_order", 99)), key=f"setup_ord_{m['id']}")
+                        
+                        if st.form_submit_button("🔒 ล็อกแผนการรบวันนี้! (ห้ามตระบัดสัตย์)"):
+                            for m in db["missions"][safe_email]:
+                                if m["id"] in updated_orders:
+                                    m["custom_order"] = updated_orders[m["id"]]
+                            user["order_locked"] = True
+                            save_db(db); st.success("⚔️ ล็อกคิวแผนรบเรียบร้อย! ไม่มีสิทธิ์แก้ไขอีก ไปแบกซุงตามหน้าที่ซะไอ้เสือ!"); st.rerun()
+            else:
+                st.info("🔒 **ลำดับแผนการรบวันนี้ถูกล็อกตายด้วยวินัยเหล็กแล้ว!** ห้ามมึงโกง ห้ามมึงสลับคิว ลุยตามนี้!")
+
+        # แสดงรายการภารกิจหลัก
         if todo_missions:
             for m in todo_missions:
                 with st.container(border=True):
-                    c1, c2, c3, c4, c5 = st.columns([4, 1.2, 1.8, 1.8, 0.6]) 
+                    c1, c2, c3, c4 = st.columns([5, 2, 2, 0.6]) 
                     is_bounty = "⚔️[เดิมพัน] " if m.get("bounty") else ""
                     is_boss = "💀 **[BOSS FIGHT]** " if m.get("is_boss") else ""
-                    c1.write(f"**{m.get('ประเภท','')}** | {is_boss}{is_bounty}{m['ภารกิจ']}")
                     
-                    # 🔢 ฟีเจอร์เปลี่ยนลำดับงานได้แบบเรียลไทม์หน้าแอป
-                    new_order = c2.number_input("ลำดับ", min_value=1, value=int(m.get("custom_order", 5)), key=f"ord_{m['id']}", label_visibility="collapsed")
-                    if new_order != m.get("custom_order", 5):
-                        m["custom_order"] = new_order
-                        save_db(db); st.rerun()
+                    # แสดงป้ายลำดับคิวแบบล็อกตาย (ถ้าตั้งค่าแล้ว)
+                    order_num = m.get("custom_order", 99)
+                    order_badge = f" 🔢 [คิวที่ {order_num}]" if order_num != 99 else " 🔢 [ยังไม่ระบุคิว]"
+                    
+                    c1.write(f"**{m.get('ประเภท','')}** | {is_boss}{is_bounty}{m['ภารกิจ']}{order_badge}")
                     
                     all_done = True
                     if m.get("subtasks"):
-                        st.caption("🔪 งานย่อย (ทำอย่างน้อย 1 อย่างรอดพิพากษา | ล็อคปุ่มส่งจนกว่าจะเสร็จครบทั้งหมด):")
+                        st.caption("🔪 งานย่อย (ทำอย่างน้อย 1 อย่างรอดพิพากษาคืนนี้ | ล็อคปุ่มสำเร็จจนกว่าจะครบทั้งหมด):")
                         for i, stask in enumerate(m["subtasks"]):
                             checked = st.checkbox(stask["name"], value=stask["done"], key=f"st_{m['id']}_{i}")
                             if checked != stask["done"]:
@@ -327,7 +348,7 @@ with colRight:
                         all_done = all(stask["done"] for stask in m["subtasks"])
 
                     if all_done:
-                        if c3.button("✅ สำเร็จ", key=f"m_{m['id']}"):
+                        if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
                             m["เสร็จแล้ว"] = True
                             exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
                             if m.get("is_boss"): exp_gain = 100
@@ -336,13 +357,13 @@ with colRight:
                             if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                             save_db(db); st.balloons(); st.rerun()
                         
-                        if c4.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
+                        if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
                             m["รอตรวจ"] = True
                             save_db(db); st.rerun()
                     else:
-                        c3.caption("🔒 งานใหญ่ยังล็อคอยู่")
+                        c2.caption("🔒 งานใหญ่ยังล็อคอยู่")
                         
-                    if c5.button("🗑️", key=f"del_m_{m['id']}"):
+                    if c4.button("🗑️", key=f"del_m_{m['id']}"):
                         db["missions"][safe_email].remove(m)
                         save_db(db); st.rerun()
         else: st.success("✅ วันนี้เคลียร์ภารกิจหลักหมดแล้ว เยี่ยมมากไอ้เสือ!")
@@ -429,7 +450,7 @@ with colRight:
                         db["missions"][safe_email].append({
                             "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
                             "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False,
-                            "custom_order": 5,
+                            "custom_order": 99,
                             "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         db["backlog"][safe_email].remove(b_task)
@@ -597,15 +618,14 @@ if user.get("ambush_task", "") != "":
         user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
-    # ⚔️ กรองงานที่จะถูกเอามาพิพากษาลงโทษ
     active_for_judgment = []
     for m in db["missions"][safe_email]:
         if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False):
-            # 💡 ถ้ามึงมีงานย่อย แล้วมึงติ๊กทำเสร็จไปแล้วอย่างน้อย 1 อย่าง = มึงรอดตาย ไม่นับว่าดองงาน!
+            # 💡 ระบบเช็คงานย่อย: ติ๊กเสร็จอย่างน้อย 1 ข้อ = รอดตาย! ไม่โดนพิพากษาปรับแพ้
             if m.get("subtasks"):
                 has_progress = any(stask.get("done", False) for stask in m["subtasks"])
                 if has_progress:
-                    continue  # ข้ามงานนี้ไปเลย ไม่เอามาลงโทษปรับแพ้
+                    continue 
             active_for_judgment.append(m)
 
     incomplete_bosses = [m for m in active_for_judgment if m.get("is_boss")]
@@ -637,7 +657,7 @@ else:
             if st.button("🔥 กูใช้พลังทั้งหมด 100%!"):
                 if random.random() < 0.2: user["ambush_task"] = random.choice(AMBUSH_TASKS)
                 else: user["cleared_yesterday"] = True; user["streak"] += 1; user["exp"] += 25
-                save_db(db); st.rerun()
+                save_db(db); rerun()
 
 # ==========================================
 # 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG)
