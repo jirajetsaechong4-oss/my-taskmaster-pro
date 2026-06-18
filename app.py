@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.20 - THE MIND BENDER)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.21 - SUBTASK SHIELD)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -178,7 +178,6 @@ if st.session_state.current_user is None:
 
 safe_email = st.session_state.current_user
 
-# Update loop to include new DB endpoints
 for k in ["missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance", "iron_habits", "exams", "beat_yesterday", "limit_breaks"]:
     if safe_email not in db[k] or db[k][safe_email] is None: 
         if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0, "current": 0}
@@ -221,7 +220,6 @@ with colTop2:
     if st.button("⚡ คาถาระเบิดพลัง\n(เรียกสติเดี่ยวนี้)", use_container_width=True):
         st.toast(f"🔊 ตื่นดิวะ! {random.choice(PUNISHMENTS)}", icon="🦍")
 with colTop3:
-    # ⏳ แสดง COUNTDOWN ชี้ชะตาที่นี่
     st.error(f"⏳ **นับถอยหลังชี้ชะตา:** {user.get('target_name', 'เป้าหมายสูงสุด')} ในอีก **{days_left}** วัน!")
     with st.popover("⚙️ ตั้งค่านับถอยหลัง"):
         new_t_name = st.text_input("เป้าหมายสูงสุด (เช่น 10ล้านวิว):", user.get("target_name", ""))
@@ -270,7 +268,6 @@ with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE (นักรบฝั่งขวา)")
     st.success(random.choice(SAVAGE_VOICES))
     
-    # === สร้าง TABS 5 อัน (เพิ่มลานประลองปัญญา) ===
     tab_missions, tab_habits, tab_backlog, tab_cookie, tab_academic = st.tabs(["🔥 ภารกิจวันนี้", "⛓️ วินัยเหล็ก", "📝 สมุดจดงาน", "🍪 โหลคุกกี้", "📚 ลานประลองปัญญา"])
     
     # ----------------------------------------------------
@@ -311,6 +308,7 @@ with colRight:
                     c1.write(f"**{m.get('ประเภท','')}** | {is_boss}{is_bounty}{m['ภารกิจ']}")
                     
                     all_done = True
+                    at_least_one_done = False
                     if m.get("subtasks"):
                         st.caption("🔪 งานย่อย (ต้องทำครบก่อนถึงจะกดส่งได้):")
                         for i, stask in enumerate(m["subtasks"]):
@@ -319,6 +317,7 @@ with colRight:
                                 m["subtasks"][i]["done"] = checked
                                 save_db(db); st.rerun()
                         all_done = all(stask["done"] for stask in m["subtasks"])
+                        at_least_one_done = any(stask["done"] for stask in m["subtasks"])
 
                     if all_done:
                         if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
@@ -334,7 +333,11 @@ with colRight:
                             m["รอตรวจ"] = True
                             save_db(db); st.rerun()
                     else:
-                        c2.caption("🔒 สับงานย่อยให้หมด!")
+                        # 🛡️ ระบบปลดล็อกสถานะคุ้มครองหากทำบางส่วนสำเร็จ แต่ยังล็อกปุ่มงานใหญ่ไว้เหมือนเดิม
+                        if at_least_one_done:
+                            c2.warning("⚡ คืบหน้า! (รอดพิพากษา)")
+                        else:
+                            c2.caption("🔒 สับงานย่อยให้หมด!")
                         
                     if c4.button("🗑️", key=f"del_m_{m['id']}"):
                         db["missions"][safe_email].remove(m)
@@ -458,7 +461,6 @@ with colRight:
         st.markdown("### 📚 ลานประลองปัญญา (THE ACADEMIC BATTLEFIELD)")
         st.info("ที่นี่ไม่ได้วัดแค่กล้ามเนื้อ แต่วัดความคมของสมองมึงด้วย!")
 
-        # --- 1. บันทึกคะแนนสอบ ---
         st.markdown("#### 📝 ประวัติคะแนนสอบ (มึงก้าวหน้าหรือถอยหลัง?)")
         with st.form("exam_form", clear_on_submit=True):
             e_subj = st.text_input("ชื่อวิชา / เรื่องที่ทดสอบ:")
@@ -498,7 +500,6 @@ with colRight:
 
         st.divider()
 
-        # --- 2. เอาชนะตัวเองเมื่อวาน ---
         st.markdown("#### 🥊 ชกกับเงา (BEAT YESTERDAY'S SELF)")
         st.write("เลือกมา 1 อย่างที่มึงจะใช้วัดผลความทุ่มเท (เช่น จำนวนหน้า, จำนวนข้อ, นาทีที่โฟกัส)")
         
@@ -536,7 +537,6 @@ with colRight:
 
         st.divider()
 
-        # --- 3. ฟีเจอร์แถม: THE 40% RULE ---
         st.markdown("#### 🩸 กฎ 40% (THE 40% RULE)")
         st.info("ตอนที่มึงคิดว่าร่างกายหรือสมองมึงรับไม่ไหวแล้ว... ความจริงมึงเพิ่งใช้ขีดจำกัดไปแค่ 40% เท่านั้น! กดปุ่มนี้เมื่อมึงฝืนทำต่อจากจุดที่อยากยอมแพ้ที่สุด!")
         if st.button("🔥 กูเกือบยอมแพ้แล้ว แต่กูฝืนทะลุขีดจำกัดได้!", use_container_width=True):
@@ -593,7 +593,14 @@ if user.get("ambush_task", "") != "":
         user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
-    active_for_judgment = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False)]
+    # 🛡️ เงื่อนไขการหลบหลีกพิพากษา: ถ้างานไหนมีงานย่อยและติ๊กไปแล้วอย่างน้อย 1 อย่าง จะถือว่ารอด ไม่โดนจับผิด
+    active_for_judgment = []
+    for m in db["missions"][safe_email]:
+        if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False):
+            if m.get("subtasks") and any(stask["done"] for stask in m["subtasks"]):
+                continue
+            active_for_judgment.append(m)
+
     incomplete_bosses = [m for m in active_for_judgment if m.get("is_boss")]
     incomplete_habits = [h for h in db["iron_habits"][safe_email] if h.get("last_done_date") != today_str]
 
@@ -648,6 +655,7 @@ if not monk_mode:
             for item in reversed(db["missions"][safe_email]):
                 if item.get("เสร็จแล้ว"): status = "✅ เสร็จแล้ว"
                 elif item.get("รอตรวจ", False): status = "⏳ รอตรวจ/พร้อมส่ง"
+                elif item.get("subtasks") and any(stask["done"] for stask in item["subtasks"]): status = "⚡ คืบหน้า (รอดพิพากษา)"
                 else: status = "❌ ยังดองอยู่"
                 st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
         else: st.write("ยังไม่มีประวัติการแบกซุง!")
