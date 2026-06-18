@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.21 - SUBTASK SHIELD)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.21 - THE STRATEGIC WARRIOR)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -280,6 +280,7 @@ with colRight:
                 m_name = st.text_input("ท่อนซุงที่ต้องแบกวันนี้:")
                 m_is_boss = st.checkbox("💀 ตั้งเป็น THE BOSS FIGHT (งานกลืนกบประจำวัน! หนี=หนี้เลือด x3)")
                 m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
+                m_order = st.number_input("🔢 ลำดับที่ต้องทำก่อน-หลัง (เลขน้อยอยู่บนสุด/ทำก่อน):", min_value=1, value=5, step=1)
                 m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: พลาดโดนหนี้ 100 ที)")
                 m_subtasks_text = st.text_area("🔪 สับท่อนซุง (ใส่ชื่อย่อยทีละบรรทัด, ไม่บังคับ):")
                 
@@ -288,7 +289,7 @@ with colRight:
                         subtasks = [{"name": s.strip(), "done": False} for s in m_subtasks_text.split('\n') if s.strip()]
                         db["missions"][safe_email].append({
                             "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, 
-                            "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
+                            "ประเภท": m_type, "order": m_order, "bounty": m_bounty, "is_boss": m_is_boss,
                             "subtasks": subtasks, "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         save_db(db); st.rerun()
@@ -297,7 +298,8 @@ with colRight:
         todo_missions = [m for m in raw_active if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active if m.get("รอตรวจ", False)]
         
-        todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, get_priority_score(x.get("ประเภท", ""))))
+        # จัดเรียง: Boss ขึ้นก่อนเสมอ ตามด้วย ลำดับที่ผู้ใช้ตั้งใจ (order) และระดับความสำคัญตามลำดับ
+        todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, x.get("order", 5), get_priority_score(x.get("ประเภท", ""))))
         
         if todo_missions:
             for m in todo_missions:
@@ -305,19 +307,18 @@ with colRight:
                     c1, c2, c3, c4 = st.columns([4, 2, 2, 1]) 
                     is_bounty = "⚔️[เดิมพัน] " if m.get("bounty") else ""
                     is_boss = "💀 **[BOSS FIGHT]** " if m.get("is_boss") else ""
-                    c1.write(f"**{m.get('ประเภท','')}** | {is_boss}{is_bounty}{m['ภารกิจ']}")
+                    order_str = f"🔢 [ลำดับ {m.get('order', 5)}] "
+                    c1.write(f"**{m.get('ประเภท','')}** | {order_str}{is_boss}{is_bounty}{m['ภารกิจ']}")
                     
                     all_done = True
-                    at_least_one_done = False
                     if m.get("subtasks"):
-                        st.caption("🔪 งานย่อย (ต้องทำครบก่อนถึงจะกดส่งได้):")
+                        st.caption("🔪 งานย่อย (ต้องทำครบก่อนถึงจะกดเสร็จ/ส่งตรวจได้):")
                         for i, stask in enumerate(m["subtasks"]):
                             checked = st.checkbox(stask["name"], value=stask["done"], key=f"st_{m['id']}_{i}")
                             if checked != stask["done"]:
                                 m["subtasks"][i]["done"] = checked
                                 save_db(db); st.rerun()
                         all_done = all(stask["done"] for stask in m["subtasks"])
-                        at_least_one_done = any(stask["done"] for stask in m["subtasks"])
 
                     if all_done:
                         if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
@@ -333,11 +334,7 @@ with colRight:
                             m["รอตรวจ"] = True
                             save_db(db); st.rerun()
                     else:
-                        # 🛡️ ระบบปลดล็อกสถานะคุ้มครองหากทำบางส่วนสำเร็จ แต่ยังล็อกปุ่มงานใหญ่ไว้เหมือนเดิม
-                        if at_least_one_done:
-                            c2.warning("⚡ คืบหน้า! (รอดพิพากษา)")
-                        else:
-                            c2.caption("🔒 สับงานย่อยให้หมด!")
+                        c2.caption("🔒 สับงานย่อยให้หมดถึงจะส่งได้!")
                         
                     if c4.button("🗑️", key=f"del_m_{m['id']}"):
                         db["missions"][safe_email].remove(m)
@@ -425,7 +422,7 @@ with colRight:
                     if c2.button("⚡ ดึงทำวันนี้", key=f"pull_{b_task['id']}", type="primary"):
                         db["missions"][safe_email].append({
                             "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
-                            "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False,
+                            "ประเภท": b_task["ประเภท"], "order": 5, "bounty": False, "is_boss": False,
                             "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         db["backlog"][safe_email].remove(b_task)
@@ -593,12 +590,14 @@ if user.get("ambush_task", "") != "":
         user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
-    # 🛡️ เงื่อนไขการหลบหลีกพิพากษา: ถ้างานไหนมีงานย่อยและติ๊กไปแล้วอย่างน้อย 1 อย่าง จะถือว่ารอด ไม่โดนจับผิด
+    # --- ปรับเงื่อนไขพิพากษาตามสัญญาล่าสุด ---
     active_for_judgment = []
     for m in db["missions"][safe_email]:
         if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False):
-            if m.get("subtasks") and any(stask["done"] for stask in m["subtasks"]):
-                continue
+            # กฎก้าวแรก: ถ้างานนี้มีงานย่อย และติ๊กเสร็จไปแล้วอย่างน้อย 1 อย่าง = วันนี้มึงรอด ไม่โดนปรับแพ้จากงานนี้!
+            if m.get("subtasks"):
+                if any(stask["done"] for stask in m["subtasks"]):
+                    continue  # ข้ามไป ไม่เอามาคิดโทษพิพากษาประจำวัน
             active_for_judgment.append(m)
 
     incomplete_bosses = [m for m in active_for_judgment if m.get("is_boss")]
@@ -613,7 +612,7 @@ else:
             user["cleared_yesterday"] = True
             save_db(db); st.rerun()
     elif active_for_judgment: 
-        st.error("❌ มึงกำลังหักหลังตัวเอง! ภารกิจวันนี้มึงยังทำไม่เสร็จ!")
+        st.error("❌ มึงกำลังหักหลังตัวเอง! ภารกิจวันนี้มึงยังทำไม่เสร็จ! (หรืองานย่อยยังไม่ได้เริ่มเลยสักข้อ!)")
     elif incomplete_habits:
         st.error(f"⛓️ วินัยเหล็กมึงขาด! มึงยังไม่ได้ทำ: " + ", ".join([h['name'] for h in incomplete_habits]))
         st.warning("กลับไปแท็บ '⛓️ วินัยเหล็ก' แล้วไปทำให้เสร็จซะ ถึงจะปิดวันได้!")
@@ -655,9 +654,13 @@ if not monk_mode:
             for item in reversed(db["missions"][safe_email]):
                 if item.get("เสร็จแล้ว"): status = "✅ เสร็จแล้ว"
                 elif item.get("รอตรวจ", False): status = "⏳ รอตรวจ/พร้อมส่ง"
-                elif item.get("subtasks") and any(stask["done"] for stask in item["subtasks"]): status = "⚡ คืบหน้า (รอดพิพากษา)"
-                else: status = "❌ ยังดองอยู่"
-                st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
+                else:
+                    # เช็คสถานะย่อยในอดีตเพื่อแสดงประวัติ
+                    if item.get("subtasks") and any(stask["done"] for stask in item["subtasks"]):
+                        status = "🏃 กำลังขยับ (รอดพิพากษา)"
+                    else:
+                        status = "❌ ยังดองอยู่"
+                st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** ลำดับ: {item.get('order', 5)} | {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
         else: st.write("ยังไม่มีประวัติการแบกซุง!")
 
     with tab4:
