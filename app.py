@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.23 - THE DOOMSDAY CLOCK)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.24 - THE ADAPTABLE WARLORD)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -127,7 +127,6 @@ with st.sidebar:
                             "username": name_input, "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False,
                             "ghost_exp": 0, "ambush_task": "", "failure_prob": 10,
                             "last_login": today_str, "cleared_yesterday": True,
-                            "order_locked": False,
                             "target_name": "ทำ 10 ล้านวิว YouTube Shorts", 
                             "target_date": str(today_date + timedelta(days=90))
                         }
@@ -151,7 +150,6 @@ with st.sidebar:
                     # ระบบเช็ควันใหม่ (เที่ยงคืนเป๊ะตามเวลาไทย)
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
-                        user_data["order_locked"] = False
                         unpaid_bounties = [m for m in db.get("missions", {}).get(safe_email, []) if m.get("bounty") and not m.get("เสร็จแล้ว")]
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
                             penalty = 100 + (len(unpaid_bounties) * 100)
@@ -296,7 +294,7 @@ with colRight:
                         db["missions"][safe_email].append({
                             "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, 
                             "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
-                            "custom_order": 99, 
+                            "custom_order": 99, "is_queued": False, # กำหนดเป็นงานใหม่ที่ยังไม่เข้าคิว
                             "subtasks": subtasks, "เสร็จแล้ว": False, "รอตรวจ": False,
                             "deadline": str(m_deadline)
                         })
@@ -306,26 +304,27 @@ with colRight:
         todo_missions = [m for m in raw_active if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active if m.get("รอตรวจ", False)]
         
+        # เรียงลำดับตาม: Boss ก่อน -> ลำดับตัวเลขแผนรบ (custom_order) -> ระดับความสำคัญเดิม
         todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, x.get("custom_order", 99), get_priority_score(x.get("ประเภท", ""))))
         
-        if todo_missions:
-            if not user.get("order_locked", False):
-                with st.expander("🔢 ⚡ วางแผนทัพ: จัดลำดับการรบวันนี้ (ล็อกแล้วห้ามแก้ไข!)"):
-                    with st.form("lock_order_form"):
-                        st.write("ถ้างานมันเยอะจนไม่รู้จะเริ่มทำอะไรก่อน พิมพ์เลขคิวรันให้ตัวเองซะ (เลขน้อยขึ้นก่อน เช่น 1, 2, 3...) เสร็จแล้วกดล็อกชะตากรรม!")
-                        updated_orders = {}
-                        for m in todo_missions:
-                            is_boss_str = "💀 [BOSS] " if m.get("is_boss") else ""
-                            updated_orders[m["id"]] = st.number_input(f"กำหนดคิวของภารกิจ: {is_boss_str}{m['ภารกิจ']}", min_value=1, value=int(m.get("custom_order", 99)), key=f"setup_ord_{m['id']}")
-                        
-                        if st.form_submit_button("🔒 ล็อกแผนการรบวันนี้! (ห้ามตระบัดสัตย์)"):
-                            for m in db["missions"][safe_email]:
-                                if m["id"] in updated_orders:
-                                    m["custom_order"] = updated_orders[m["id"]]
-                            user["order_locked"] = True
-                            save_db(db); st.success("⚔️ ล็อกคิวแผนรบเรียบร้อย! ไม่มีสิทธิ์แก้ไขอีก ไปแบกซุงตามหน้าที่ซะไอ้เสือ!"); st.rerun()
-            else:
-                st.info("🔒 **ลำดับแผนการรบวันนี้ถูกล็อกตายด้วยวินัยเหล็กแล้ว!** ห้ามมึงโกง ห้ามมึงสลับคิว ลุยตามนี้!")
+        # 🔥 ฟีเจอร์คัดแยก "งานที่เพิ่งเพิ่มเข้ามาใหม่ (ยังไม่ได้ล็อกคิว)"
+        needs_queueing = [m for m in todo_missions if not m.get("is_queued", False)]
+        
+        if needs_queueing:
+            with st.expander("🔢 ⚡ ทัพหนุนมาใหม่: จัดลำดับงานที่ยังไม่เข้าคิว (ล็อกแล้วห้ามเปลี่ยน!)", expanded=True):
+                with st.form("lock_order_form"):
+                    st.write("มึงมีงานใหม่ที่เพิ่งแอดเข้ามา พิมพ์เลขคิวแทรกเข้าไปซะ (เลขน้อยขึ้นก่อน) เสร็จแล้วกดล็อกชะตากรรม!")
+                    updated_orders = {}
+                    for m in needs_queueing:
+                        is_boss_str = "💀 [BOSS] " if m.get("is_boss") else ""
+                        updated_orders[m["id"]] = st.number_input(f"กำหนดคิวแทรก: {is_boss_str}{m['ภารกิจ']}", min_value=1, value=int(m.get("custom_order", 99)), key=f"setup_ord_{m['id']}")
+                    
+                    if st.form_submit_button("🔒 ยืนยันคิวงานใหม่! (ห้ามตระบัดสัตย์)"):
+                        for m in db["missions"][safe_email]:
+                            if m["id"] in updated_orders:
+                                m["custom_order"] = updated_orders[m["id"]]
+                                m["is_queued"] = True # ล็อกตายเฉพาะงานที่เพิ่งจัดคิวนี้!
+                        save_db(db); st.success("⚔️ ล็อกคิวงานใหม่เรียบร้อย! มันไปแทรกอยู่ในทัพแล้ว ไปลุยซะ!"); st.rerun()
 
         if todo_missions:
             for m in todo_missions:
@@ -335,7 +334,7 @@ with colRight:
                     is_boss = "💀 **[BOSS FIGHT]** " if m.get("is_boss") else ""
                     
                     order_num = m.get("custom_order", 99)
-                    order_badge = f" 🔢 [คิวที่ {order_num}]" if order_num != 99 else " 🔢 [ยังไม่ระบุคิว]"
+                    order_badge = f" 🔢 [คิวที่ {order_num}]" if m.get("is_queued", False) else " 🔢 [ยังไม่ระบุคิว]"
                     
                     # ⏱️ ระบบนับถอยหลังภารกิจ
                     deadline_badge = ""
@@ -475,8 +474,8 @@ with colRight:
                         db["missions"][safe_email].append({
                             "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
                             "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False,
-                            "custom_order": 99,
-                            "deadline": b_task.get("deadline", ""), # ดึงเวลาตามมาด้วย
+                            "custom_order": 99, "is_queued": False, # งานดึงมาจากสมุดจดถือเป็นทัพใหม่
+                            "deadline": b_task.get("deadline", ""),
                             "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         db["backlog"][safe_email].remove(b_task)
