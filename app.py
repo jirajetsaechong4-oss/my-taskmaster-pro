@@ -1,20 +1,23 @@
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 import requests
 import uuid
 import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.22 - THE ORDER OF DOOM)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.23 - THE DOOMSDAY CLOCK)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
 # ⚠️ ลิงก์ Firebase ของมึง
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 
-today_date = date.today()
+# ⏱️ ล็อกเวลาให้เป็นโซนประเทศไทย (GMT+7) เสมอ แบบ Real-time!
+tz_thai = timezone(timedelta(hours=7))
+now_thai = datetime.now(tz_thai)
+today_date = now_thai.date()
 today_str = str(today_date)
 
 PUNISHMENTS = [
@@ -145,9 +148,10 @@ with st.sidebar:
                         user_data["target_name"] = "ทำ 10 ล้านวิว YouTube Shorts"
                         user_data["target_date"] = str(today_date + timedelta(days=90))
 
+                    # ระบบเช็ควันใหม่ (เที่ยงคืนเป๊ะตามเวลาไทย)
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
-                        user_data["order_locked"] = False # ขึ้นวันใหม่ ปลดล็อกแผนรบให้ตั้งใหม่
+                        user_data["order_locked"] = False
                         unpaid_bounties = [m for m in db.get("missions", {}).get(safe_email, []) if m.get("bounty") and not m.get("เสร็จแล้ว")]
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
                             penalty = 100 + (len(unpaid_bounties) * 100)
@@ -191,20 +195,20 @@ finance = db["finance"][safe_email]
 
 # ===== 🚨 CHECK OVERDUE BACKLOG =====
 overdue_count = 0
-valid_backlog = []
 for task in db["backlog"][safe_email]:
     try:
         dl_date = datetime.strptime(task["deadline"], "%Y-%m-%d").date()
-        if dl_date < today_date: overdue_count += 1
-        else: valid_backlog.append(task)
-    except: valid_backlog.append(task)
+        # ถ้าเลยกำหนด แล้ววันนี้ยังไม่ได้โดนหัก ให้หักซะ! (แต่งานยังอยู่ให้เคลียร์)
+        if dl_date < today_date and task.get("last_penalized") != today_str:
+            overdue_count += 1
+            task["last_penalized"] = today_str
+    except: pass
 
 if overdue_count > 0:
-    db["backlog"][safe_email] = valid_backlog
     user["failure_prob"] = min(100, user["failure_prob"] + (10 * overdue_count))
     user["blood_debt"] += (50 * overdue_count); user["in_cage"] = True
     save_db(db)
-    st.error(f"🚨 ไอ้หน้าโง่! ดองงานจนเลยเวลาไป {overdue_count} งาน! ระบบยัดหนี้เลือดมึงแล้ว!")
+    st.error(f"🚨 ไอ้หน้าโง่! มึงมีงานดองเกินกำหนด {overdue_count} งาน! แท่นพิพากษายัดหนี้เลือดมึงแล้ว รีบไปเคลียร์ซะ!")
 
 # ==========================================
 # 🎯 ส่วนหัว: ปลุกพลัง & ระบบนับถอยหลังอนาคต (FUTURE COUNTDOWN)
@@ -284,6 +288,7 @@ with colRight:
                 m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
                 m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: พลาดโดนหนี้ 100 ที)")
                 m_subtasks_text = st.text_area("🔪 สับท่อนซุง (ใส่ชื่อย่อยทีละบรรทัด, ไม่บังคับ):")
+                m_deadline = st.date_input("วันกำหนดส่ง (Deadline ถ้ามี):")
                 
                 if st.form_submit_button("เพิ่มภารกิจ"):
                     if m_name:
@@ -291,8 +296,9 @@ with colRight:
                         db["missions"][safe_email].append({
                             "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, 
                             "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
-                            "custom_order": 99, # ค่าเริ่มต้นคิวท้ายสุด
-                            "subtasks": subtasks, "เสร็จแล้ว": False, "รอตรวจ": False
+                            "custom_order": 99, 
+                            "subtasks": subtasks, "เสร็จแล้ว": False, "รอตรวจ": False,
+                            "deadline": str(m_deadline)
                         })
                         save_db(db); st.rerun()
                     
@@ -300,10 +306,8 @@ with colRight:
         todo_missions = [m for m in raw_active if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active if m.get("รอตรวจ", False)]
         
-        # เรียงลำดับตาม: Boss ก่อน -> ลำดับตัวเลขแผนรบ (custom_order) -> ระดับความสำคัญเดิม
         todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, x.get("custom_order", 99), get_priority_score(x.get("ประเภท", ""))))
         
-        # 🔥 ฟีเจอร์ "จัดลำดับคิวแผนรบและสั่งล็อกตาย"
         if todo_missions:
             if not user.get("order_locked", False):
                 with st.expander("🔢 ⚡ วางแผนทัพ: จัดลำดับการรบวันนี้ (ล็อกแล้วห้ามแก้ไข!)"):
@@ -323,7 +327,6 @@ with colRight:
             else:
                 st.info("🔒 **ลำดับแผนการรบวันนี้ถูกล็อกตายด้วยวินัยเหล็กแล้ว!** ห้ามมึงโกง ห้ามมึงสลับคิว ลุยตามนี้!")
 
-        # แสดงรายการภารกิจหลัก
         if todo_missions:
             for m in todo_missions:
                 with st.container(border=True):
@@ -331,11 +334,21 @@ with colRight:
                     is_bounty = "⚔️[เดิมพัน] " if m.get("bounty") else ""
                     is_boss = "💀 **[BOSS FIGHT]** " if m.get("is_boss") else ""
                     
-                    # แสดงป้ายลำดับคิวแบบล็อกตาย (ถ้าตั้งค่าแล้ว)
                     order_num = m.get("custom_order", 99)
                     order_badge = f" 🔢 [คิวที่ {order_num}]" if order_num != 99 else " 🔢 [ยังไม่ระบุคิว]"
                     
-                    c1.write(f"**{m.get('ประเภท','')}** | {is_boss}{is_bounty}{m['ภารกิจ']}{order_badge}")
+                    # ⏱️ ระบบนับถอยหลังภารกิจ
+                    deadline_badge = ""
+                    if m.get("deadline"):
+                        try:
+                            dl_date = datetime.strptime(m["deadline"], "%Y-%m-%d").date()
+                            days_left_task = (dl_date - today_date).days
+                            if days_left_task > 0: deadline_badge = f" ⏳ (เหลือ {days_left_task} วัน)"
+                            elif days_left_task == 0: deadline_badge = f" 🚨 **(วันสุดท้าย!)**"
+                            else: deadline_badge = f" 💀 **(เลยกำหนด {-days_left_task} วัน)**"
+                        except: pass
+
+                    c1.write(f"**{m.get('ประเภท','')}** | {is_boss}{is_bounty}{m['ภารกิจ']}{order_badge}{deadline_badge}")
                     
                     all_done = True
                     if m.get("subtasks"):
@@ -440,17 +453,30 @@ with colRight:
                     save_db(db); st.rerun()
                     
         if db["backlog"][safe_email]:
-            for b_task in sorted(db["backlog"][safe_email], key=lambda x: x["deadline"]):
+            for b_task in sorted(db["backlog"][safe_email], key=lambda x: x.get("deadline", "9999-12-31")):
                 with st.container(border=True):
                     c1, c2 = st.columns([3, 1])
+                    
+                    # ⏱️ คำนวณวันคงเหลือ
+                    days_badge = ""
+                    if b_task.get("deadline"):
+                        try:
+                            dl_date = datetime.strptime(b_task["deadline"], "%Y-%m-%d").date()
+                            days_left_b = (dl_date - today_date).days
+                            if days_left_b > 0: days_badge = f"⏳ เหลือ {days_left_b} วัน"
+                            elif days_left_b == 0: days_badge = f"🚨 **วันสุดท้าย!**"
+                            else: days_badge = f"💀 **เลยกำหนด {-days_left_b} วัน**"
+                        except: pass
+
                     c1.write(f"**{b_task['ประเภท']}** | 📝 {b_task['ภารกิจ']}")
-                    c1.caption(f"📅 Deadline: {b_task['deadline']} | รายละเอียด: {b_task.get('รายละเอียด', '-')}")
+                    c1.caption(f"📅 Deadline: {b_task.get('deadline', '-')} ({days_badge}) | รายละเอียด: {b_task.get('รายละเอียด', '-')}")
                     
                     if c2.button("⚡ ดึงทำวันนี้", key=f"pull_{b_task['id']}", type="primary"):
                         db["missions"][safe_email].append({
                             "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
                             "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False,
                             "custom_order": 99,
+                            "deadline": b_task.get("deadline", ""), # ดึงเวลาตามมาด้วย
                             "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False
                         })
                         db["backlog"][safe_email].remove(b_task)
@@ -657,7 +683,7 @@ else:
             if st.button("🔥 กูใช้พลังทั้งหมด 100%!"):
                 if random.random() < 0.2: user["ambush_task"] = random.choice(AMBUSH_TASKS)
                 else: user["cleared_yesterday"] = True; user["streak"] += 1; user["exp"] += 25
-                save_db(db); rerun()
+                save_db(db); st.rerun()
 
 # ==========================================
 # 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG)
