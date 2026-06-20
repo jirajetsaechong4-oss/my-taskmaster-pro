@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.26 - THE UNYIELDING JUDGE)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.27 - THE OMNISCIENT COMMANDER)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -330,7 +330,6 @@ with colRight:
                 with st.container(border=True):
                     c1, c2, c3, c4 = st.columns([5, 2, 2, 0.6]) 
                     
-                    # 🏷️ ระบุประเภทการดองให้ชัดเจน
                     task_mode_badge = "🔪 **[งานใหญ่]**" if m.get("subtasks") else "⚡ **[ม้วนเดียวจบ]**"
                     is_bounty = " ⚔️[เดิมพัน]" if m.get("bounty") else ""
                     is_boss = " 💀 **[BOSS]**" if m.get("is_boss") else ""
@@ -359,12 +358,22 @@ with colRight:
                             is_done = stask.get("done", False)
                             done_date = stask.get("done_date", "")
                             
-                            # 🛡️ ระบบผนึกกุญแจ (Locking System) 
-                            # ถ้าติ๊กเสร็จแล้ว และไม่ได้เพิ่งทำวันนี้ -> ล็อกมันซะ!
                             is_locked = is_done and done_date != today_str
                             
                             label = f"{stask['name']}"
-                            if is_locked: label += f" 🔒 (ผนึกเมื่อ: {done_date})"
+                            # 🔥 อัปเกรดป้ายผนึกวิญญาณ: คำนวณวันที่ดองไว้
+                            if is_locked and done_date:
+                                try:
+                                    d_dt = datetime.strptime(done_date, "%Y-%m-%d").date()
+                                    diff_days = (today_date - d_dt).days
+                                    if diff_days == 1:
+                                        label += " 🔒 (ผนึกเมื่อวานนี้)"
+                                    elif diff_days > 1:
+                                        label += f" 🔒 (ผนึกเมื่อ {diff_days} วันที่แล้ว)"
+                                    else:
+                                        label += f" 🔒 (ผนึกแล้ว)"
+                                except:
+                                    label += f" 🔒 (ผนึกเมื่อ: {done_date})"
                                 
                             checked = st.checkbox(label, value=is_done, disabled=is_locked, key=f"st_{m['id']}_{i}")
                             
@@ -385,7 +394,7 @@ with colRight:
                             st.markdown("🔴 *⚠️ [วิกฤต! วันนี้ยังไม่ขยับเลย ระวังแท่นพิพากษา!]*")
                     else:
                         st.caption("⚡ *งานนี้ไม่มีงานย่อย ต้องกดปุ่ม [✅ สำเร็จ] ม้วนเดียวให้จบภายในวันนี้!*")
-                        all_done = True # เพื่อให้ปุ่ม สำเร็จ ปลดล็อก
+                        all_done = True 
 
                     if all_done:
                         if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
@@ -670,20 +679,16 @@ if user.get("ambush_task", "") != "":
         user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
-    # ⚔️ เช็คงานค้างอย่างละเอียด (แยกประเภท)
     active_for_judgment = []
     for m in db["missions"][safe_email]:
         if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False):
             if m.get("subtasks"):
-                # กรณี [งานใหญ่] ต้องมีการขยับของ "วันนี้" เท่านั้น
                 has_today_progress = any(stask.get("done", False) and stask.get("done_date", "") == today_str for stask in m["subtasks"])
                 if not has_today_progress:
                     active_for_judgment.append(m)
             else:
-                # กรณี [ม้วนเดียวจบ] ถ้ายังไม่เสร็จ ถือว่าผิดกฎเต็มๆ!
                 active_for_judgment.append(m)
 
-    # ⛓️ เช็ควินัยเหล็ก
     incomplete_habits = [h for h in db["iron_habits"][safe_email] if h.get("last_done_date") != today_str]
     incomplete_bosses = [m for m in active_for_judgment if m.get("is_boss")]
 
@@ -698,8 +703,6 @@ else:
             
     elif active_for_judgment or incomplete_habits: 
         st.error("❌ มึงกำลังหักหลังตัวเอง! ศาลเตี้ยพบงาน/วินัยที่มึงละทิ้งในวันนี้:")
-        
-        # ลิสต์ประจานให้เห็นชัดๆ ว่าดองอะไรไว้
         for m in active_for_judgment:
             mode = "🔪 งานใหญ่ (มึงลืมสับซุง)" if m.get("subtasks") else "⚡ ม้วนเดียวจบ (มึงดองข้ามวัน)"
             st.write(f"👉 **{m['ภารกิจ']}** [{mode}]")
@@ -713,7 +716,7 @@ else:
             user["blood_debt"] += (50 * penalty_count)
             user["failure_prob"] = min(100, user["failure_prob"] + (10 * penalty_count))
             user["in_cage"] = True
-            user["cleared_yesterday"] = True # ปล่อยผ่านให้ขึ้นวันใหม่พร้อมหนี้
+            user["cleared_yesterday"] = True 
             save_db(db); st.rerun()
             
     elif user.get("in_cage") or user.get("blood_debt", 0) > 0: 
@@ -732,37 +735,63 @@ else:
                 save_db(db); st.rerun()
 
 # ==========================================
-# 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG)
+# 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG) อัปเกรด
 # ==========================================
 st.divider()
 if not monk_mode:
     st.markdown("## 📜 พงศาวดารความทรงจำ (HISTORY LOG)")
-    tab1, tab2, tab3, tab4 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 ภารกิจทั้งหมด", "📊 ดัชนีวินัย (สถิติ)"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 บันทึกการแบกซุง (ตาราง)", "📊 BATTLE ANALYTICS"])
 
     with tab1:
         if db["cookie_jar"].get(safe_email):
-            for item in reversed(db["cookie_jar"][safe_email]): st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
+            for item in reversed(db["cookie_jar"][safe_email]): 
+                st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
         else: st.write("ยังไม่มีความสำเร็จอะไรเลย ไปทำซะ!")
 
     with tab2:
         if db["excuses"].get(safe_email):
-            for item in reversed(db["excuses"][safe_email]): st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
+            for item in reversed(db["excuses"][safe_email]): 
+                st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
         else: st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
 
     with tab3:
         if db["missions"].get(safe_email):
+            mission_history = []
             for item in reversed(db["missions"][safe_email]):
                 if item.get("เสร็จแล้ว"): status = "✅ เสร็จแล้ว"
-                elif item.get("รอตรวจ", False): status = "⏳ รอตรวจ/พร้อมส่ง"
+                elif item.get("รอตรวจ", False): status = "⏳ รอตรวจ"
                 else: status = "❌ ยังดองอยู่"
-                st.write(f"🔹 **[{item.get('วันที่', 'ไม่ระบุ')}]** {item.get('ภารกิจ', '')} ({item.get('ประเภท','ทั่วไป')}) 👉 {status}")
-        else: st.write("ยังไม่มีประวัติการแบกซุง!")
+                
+                mission_history.append({
+                    "วันที่เริ่ม": item.get('วันที่', '-'),
+                    "ภารกิจ": item.get('ภารกิจ', ''),
+                    "ความสำคัญ": item.get('ประเภท','-'),
+                    "BOSS?": "💀" if item.get("is_boss") else "-",
+                    "เดิมพัน?": "⚔️" if item.get("bounty") else "-",
+                    "สถานะ": status
+                })
+            df_missions = pd.DataFrame(mission_history)
+            st.dataframe(df_missions, use_container_width=True, hide_index=True)
+        else: st.write("ยังไม่มีประวัติการแบกซุงเลยไอ้ลูกหมา ไปหางานทำซะ!")
 
     with tab4:
+        all_m = db["missions"].get(safe_email, [])
+        total_m = len(all_m)
+        done_m = len([m for m in all_m if m.get("เสร็จแล้ว")])
+        boss_killed = len([m for m in all_m if m.get("เสร็จแล้ว") and m.get("is_boss")])
+        win_rate = (done_m / total_m * 100) if total_m > 0 else 0
+        
         win_count = len(db["cookie_jar"].get(safe_email, []))
         fail_count = len(db["excuses"].get(safe_email, []))
-        st.write(f"📈 จำนวนครั้งที่ชนะใจตัวเอง: **{win_count}** ครั้ง")
-        st.write(f"📉 จำนวนครั้งที่พ่ายแพ้ปล่อยข้ออ้าง: **{fail_count}** ครั้ง")
+        
+        st.markdown("#### 📊 สรุปผลประกอบการสมอง (BATTLE ANALYTICS)")
+        c_stat1, c_stat2, c_stat3, c_stat4 = st.columns(4)
+        c_stat1.metric("อัตราการชนะ (Win Rate)", f"{win_rate:.1f}%")
+        c_stat2.metric("บอสที่ฆ่าได้ (Boss Kills)", f"{boss_killed} ตัว")
+        c_stat3.metric("ภารกิจที่สำเร็จ (Missions)", f"{done_m} / {total_m}")
+        c_stat4.metric("รอยแผลความขี้เกียจ", f"{fail_count} รอย")
+        
         if win_count + fail_count > 0:
+            st.markdown("**กราฟเปรียบเทียบ: ร่างทอง (ชนะใจตัวเอง) VS ร่างขยะ (พ่ายแพ้ปล่อยข้ออ้าง)**")
             chart_data = pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Savage (ชนะ)", "Bitch (ข้ออ้าง)"])
             st.bar_chart(chart_data)
