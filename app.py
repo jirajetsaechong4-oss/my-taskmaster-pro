@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.27 - THE OMNISCIENT COMMANDER)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.28 - THE UNBREAKABLE LIMIT)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -170,7 +170,27 @@ with st.sidebar:
         scars = len(db.get("dopamine_fails", {}).get(safe_email, []))
         st.markdown(f"🩻 **รอยแผลเป็นความพ่ายแพ้: {scars} รอย**")
         st.warning(f"🔥 สถิติไม่แพ้: {u_data['streak']} วัน")
-        st.progress(u_data["exp"] / 100, text=f"Lv.{u_data['level']} | EXP: {u_data['exp']}/100")
+        
+        # 🔥 จัดการ EXP ไม่ให้ทะลุหลอดป้องกันบั๊ก StreamlitAPIException
+        needs_save = False
+        while u_data["exp"] >= 100:
+            u_data["level"] += 1
+            u_data["exp"] -= 100
+            needs_save = True
+        while u_data["exp"] < 0:
+            if u_data["level"] > 1:
+                u_data["level"] -= 1
+                u_data["exp"] += 100
+            else:
+                u_data["exp"] = 0
+            needs_save = True
+            
+        if needs_save:
+            save_db(db)
+            
+        prog_val = max(0.0, min(1.0, u_data["exp"] / 100))
+        st.progress(prog_val, text=f"Lv.{u_data['level']} | EXP: {u_data['exp']}/100")
+        
         st.divider()
         monk_mode = st.toggle("🧘‍♂️ โหมดจำศีล (Monk Mode)")
         if st.button("🚪 ถอยทัพ (ออกจากระบบ)"):
@@ -361,7 +381,6 @@ with colRight:
                             is_locked = is_done and done_date != today_str
                             
                             label = f"{stask['name']}"
-                            # 🔥 อัปเกรดป้ายผนึกวิญญาณ: คำนวณวันที่ดองไว้
                             if is_locked and done_date:
                                 try:
                                     d_dt = datetime.strptime(done_date, "%Y-%m-%d").date()
@@ -399,11 +418,6 @@ with colRight:
                     if all_done:
                         if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
                             m["เสร็จแล้ว"] = True
-                            exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
-                            if m.get("is_boss"): exp_gain = 100
-                            elif m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
-                            user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
-                            if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                             save_db(db); st.balloons(); st.rerun()
                         
                         if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
@@ -431,7 +445,6 @@ with colRight:
                     if m.get("is_boss"): exp_gain = 100
                     elif m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
                     user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
-                    if user["exp"] >= 100: user["level"] += 1; user["exp"] -= 100
                     save_db(db); st.balloons(); st.rerun()
                 if c3.button("⏪ ดึงกลับมาทำ", key=f"revert_{m['id']}"):
                     m["รอตรวจ"] = False
@@ -642,7 +655,7 @@ with colRight:
     with c_fin1:
         st.write(f"**เป้าหมาย:** {finance.get('goal_name', 'ยังไม่ตั้ง')}")
         cur = finance.get('current', 0); tgt = finance.get('goal_amount', 1)
-        prog = min(cur / tgt, 1.0) if tgt > 0 else 0
+        prog = max(0.0, min(cur / tgt, 1.0)) if tgt > 0 else 0.0
         st.progress(prog, text=f"มีแล้ว: {cur} / {tgt} บาท ({int(prog*100)}%)")
     with c_fin2:
         with st.popover("⚙️ จัดการเงิน"):
