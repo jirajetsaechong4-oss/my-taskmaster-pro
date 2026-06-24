@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.28 - THE UNBREAKABLE LIMIT)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.30 - THE TIME-BOUND STRATEGIST)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -171,7 +171,6 @@ with st.sidebar:
         st.markdown(f"🩻 **รอยแผลเป็นความพ่ายแพ้: {scars} รอย**")
         st.warning(f"🔥 สถิติไม่แพ้: {u_data['streak']} วัน")
         
-        # 🔥 จัดการ EXP ไม่ให้ทะลุหลอดป้องกันบั๊ก StreamlitAPIException
         needs_save = False
         while u_data["exp"] >= 100:
             u_data["level"] += 1
@@ -315,7 +314,7 @@ with colRight:
                         db["missions"][safe_email].append({
                             "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, 
                             "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
-                            "custom_order": 99, "is_queued": False,
+                            "custom_order": 99, "is_queued": False, "skip_today_date": "",
                             "subtasks": subtasks, "เสร็จแล้ว": False, "รอตรวจ": False,
                             "deadline": str(m_deadline)
                         })
@@ -348,7 +347,7 @@ with colRight:
         if todo_missions:
             for m in todo_missions:
                 with st.container(border=True):
-                    c1, c2, c3, c4 = st.columns([5, 2, 2, 0.6]) 
+                    c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6]) 
                     
                     task_mode_badge = "🔪 **[งานใหญ่]**" if m.get("subtasks") else "⚡ **[ม้วนเดียวจบ]**"
                     is_bounty = " ⚔️[เดิมพัน]" if m.get("bounty") else ""
@@ -357,6 +356,8 @@ with colRight:
                     order_num = m.get("custom_order", 99)
                     order_badge = f" 🔢 [คิวที่ {order_num}]" if m.get("is_queued", False) else " 🔢 [ยังไม่ระบุคิว]"
                     
+                    # ⏰ คำนวณความศักดิ์สิทธิ์ของ Deadline (นับถอยหลังเสมอโลกไม่เคยหยุดรอ)
+                    is_overdue = False
                     deadline_badge = ""
                     if m.get("deadline"):
                         try:
@@ -364,10 +365,20 @@ with colRight:
                             days_left_task = (dl_date - today_date).days
                             if days_left_task > 0: deadline_badge = f" ⏳ (เหลือ {days_left_task} วัน)"
                             elif days_left_task == 0: deadline_badge = f" 🚨 **(วันสุดท้าย!)**"
-                            else: deadline_badge = f" 💀 **(เลยกำหนด {-days_left_task} วัน)**"
+                            else: 
+                                deadline_badge = f" 💀 **(เลยกำหนด {-days_left_task} วัน)**"
+                                is_overdue = True # บันทึกสถานะเลยเวลาส่ง
                         except: pass
 
-                    c1.write(f"**{m.get('ประเภท','')}** | {task_mode_badge}{is_boss}{is_bounty} {m['ภารกิจ']}{order_badge}{deadline_badge}")
+                    # 🔥 ป้ายกำกับแช่แข็งคุมทัพฉุกเฉิน
+                    is_frozen = m.get("skip_today_date") == today_str
+                    
+                    if is_frozen:
+                        if is_overdue: frozen_badge = " ❄️🚨 [เกราะแตก! เลยกำหนดส่งแล้ว]"
+                        else: frozen_badge = " ❄️ [แช่แข็งหนีภัยฉุกเฉิน]"
+                    else: frozen_badge = ""
+
+                    c1.write(f"**{m.get('ประเภท','')}** | {task_mode_badge}{is_boss}{is_bounty} {m['ภารกิจ']}{order_badge}{deadline_badge}{frozen_badge}")
                     
                     all_done = True
                     has_today_progress = False
@@ -385,18 +396,16 @@ with colRight:
                                 try:
                                     d_dt = datetime.strptime(done_date, "%Y-%m-%d").date()
                                     diff_days = (today_date - d_dt).days
-                                    if diff_days == 1:
-                                        label += " 🔒 (ผนึกเมื่อวานนี้)"
-                                    elif diff_days > 1:
-                                        label += f" 🔒 (ผนึกเมื่อ {diff_days} วันที่แล้ว)"
-                                    else:
-                                        label += f" 🔒 (ผนึกแล้ว)"
-                                except:
-                                    label += f" 🔒 (ผนึกเมื่อ: {done_date})"
+                                    if diff_days == 1: label += " 🔒 (ผนึกเมื่อวานนี้)"
+                                    elif diff_days > 1: label += f" 🔒 (ผนึกเมื่อ {diff_days} วันที่แล้ว)"
+                                    else: label += f" 🔒 (ผนึกแล้ว)"
+                                except: label += f" 🔒 (ผนึกเมื่อ: {done_date})"
                                 
-                            checked = st.checkbox(label, value=is_done, disabled=is_locked, key=f"st_{m['id']}_{i}")
+                            # 🛡️ เงื่อนไข: ถ้าแช่แข็งชั่วคราวและยังไม่เลยเดดไลน์ จะบล็อกปุ่มติ๊กไว้ แต่ถ้าเลยเดดไลน์แล้วเกราะแตก! ต้องปลดเพื่อให้ทำงานแก้ตัวได้!
+                            can_interact = not is_locked and (not is_frozen or is_overdue)
+                            checked = st.checkbox(label, value=is_done, disabled=not can_interact, key=f"st_{m['id']}_{i}")
                             
-                            if not is_locked:
+                            if can_interact:
                                 if checked != is_done:
                                     m["subtasks"][i]["done"] = checked
                                     m["subtasks"][i]["done_date"] = today_str if checked else ""
@@ -407,26 +416,41 @@ with colRight:
                                 
                         all_done = all(stask.get("done", False) for stask in m["subtasks"])
 
-                        if has_today_progress:
-                            st.markdown("🟢 *[รอดตาย! วันนี้มึงสับงานย่อยแล้ว]*")
-                        else:
-                            st.markdown("🔴 *⚠️ [วิกฤต! วันนี้ยังไม่ขยับเลย ระวังแท่นพิพากษา!]*")
+                        if is_frozen:
+                            if is_overdue: st.markdown("🔴 *⚠️ [เกราะแตก! แช่แข็งไร้ผลเพราะงานเลยเดดไลน์แล้ว มึงโดนพิพากษาแน่!]*")
+                            else: st.markdown("❄️ *[วิชานี้เปิดเกราะแช่แข็งฉุกเฉิน รอดพ้นศาลเตี้ยคืนนี้]*")
+                        elif has_today_progress: st.markdown("🟢 *[รอดตาย! วันนี้มึงสับงานย่อยแล้ว]*")
+                        else: st.markdown("🔴 *⚠️ [วิกฤต! วันนี้ยังไม่ขยับเลย ระวังแท่นพิพากษา!]*")
                     else:
-                        st.caption("⚡ *งานนี้ไม่มีงานย่อย ต้องกดปุ่ม [✅ สำเร็จ] ม้วนเดียวให้จบภายในวันนี้!*")
+                        if is_frozen:
+                            if is_overdue: st.markdown("🔴 *⚠️ [เกราะแตก! แช่แข็งไร้ผลเพราะงานเลยเดดไลน์แล้ว]*")
+                            else: st.markdown("❄️ *[งานนี้เปิดเกราะแช่แข็งฉุกเฉิน รอดพ้นศาลเตี้ยคืนนี้]*")
+                        else: st.caption("⚡ *งานนี้ไม่มีงานย่อย ต้องกดปุ่ม [✅ สำเร็จ] ม้วนเดียวให้จบภายในวันนี้!*")
                         all_done = True 
 
-                    if all_done:
+                    # ❄️ แผงควบคุมระบบแช่แข็งหนีภัยสงคราม
+                    if is_frozen:
+                        if c4.button("🔥 ปลดล็อก", key=f"unfrz_{m['id']}", use_container_width=True):
+                            m["skip_today_date"] = ""
+                            save_db(db); st.rerun()
+                    else:
+                        if c4.button("❄️ เลื่อนฉุกเฉิน", key=f"frz_{m['id']}", use_container_width=True, help="แช่แข็งงานนี้วันนี้ชั่วคราวเนื่องจากติดภารกิจโครงงานฉุกเฉิน! รอดโทษประจำวัน (ยกเว้นงานที่เลยเดดไลน์แล้ว)"):
+                            m["skip_today_date"] = today_str
+                            save_db(db); st.rerun()
+
+                    # ปุ่มปิดภารกิจ (จะทำงานได้ก็ต่อเมื่อไม่ได้โดนแช่แข็งแบบปกติ)
+                    if all_done and (not is_frozen or is_overdue):
                         if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
                             m["เสร็จแล้ว"] = True
                             save_db(db); st.balloons(); st.rerun()
-                        
                         if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
                             m["รอตรวจ"] = True
                             save_db(db); st.rerun()
                     else:
-                        c2.caption("🔒 ปุ่มสำเร็จถูกล็อก (เหลืองานย่อย)")
+                        if is_frozen and not is_overdue: c2.caption("❄️ แช่แข็งชั่วคราว")
+                        else: c2.caption("🔒 งานย่อยยังคาอยู่")
                         
-                    if c4.button("🗑️", key=f"del_m_{m['id']}"):
+                    if c5.button("🗑️", key=f"del_m_{m['id']}"):
                         db["missions"][safe_email].remove(m)
                         save_db(db); st.rerun()
         else: st.success("✅ วันนี้เคลียร์ภารกิจหลักหมดแล้ว เยี่ยมมากไอ้เสือ!")
@@ -523,7 +547,7 @@ with colRight:
                         db["missions"][safe_email].append({
                             "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
                             "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False,
-                            "custom_order": 99, "is_queued": False,
+                            "custom_order": 99, "is_queued": False, "skip_today_date": "",
                             "deadline": b_task.get("deadline", ""),
                             "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False
                         })
@@ -695,10 +719,21 @@ else:
     active_for_judgment = []
     for m in db["missions"][safe_email]:
         if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False):
+            # 🔥 ตรรกะใหม่: ถ้าโดนแช่แข็งวันนี้ ให้รอดสิทธิ์พิพากษาประจำวัน... "ยกเว้น" ว่ามันจะเลยกำหนดส่ง (Overdue) แล้ว!
+            if m.get("skip_today_date") == today_str:
+                is_task_overdue = False
+                if m.get("deadline"):
+                    try:
+                        dl_dt = datetime.strptime(m["deadline"], "%Y-%m-%d").date()
+                        if dl_dt < today_date: is_task_overdue = True # เลยกำหนดส่งจริง
+                    except: pass
+                
+                if not is_task_overdue:
+                    continue # ยังไม่เลยเดดไลน์ ให้รอดตัวไปโฟกัสงานโครงงานฉุกเฉินได้!
+                
             if m.get("subtasks"):
                 has_today_progress = any(stask.get("done", False) and stask.get("done_date", "") == today_str for stask in m["subtasks"])
-                if not has_today_progress:
-                    active_for_judgment.append(m)
+                if not has_today_progress: active_for_judgment.append(m)
             else:
                 active_for_judgment.append(m)
 
@@ -717,12 +752,20 @@ else:
     elif active_for_judgment or incomplete_habits: 
         st.error("❌ มึงกำลังหักหลังตัวเอง! ศาลเตี้ยพบงาน/วินัยที่มึงละทิ้งในวันนี้:")
         for m in active_for_judgment:
-            mode = "🔪 งานใหญ่ (มึงลืมสับซุง)" if m.get("subtasks") else "⚡ ม้วนเดียวจบ (มึงดองข้ามวัน)"
+            # เพิ่ม Badge แจ้งให้ชัดเจนว่าโดนทำโทษเพราะเลยเวลาส่ง
+            is_overdue_check = False
+            if m.get("deadline"):
+                try:
+                    if datetime.strptime(m["deadline"], "%Y-%m-%d").date() < today_date: is_overdue_check = True
+                except: pass
+            
+            if is_overdue_check: mode = "🚨 เกราะแตก! เลยกำหนดส่งแล้ว ต่อให้แช่แข็งก็ไม่รอด!"
+            else: mode = "🔪 งานใหญ่ (มึงลืมสับซุง)" if m.get("subtasks") else "⚡ ม้วนเดียวจบ (มึงดองข้ามวัน)"
             st.write(f"👉 **{m['ภารกิจ']}** [{mode}]")
         for h in incomplete_habits:
             st.write(f"👉 **{h['name']}** [⛓️ วินัยเหล็ก]")
             
-        st.warning("กลับไปจัดการให้จบซะ หรือถ้ามึงสู้ไม่ไหว ก็จงกดปุ่มยอมรับความพ่ายแพ้!")
+        st.warning("กลับไปจัดการให้จบซะ หรือถ้ามึงมีทัพเสริมฉุกเฉินเข้ามาชนจริง ให้กดยอมรับหนี้ หรือกดแช่แข็งงานข้างบนซะ!")
         
         if st.button("🩸 ยอมรับความกาก (ทิ้งงานวันนี้ รับหนี้เลือด 50 ที/งานที่ดอง)"):
             penalty_count = len(active_for_judgment) + len(incomplete_habits)
