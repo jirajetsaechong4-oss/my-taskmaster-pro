@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.30 - THE TIME-BOUND STRATEGIST)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.31 - THE REWARDING TRIUMPH)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -61,6 +61,32 @@ def get_priority_score(task_type):
     if "🟡 ปานกลาง" in task_type: return 2
     if "🟢 ชิลๆ" in task_type: return 3
     return 4
+
+# 🔥 ฟังก์ชันใหม่: คำนวณ EXP และ การลดโอกาสล้มเหลวแบบ Dynamic!
+def calculate_task_rewards(task):
+    score = get_priority_score(task.get("ประเภท", ""))
+    
+    # 1. คำนวณ Base EXP
+    base_exp = 40 if score == 1 else (20 if score == 2 else 10)
+    
+    # 2. คำนวณ Bonus EXP
+    bonus_exp = 0
+    if task.get("is_boss"): bonus_exp += 100
+    if task.get("bounty"): bonus_exp += 50
+    if task.get("subtasks"):
+        bonus_exp += len(task["subtasks"]) * 10  # ยิ่งงานย่อยเยอะ ยิ่งได้ EXP เยอะ
+        
+    total_exp = base_exp + bonus_exp
+    
+    # 3. คำนวณอัตราลดโอกาสล้มเหลว (ยิ่งงานโหด ยิ่งฟื้นฟูได้เยอะ)
+    fail_reduce = 2 # ขั้นต่ำลด 2%
+    if score == 1: fail_reduce = 10
+    elif score == 2: fail_reduce = 5
+    
+    if task.get("is_boss"): fail_reduce += 15
+    if task.get("bounty"): fail_reduce += 5
+    
+    return total_exp, fail_reduce
 
 def load_db():
     if FIREBASE_URL == "" or FIREBASE_URL is None:
@@ -171,11 +197,13 @@ with st.sidebar:
         st.markdown(f"🩻 **รอยแผลเป็นความพ่ายแพ้: {scars} รอย**")
         st.warning(f"🔥 สถิติไม่แพ้: {u_data['streak']} วัน")
         
+        # 🔥 ระบบเลเวลอัปอัตโนมัติ (ป้องกันหลอดพลังแตก)
         needs_save = False
         while u_data["exp"] >= 100:
             u_data["level"] += 1
             u_data["exp"] -= 100
             needs_save = True
+            st.toast(f"🔥 LEVEL UP! มึงแกร่งขึ้นเป็น Lv.{u_data['level']}", icon="🦍")
         while u_data["exp"] < 0:
             if u_data["level"] > 1:
                 u_data["level"] -= 1
@@ -356,7 +384,7 @@ with colRight:
                     order_num = m.get("custom_order", 99)
                     order_badge = f" 🔢 [คิวที่ {order_num}]" if m.get("is_queued", False) else " 🔢 [ยังไม่ระบุคิว]"
                     
-                    # ⏰ คำนวณความศักดิ์สิทธิ์ของ Deadline (นับถอยหลังเสมอโลกไม่เคยหยุดรอ)
+                    # ⏰ คำนวณความศักดิ์สิทธิ์ของ Deadline 
                     is_overdue = False
                     deadline_badge = ""
                     if m.get("deadline"):
@@ -367,7 +395,7 @@ with colRight:
                             elif days_left_task == 0: deadline_badge = f" 🚨 **(วันสุดท้าย!)**"
                             else: 
                                 deadline_badge = f" 💀 **(เลยกำหนด {-days_left_task} วัน)**"
-                                is_overdue = True # บันทึกสถานะเลยเวลาส่ง
+                                is_overdue = True 
                         except: pass
 
                     # 🔥 ป้ายกำกับแช่แข็งคุมทัพฉุกเฉิน
@@ -401,7 +429,6 @@ with colRight:
                                     else: label += f" 🔒 (ผนึกแล้ว)"
                                 except: label += f" 🔒 (ผนึกเมื่อ: {done_date})"
                                 
-                            # 🛡️ เงื่อนไข: ถ้าแช่แข็งชั่วคราวและยังไม่เลยเดดไลน์ จะบล็อกปุ่มติ๊กไว้ แต่ถ้าเลยเดดไลน์แล้วเกราะแตก! ต้องปลดเพื่อให้ทำงานแก้ตัวได้!
                             can_interact = not is_locked and (not is_frozen or is_overdue)
                             checked = st.checkbox(label, value=is_done, disabled=not can_interact, key=f"st_{m['id']}_{i}")
                             
@@ -438,11 +465,15 @@ with colRight:
                             m["skip_today_date"] = today_str
                             save_db(db); st.rerun()
 
-                    # ปุ่มปิดภารกิจ (จะทำงานได้ก็ต่อเมื่อไม่ได้โดนแช่แข็งแบบปกติ)
+                    # 💎 แก้บัค EXP: เมื่อกดจบงาน คำนวณรางวัลและลดโอกาสล้มเหลวทันที!
                     if all_done and (not is_frozen or is_overdue):
                         if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
                             m["เสร็จแล้ว"] = True
+                            exp_gain, fail_reduce = calculate_task_rewards(m)
+                            user["exp"] += exp_gain
+                            user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
                             save_db(db); st.balloons(); st.rerun()
+                            
                         if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
                             m["รอตรวจ"] = True
                             save_db(db); st.rerun()
@@ -465,10 +496,12 @@ with colRight:
                 if c2.button("✅ ตรวจผ่าน (รับ EXP)", key=f"appr_{m['id']}"):
                     m["เสร็จแล้ว"] = True
                     m["รอตรวจ"] = False
-                    exp_gain = 40 if (get_priority_score(m.get("ประเภท", "")) == 1 or m.get("bounty")) else 20
-                    if m.get("is_boss"): exp_gain = 100
-                    elif m.get("bounty") and get_priority_score(m.get("ประเภท", "")) == 1: exp_gain = 80 
-                    user["exp"] += exp_gain; user["failure_prob"] = max(0, user["failure_prob"] - 5)
+                    
+                    # 💎 แก้บัค EXP สำหรับงานที่รอการตรวจด้วย!
+                    exp_gain, fail_reduce = calculate_task_rewards(m)
+                    user["exp"] += exp_gain
+                    user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
+                    
                     save_db(db); st.balloons(); st.rerun()
                 if c3.button("⏪ ดึงกลับมาทำ", key=f"revert_{m['id']}"):
                     m["รอตรวจ"] = False
@@ -719,17 +752,16 @@ else:
     active_for_judgment = []
     for m in db["missions"][safe_email]:
         if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False):
-            # 🔥 ตรรกะใหม่: ถ้าโดนแช่แข็งวันนี้ ให้รอดสิทธิ์พิพากษาประจำวัน... "ยกเว้น" ว่ามันจะเลยกำหนดส่ง (Overdue) แล้ว!
             if m.get("skip_today_date") == today_str:
                 is_task_overdue = False
                 if m.get("deadline"):
                     try:
                         dl_dt = datetime.strptime(m["deadline"], "%Y-%m-%d").date()
-                        if dl_dt < today_date: is_task_overdue = True # เลยกำหนดส่งจริง
+                        if dl_dt < today_date: is_task_overdue = True 
                     except: pass
                 
                 if not is_task_overdue:
-                    continue # ยังไม่เลยเดดไลน์ ให้รอดตัวไปโฟกัสงานโครงงานฉุกเฉินได้!
+                    continue 
                 
             if m.get("subtasks"):
                 has_today_progress = any(stask.get("done", False) and stask.get("done_date", "") == today_str for stask in m["subtasks"])
@@ -752,7 +784,6 @@ else:
     elif active_for_judgment or incomplete_habits: 
         st.error("❌ มึงกำลังหักหลังตัวเอง! ศาลเตี้ยพบงาน/วินัยที่มึงละทิ้งในวันนี้:")
         for m in active_for_judgment:
-            # เพิ่ม Badge แจ้งให้ชัดเจนว่าโดนทำโทษเพราะเลยเวลาส่ง
             is_overdue_check = False
             if m.get("deadline"):
                 try:
