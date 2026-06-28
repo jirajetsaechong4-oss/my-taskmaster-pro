@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.33 - THE STRATEGIC FORTRAN)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.34 - THE APEX PREDATOR)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -70,8 +70,8 @@ def get_priority_score(task_type):
         return 3
     return 4
 
-# 🔥 ฟังก์ชันคำนวณ EXP และ การลดโอกาสล้มเหลวแบบ Dynamic!
-def calculate_task_rewards(task):
+# 🔥 V.34 อัปเกรดประสิทธิภาพ: ฟังก์ชันคำนวณ EXP มีการคูณโบนัส Streak (Savage Multiplier)
+def calculate_task_rewards(task, current_streak):
     score = get_priority_score(task.get("ประเภท", ""))
     
     # 1. คำนวณ Base EXP
@@ -91,7 +91,18 @@ def calculate_task_rewards(task):
     if task.get("subtasks"):
         bonus_exp += len(task["subtasks"]) * 10  # ยิ่งงานย่อยเยอะ ยิ่งได้ EXP เยอะ
         
-    total_exp = base_exp + bonus_exp
+    raw_total_exp = base_exp + bonus_exp
+    
+    # 🔥 The Savage Multiplier (คูณโบนัสความสม่ำเสมอ)
+    multiplier = 1.0
+    if current_streak >= 30:
+        multiplier = 1.5
+    elif current_streak >= 7:
+        multiplier = 1.2
+    elif current_streak >= 3:
+        multiplier = 1.1
+        
+    final_exp = int(raw_total_exp * multiplier)
     
     # 3. คำนวณอัตราลดโอกาสล้มเหลว (ยิ่งงานโหด ยิ่งฟื้นฟูได้เยอะ)
     if score == 1:
@@ -106,7 +117,7 @@ def calculate_task_rewards(task):
     if task.get("bounty"): 
         fail_reduce += 5
     
-    return total_exp, fail_reduce
+    return final_exp, fail_reduce
 
 def load_db():
     if FIREBASE_URL == "" or FIREBASE_URL is None:
@@ -119,7 +130,7 @@ def load_db():
             defaults = {
                 "users": {}, 
                 "missions": {}, 
-                "study_missions": {},  # แตกโครงสร้างรองรับภารกิจเรียนรายวิชา
+                "study_missions": {}, 
                 "backlog": {}, 
                 "dark_room": {}, 
                 "anti_simp": {}, 
@@ -263,7 +274,17 @@ with st.sidebar:
         st.markdown(f"🩻 **รอยแผลเป็นความพ่ายแพ้: {scars} รอย**")
         st.warning(f"🔥 สถิติไม่แพ้: {u_data['streak']} วัน")
         
-        # 🔥 ระบบเลเวลอัปอัตโนมัติ (ป้องกันหลอดพลังแตก บั๊กหายขาด)
+        # 🔥 UI Buff Status (บอกโบนัสผู้เล่นชัดเจน)
+        current_streak = u_data.get("streak", 0)
+        if current_streak >= 30:
+            st.success("👑 BUFF: โบนัส EXP x 1.5 (ร่างทองคำ)")
+        elif current_streak >= 7:
+            st.success("🔥 BUFF: โบนัส EXP x 1.2 (นักรบคุ้มคลั่ง)")
+        elif current_streak >= 3:
+            st.success("⚡ BUFF: โบนัส EXP x 1.1 (เริ่มเข้าฝัก)")
+        else:
+            st.caption("💀 BUFF: ไม่มีโบนัส (กระจอก)")
+        
         needs_save = False
         while u_data["exp"] >= 100:
             u_data["level"] += 1
@@ -309,6 +330,7 @@ for k in ["missions", "study_missions", "backlog", "dark_room", "anti_simp", "do
 
 user = db["users"][safe_email]
 finance = db["finance"][safe_email]
+current_streak = user.get("streak", 0) # สำหรับส่งไปคำนวณ EXP
 
 # ===== 🚨 CHECK OVERDUE BACKLOG =====
 overdue_count = 0
@@ -409,7 +431,6 @@ with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE (นักรบฝั่งขวา)")
     st.success(random.choice(SAVAGE_VOICES))
     
-    # 🔥 เพิ่มแท็บการเรียนแยกออกมาชัดเจนตามโครงสร้างที่มึงต้องการ
     tab_missions, tab_study, tab_habits, tab_backlog, tab_cookie, tab_academic = st.tabs([
         "🔥 ภารกิจวันนี้", 
         "📖 ภารกิจการเรียน", 
@@ -425,12 +446,12 @@ with colRight:
     with tab_missions:
         st.markdown("### 🪵 The Daily Siege (ตารางรบวันนี้)")
         
-        # 🔒 กฎ 3 ก๊กปรับปรุงใหม่: นับเฉพาะงานย่อยเดี่ยว/ม้วนเดียวจบที่ไม่มีคีย์ข้อย่อย งานใหญ่สับซุงได้สิทธิ์ยกเว้นไม่นับในโควตา!
+        # 🔒 กฎ 3 ก๊กปรับปรุงใหม่: นับเฉพาะงานย่อยเดี่ยว/ม้วนเดียวจบที่ไม่มีคีย์ข้อย่อย
         raw_active_missions = [m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว")]
         active_single_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False) and not m.get("subtasks")]
         
         if len(active_single_missions) >= 3:
-            st.error("🚨 **กฎเหล็กจอมทัพ:** โควตางานย่อยเดี่ยวของวันนี้เต็ม 3 Slot แล้ว! มึงต้องรีบเคลียร์งานเก่าให้เสร็จก่อน หรือถ้าอยากเพิ่มงานใหม่ มึงต้องแอดเป็นโครงงานใหญ่ที่มีข้อย่อยสับซุงเท่านั้น!")
+            st.error("🚨 **กฎเหล็กจอมทัพ:** โควตางานเดี่ยววันนี้เต็ม 3 Slot แล้ว! รีบเคลียร์ของเก่า หรือถ้าจะเพิ่มใหม่ต้องเป็นโครงงานใหญ่สับซุงเท่านั้น!")
         
         with st.expander("➕ เพิ่มงานด่วนวันนี้ (ไม่ผ่านสมุด)"):
             with st.form("mission_form", clear_on_submit=True):
@@ -438,7 +459,7 @@ with colRight:
                 m_is_boss = st.checkbox("💀 ตั้งเป็น THE BOSS FIGHT (งานกลืนกบประจำวัน! หนี=หนี้เลือด x3)")
                 m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
                 m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: พลาดโดนหนี้ 100 ที)")
-                st.caption("💡 กฎกติกาแช่แข็งของขุนศึก: \n- **ถ้าพิมพ์งานย่อยลงไปกางไว้:** ถือว่าเป็น [งานใหญ่] จะไม่ถูกจำกัดด้วยกฎโควตา 3 งานต่อวัน ค่อยๆ ทำได้!\n- **ถ้าปล่อยช่องงานย่อยว่างไว้:** ถือเป็น [ม้วนเดียวจบ] จะติดกฎ 3 งานสูงสุดต่อวัน และต้องกดสำเร็จภายในวันนี้!")
+                st.caption("💡 กติกาใหม่: \n- **สับงานย่อยลงไป:** เป็น [โครงการระยะยาว] ไม่คิดโควตา 3 งานต่อวัน ค่อยๆ ทำได้\n- **ปล่อยว่าง:** เป็น [ม้วนเดียวจบ] กิน 1 Slot ต้องเสร็จวันนี้!")
                 m_subtasks_text = st.text_area("🔪 สับท่อนซุง (ใส่ชื่อย่อยทีละบรรทัด, ไม่บังคับ):")
                 m_deadline = st.date_input("วันกำหนดส่ง (Deadline ถ้ามี):")
                 
@@ -446,9 +467,8 @@ with colRight:
                     if m_name:
                         subtasks = [{"name": s.strip(), "done": False, "done_date": ""} for s in m_subtasks_text.split('\n') if s.strip()]
                         
-                        # ถ้ายิงงานย่อยเดี่ยวมาตอนเต็มให้บล็อก
                         if not subtasks and len(active_single_missions) >= 3:
-                            st.error("🤡 ตะบัดสัตย์! โควตางานเดี่ยวเต็มแล้ว ระบบไม่อนุมัติ บังคับให้สับข้อย่อยท่อนซุงซะ!")
+                            st.error("🤡 ตะบัดสัตย์! โควตางานเดี่ยวเต็มแล้ว ระบบบล็อกไม่ให้เพิ่ม บังคับให้สับข้อย่อยท่อนซุงซะ!")
                         else:
                             db["missions"][safe_email].append({
                                 "id": str(uuid.uuid4()), 
@@ -537,6 +557,12 @@ with colRight:
                     has_today_progress = False
                     
                     if m.get("subtasks"):
+                        # 🔥 V.34 อัปเกรด: แถบ Progress Bar ของงานย่อย
+                        total_subs = len(m["subtasks"])
+                        done_subs = len([s for s in m["subtasks"] if s.get("done")])
+                        progress_pct = done_subs / total_subs if total_subs > 0 else 0
+                        st.progress(progress_pct, text=f"📊 ความคืบหน้าการสับซุง: {done_subs} / {total_subs} ({int(progress_pct*100)}%)")
+                        
                         st.caption("🔒 *งานย่อยที่เสร็จแล้วจะถูกผนึก! มึงต้องขยับสับข้อใหม่ของวันนี้ถึงจะรอด!*")
                         for i, stask in enumerate(m["subtasks"]):
                             is_done = stask.get("done", False)
@@ -566,6 +592,7 @@ with colRight:
                                     m["subtasks"][i]["done"] = checked
                                     m["subtasks"][i]["done_date"] = today_str if checked else ""
                                     save_db(db)
+                                    st.toast("🔥 สับซุงสำเร็จ 1 ท่อน!", icon="🪓")
                                     st.rerun()
                             
                             if m["subtasks"][i].get("done_date", "") == today_str:
@@ -606,7 +633,7 @@ with colRight:
                     if all_done and (not is_frozen or is_overdue):
                         if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
                             m["เสร็จแล้ว"] = True
-                            exp_gain, fail_reduce = calculate_task_rewards(m)
+                            exp_gain, fail_reduce = calculate_task_rewards(m, current_streak)
                             user["exp"] += exp_gain
                             user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
                             save_db(db)
@@ -641,7 +668,7 @@ with colRight:
                     m["เสร็จแล้ว"] = True
                     m["รอตรวจ"] = False
                     
-                    exp_gain, fail_reduce = calculate_task_rewards(m)
+                    exp_gain, fail_reduce = calculate_task_rewards(m, current_streak)
                     user["exp"] += exp_gain
                     user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
                     
@@ -654,7 +681,7 @@ with colRight:
                     st.rerun()
 
     # ----------------------------------------------------
-    # 📖 TAB 2: ภารกิจการเรียนและการทบทวน (Study Missions Module) - ระบบสมบูรณ์แบบไม่ขาดหาย
+    # 📖 TAB 2: ภารกิจการเรียนและการทบทวน (Study Missions Module)
     # ----------------------------------------------------
     with tab_study:
         st.markdown("### 📚 The Academic Siege (กระดานคุมการเรียนและการทบทวน)")
@@ -663,7 +690,7 @@ with colRight:
         active_single_study = [s for s in raw_active_study if not s.get("รอตรวจ", False) and not s.get("subtasks")]
         
         if len(active_single_study) >= 3:
-            st.error("🚨 **กฎเหล็กวิชาการ:** โควตาวิชาทบทวนเดี่ยวม้วนเดียวจบเต็ม 3 Slot แล้ว! รีบเปิดอ่านวิชาเก่าให้แตกฉาน หรือจะเพิ่มบทใหม่มึงต้องสับเป็นแผนบทย่อยวิชาใหญ่ยาวๆ เท่านั้น!")
+            st.error("🚨 **กฎเหล็กวิชาการ:** โควตาวิชาทบทวนเดี่ยวเต็ม 3 Slot แล้ว! รีบเคลียร์วิชาเก่า หรือเพิ่มเนื้อหาเป็นแบบสับข้อย่อยท่อนซุงเท่านั้น!")
             
         with st.expander("➕ เพิ่มวิชา/เนื้อหาที่ต้องทบทวน"):
             with st.form("study_form", clear_on_submit=True):
@@ -671,7 +698,7 @@ with colRight:
                 s_is_boss = st.checkbox("💀 ตั้งเป็นบทโหดไฟลุก (BOSS FIGHT ของการเรียน)")
                 s_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (สอบพรุ่งนี้/มะรืน)", "🔥 ติวเข้ม Special Event", "🟡 ปานกลาง (ทบทวนเรื่อยๆ)", "🟢 ชิลๆ (อ่านฆ่าเวลา)"])
                 s_bounty = st.checkbox("⚔️ เดิมพันวิชาการ! (ถ้าพลาดโดนทำโทษหนักหนี้เลือดบวก 100 ที)")
-                st.caption("💡 ทริควิชาการ: \n- **สับหัวข้อย่อยยาวๆ:** ระบบจัดเป็น [วิชาโครงการใหญ่] ได้รับข้อยกเว้นไม่นับในเพดาน 3 วิชาต่อวัน ฟาร์มได้เรื่อยๆ!\n- **ไม่สับหัวข้อย่อย:** จัดเป็น [ทบทวนม้วนเดียวจบ] นับเป็น 1 Slot ต้องติวให้เสร็จภายในวันข้ามคืนไม่งั้นโดนทัณฑ์บน!")
+                st.caption("💡 ทริควิชาการ: \n- **สับหัวข้อย่อยยาวๆ:** ระบบจัดเป็น [วิชาโครงการใหญ่] ไม่นับเพดาน 3 วิชาต่อวัน\n- **ไม่สับหัวข้อย่อย:** จัดเป็น [ทบทวนม้วนเดียวจบ] นับเป็น 1 Slot ติดกฎ!")
                 s_subtasks_text = st.text_area("🔪 สับหัวข้อย่อย / บทเรียนที่ต้องเก็บให้ครบ (ใส่ทีละบรรทัด):")
                 s_deadline = st.date_input("วันกำหนดสอบ / เดดไลน์วิชานี้:")
                 
@@ -680,7 +707,7 @@ with colRight:
                         subtasks = [{"name": s.strip(), "done": False, "done_date": ""} for s in s_subtasks_text.split('\n') if s.strip()]
                         
                         if not subtasks and len(active_single_study) >= 3:
-                            st.error("🤡 ตะบัดสัตย์! โควตาวิชาเดี่ยวเต็ม 3 แล้ว ระบบไม่ยอมให้มึงโลภสุ่มแอด แอดเป็นบทย่อยท่อนซุงซะ!")
+                            st.error("🤡 ตะบัดสัตย์! โควตาวิชาเดี่ยวเต็ม 3 แล้ว ระบบบล็อก! จงแอดเป็นบทย่อยท่อนซุงซะ!")
                         else:
                             db["study_missions"][safe_email].append({
                                 "id": str(uuid.uuid4()), 
@@ -696,7 +723,7 @@ with colRight:
                                 "เสร็จแล้ว": False, 
                                 "รอตรวจ": False,
                                 "deadline": str(s_deadline),
-                                "is_study": True  # แท็กแยกประเภทการคำนวณแดชบอร์ด
+                                "is_study": True
                             })
                             save_db(db)
                             st.rerun()
@@ -746,6 +773,12 @@ with colRight:
                     has_today_progress = False
                     
                     if s.get("subtasks"):
+                        # 🔥 V.34 อัปเกรด: แถบ Progress Bar ฝั่งการเรียน
+                        total_subs = len(s["subtasks"])
+                        done_subs = len([stk for stk in s["subtasks"] if stk.get("done")])
+                        progress_pct = done_subs / total_subs if total_subs > 0 else 0
+                        st.progress(progress_pct, text=f"📈 ความคืบหน้าการอ่าน: {done_subs} / {total_subs} บท ({int(progress_pct*100)}%)")
+
                         st.caption("🔒 *บทเรียนย่อยที่อ่านแล้วจะถูกผนึก! ข้ามวันใหม่มึงต้องเปิดสับหน้าถัดไปห้ามอ่านซ้ำรอยเดิม!*")
                         for i, stask in enumerate(s["subtasks"]):
                             is_done = stask.get("done", False)
@@ -775,6 +808,7 @@ with colRight:
                                     s["subtasks"][i]["done"] = checked
                                     s["subtasks"][i]["done_date"] = today_str if checked else ""
                                     save_db(db)
+                                    st.toast("🔥 เก็บเนื้อหาได้อีก 1 บท!", icon="📖")
                                     st.rerun()
                                     
                             if s["subtasks"][i].get("done_date", "") == today_str: 
@@ -815,7 +849,7 @@ with colRight:
                     if all_done and (not is_frozen or is_overdue):
                         if c2.button("✅ ติวสำเร็จ", key=f"stud_win_{s['id']}", use_container_width=True):
                             s["เสร็จแล้ว"] = True
-                            exp_gain, fail_reduce = calculate_task_rewards(s)
+                            exp_gain, fail_reduce = calculate_task_rewards(s, current_streak)
                             user["exp"] += exp_gain
                             user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
                             save_db(db)
@@ -847,7 +881,7 @@ with colRight:
                 if c2.button("✅ ผ่าน (รับ EXP)", key=f"appr_stud_{s['id']}"):
                     s["เสร็จแล้ว"] = True
                     s["รอตรวจ"] = False
-                    exp_gain, fail_reduce = calculate_task_rewards(s)
+                    exp_gain, fail_reduce = calculate_task_rewards(s, current_streak)
                     user["exp"] += exp_gain
                     user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
                     save_db(db)
@@ -881,7 +915,11 @@ with colRight:
                 else:
                     if c2.button("🔥 กูทำสำเร็จ!", key=f"h_done_{h['id']}"):
                         h["last_done_date"] = today_str
-                        user["exp"] += 5
+                        # วินัยเหล็กก็ให้โบนัสถ้า Streak สูง
+                        bonus = 5
+                        if current_streak >= 30: bonus = 10
+                        elif current_streak >= 7: bonus = 7
+                        user["exp"] += bonus
                         save_db(db)
                         st.balloons()
                         st.rerun()
@@ -893,7 +931,7 @@ with colRight:
             st.success("ยังไม่มีวินัยเหล็ก! สร้างมันขึ้นมาซะ!")
 
     # ----------------------------------------------------
-    # TAB 4: สมุดจดงาน (Backlog) - แยกทางเดินแจกจ่ายงานชัดเจนตามกวนมึงสั่ง!
+    # TAB 4: สมุดจดงาน (Backlog) - ดึงงานด่วนไปบนสุด
     # ----------------------------------------------------
     with tab_backlog:
         st.markdown("### 📝 สมุดจดงาน (Task Backlog)")
@@ -945,7 +983,6 @@ with colRight:
                     
                     has_subtasks = bool(b_task.get("subtasks"))
                     
-                    # 🛡️ เช็คโควตากลยุทธ์ 3 ขุนพลก่อนดึงเข้ากระดานงาน
                     if not has_subtasks and active_m_slots >= 3:
                         c2.button("⚡ ดึงเข้าช่องงาน", key=f"pull_m_{b_task['id']}", disabled=True, help="โควตางานเดี่ยวเต็ม 3 ชิ้นแล้ว! งานนี้ไม่มีข้อย่อย ดึงเข้าไม่ได้!")
                     else:
@@ -957,7 +994,7 @@ with colRight:
                                 "ประเภท": b_task["ประเภท"], 
                                 "bounty": False, 
                                 "is_boss": False,
-                                "custom_order": 99, 
+                                "custom_order": 1 if "🔴" in b_task["ประเภท"] else 99, # ดันงานด่วนขึ้นคิวบนสุดอัตโนมัติ
                                 "is_queued": False, 
                                 "skip_today_date": "",
                                 "deadline": b_task.get("deadline", ""),
@@ -969,7 +1006,6 @@ with colRight:
                             save_db(db)
                             st.rerun()
                             
-                    # 🛡️ เช็คโควตากลยุทธ์ 3 ขุนพลก่อนดึงเข้ากระดานเรียน
                     if not has_subtasks and active_s_slots >= 3:
                         c3.button("📖 ดึงเข้าช่องเรียน", key=f"pull_s_{b_task['id']}", disabled=True, help="โควตาวิชาเรียนเดี่ยวเต็ม 3Slot แล้ว! ดึงเข้าไม่ได้!")
                     else:
@@ -981,7 +1017,7 @@ with colRight:
                                 "ประเภท": b_task["ประเภท"], 
                                 "bounty": False, 
                                 "is_boss": False,
-                                "custom_order": 99, 
+                                "custom_order": 1 if "🔴" in b_task["ประเภท"] else 99,
                                 "is_queued": False, 
                                 "skip_today_date": "",
                                 "deadline": b_task.get("deadline", ""),
@@ -1012,7 +1048,7 @@ with colRight:
             if st.form_submit_button("เก็บชัยชนะลงโหล!"):
                 if win_text:
                     db["cookie_jar"][safe_email].append({"วันที่": today_str, "ชัยชนะ": win_text})
-                    user["exp"] += 5
+                    user["exp"] += int(5 * (1.5 if current_streak>=30 else 1.2 if current_streak>=7 else 1.0))
                     save_db(db)
                     st.success("✅ เก็บชัยชนะลงโหลเรียบร้อย! มึงแม่งสุดยอด!")
                     st.rerun()
@@ -1043,8 +1079,8 @@ with colRight:
                     if len(history) > 0:
                         last_score = history[-1]
                         if e_score > last_score:
-                            user["exp"] += 30
-                            st.success(f"🔥 โคตรเถื่อน! มึงเก่งขึ้นกว่าครั้งที่แล้ว ({last_score} -> {e_score}) รับ 30 EXP!")
+                            user["exp"] += int(30 * (1.5 if current_streak>=30 else 1.0))
+                            st.success(f"🔥 โคตรเถื่อน! มึงเก่งขึ้นกว่าครั้งที่แล้ว ({last_score} -> {e_score}) รับ EXP ท่วมๆ!")
                         elif e_score < last_score:
                             user["blood_debt"] += 50
                             user["failure_prob"] = min(100, user["failure_prob"] + 10)
@@ -1085,7 +1121,7 @@ with colRight:
                     y_val = db["beat_yesterday"][safe_email]["history"].get(yesterday_str, 0)
                     
                     if by_val > y_val:
-                        user["exp"] += 20
+                        user["exp"] += int(20 * (1.2 if current_streak>=7 else 1.0))
                         st.success(f"🔥 มึงชนะไอ้ขี้แพ้เมื่อวานได้แล้ว! ({y_val} -> {by_val})")
                     elif by_val == y_val:
                         st.warning("มึงแค่เสมอตัวกับเมื่อวาน! พรุ่งนี้ต้องดีกว่านี้!")
@@ -1110,11 +1146,11 @@ with colRight:
         if st.button("🔥 กูเกือบยอมแพ้แล้ว แต่กูฝืนทะลุขีดจำกัดได้!", use_container_width=True):
             if today_str not in db["limit_breaks"][safe_email]:
                 db["limit_breaks"][safe_email].append(today_str)
-                user["exp"] += 50
+                user["exp"] += int(50 * (1.5 if current_streak>=30 else 1.0))
                 user["failure_prob"] = max(0, user["failure_prob"] - 15)
                 save_db(db)
                 st.balloons()
-                st.success("🦍 พลังใจมึงมันระดับสัตว์ประหลาด! เอา EXP ไป 50 และลดโอกาสล้มเหลวลง 15%!")
+                st.success("🦍 พลังใจมึงมันระดับสัตว์ประหลาด! เอา EXP ทวีคูณไป และลดโอกาสล้มเหลวลง 15%!")
             else:
                 st.warning("วันนี้มึงทะลุขีดจำกัดไปแล้ว! เก็บแรงไว้ลุยพรุ่งนี้บ้างไอ้บ้าพลัง!")
 
@@ -1176,12 +1212,10 @@ elif user.get("cleared_yesterday"):
 else:
     active_for_judgment = []
     
-    # 🩸 รวมทัพตรวจสอบเหมาเข่งทั้ง [ฝั่งงาน] และ [ฝั่งเรียน] เพื่อความยุติธรรมของศาลเตี้ย!
     combined_missions = db["missions"][safe_email] + db["study_missions"][safe_email]
     
     for m in combined_missions:
         if not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False):
-            # ตรวจสอบสถานะการแช่แข็งหนีภัยสงคราม
             if m.get("skip_today_date") == today_str:
                 is_task_overdue = False
                 if m.get("deadline"):
@@ -1192,7 +1226,6 @@ else:
                     except: 
                         pass
                 
-                # ถ้ายังไม่เลยเดดไลน์ ให้สิทธิ์การแช่แข็งฉุกเฉินคุ้มครองรอดพ้นค่ายกลคืนนี้!
                 if not is_task_overdue:
                     continue 
                 
@@ -1213,11 +1246,14 @@ else:
             user["failure_prob"] = min(100, user["failure_prob"] + 30)
             user["in_cage"] = True
             user["cleared_yesterday"] = True
+            user["streak"] = 0 # โดนล้างสถิติ!
             save_db(db)
             st.rerun()
             
     elif active_for_judgment or incomplete_habits: 
         st.error("❌ มึงกำลังหักหลังตัวเอง! ศาลเตี้ยพบงาน/วิชาเรียน/วินัยที่มึงละทิ้งในวันนี้:")
+        
+        total_blood_penalty = 0
         for m in active_for_judgment:
             is_overdue_check = False
             if m.get("deadline"):
@@ -1229,23 +1265,30 @@ else:
             
             domain_label = "[📚 วิชาเรียน]" if m.get("is_study") else "[🔪 ภารกิจงาน]"
             
+            # 🔥 V.34 อัปเกรด: Smart Penalty Scaling ดองงานด่วนปรับหนี้เลือดหนักกว่า!
+            task_score = get_priority_score(m.get("ประเภท", ""))
+            task_penalty = 100 if task_score == 1 else 70 if task_score == 2 else 50
+            total_blood_penalty += task_penalty
+            
             if is_overdue_check: 
-                mode = f"{domain_label} 🚨 เกราะแตก! เลยกำหนดเดดไลน์ส่งแล้ว ต่อให้กดแช่แข็งก็ไม่คุ้มครอง!"
+                mode = f"{domain_label} 🚨 เกราะแตก! เลยกำหนดเดดไลน์ (หนี้เลือด +{task_penalty})"
             else: 
-                mode = f"{domain_label} 🔪 งานโครงการใหญ่ (มึงไม่ได้สับซุงวันนี้)" if m.get("subtasks") else f"{domain_label} ⚡ ม้วนเดียวจบ (มึงดองข้ามวัน)"
+                mode = f"{domain_label} 🔪 โครงการใหญ่ ไม่ยอมทำ (หนี้เลือด +{task_penalty})" if m.get("subtasks") else f"{domain_label} ⚡ ม้วนเดียวจบ ดองข้ามวัน (หนี้เลือด +{task_penalty})"
             st.write(f"👉 **{m['ภารกิจ']}** [{mode}]")
             
         for h in incomplete_habits:
-            st.write(f"👉 **{h['name']}** [⛓️ วินัยเหล็ก]")
+            total_blood_penalty += 30
+            st.write(f"👉 **{h['name']}** [⛓️ วินัยเหล็ก ละทิ้ง (หนี้เลือด +30)]")
             
         st.warning("กลับไปจัดการให้จบซะ หรือถ้ามึงสู้ไม่ไหว ก็จงกดปุ่มยอมรับความพ่ายแพ้!")
         
-        if st.button("🩸 ยอมรับความกาก (ทิ้งงานวันนี้ รับหนี้เลือด 50 ที/งานที่ดอง)"):
+        if st.button(f"🩸 ยอมรับความกาก (ทิ้งงานวันนี้ รับหนี้เลือดรวม {total_blood_penalty} ที)"):
             penalty_count = len(active_for_judgment) + len(incomplete_habits)
-            user["blood_debt"] += (50 * penalty_count)
+            user["blood_debt"] += total_blood_penalty
             user["failure_prob"] = min(100, user["failure_prob"] + (10 * penalty_count))
             user["in_cage"] = True
             user["cleared_yesterday"] = True 
+            user["streak"] = 0 # ทิ้งงาน = Streak แตก
             save_db(db)
             st.rerun()
             
@@ -1259,6 +1302,7 @@ else:
                 user["exp"] -= 30
                 user["cleared_yesterday"] = True
                 user["failure_prob"] = min(100, user["failure_prob"] + 10)
+                user["streak"] = 0 # ไม่เต็มร้อย = Streak ขาด
                 save_db(db)
                 st.rerun()
         with j_col2:
@@ -1268,7 +1312,8 @@ else:
                 else: 
                     user["cleared_yesterday"] = True
                     user["streak"] += 1
-                    user["exp"] += 25
+                    # แถมโบนัสปิดวันตาม Streak
+                    user["exp"] += int(25 * (1.5 if current_streak>=30 else 1.2 if current_streak>=7 else 1.0))
                 save_db(db)
                 st.rerun()
 
@@ -1295,7 +1340,6 @@ if not monk_mode:
             st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
 
     with tab3:
-        # ดึงประวัติรวมทั้งสองฝั่งมาประจานในตารางพงศาวดาร
         total_missions_list = db["missions"].get(safe_email, []) + db["study_missions"].get(safe_email, [])
         if total_missions_list:
             mission_history = []
