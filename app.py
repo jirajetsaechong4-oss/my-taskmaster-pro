@@ -7,18 +7,28 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.36 - THE RELENTLESS CLOCK)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.37 - THE TIMELESS WARLORD)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
 # ⚠️ ลิงก์ Firebase ของมึง
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 
-# ⏱️ ล็อกเวลาให้เป็นโซนประเทศไทย (GMT+7) เสมอ แบบ Real-time!
-tz_thai = timezone(timedelta(hours=7))
-now_thai = datetime.now(tz_thai)
+# ⏱️ ฟังก์ชันจับเวลา Absolute Real-time (แก้ปัญหาเปิดแอปค้างข้ามคืนแล้วเวลาไม่เดิน)
+def get_current_thai_time():
+    tz_thai = timezone(timedelta(hours=7))
+    return datetime.now(tz_thai)
+
+now_thai = get_current_thai_time()
 today_date = now_thai.date()
 today_str = str(today_date)
+
+# 🗺️ ซ่อมบัค: ประกาศ Dictionary ค่ายกลกระบวนทัพเป็น Global เพื่อให้ใช้ร่วมกันได้ทุกแท็บ
+ROLE_MAP = {
+    "Vanguard": "⚡ [ทัพหน้า - First Strike]", 
+    "Main": "⚔️ [ทัพหลวง]", 
+    "Support": "🏹 [ทัพหนุน]"
+}
 
 PUNISHMENTS = [
     "ไปดันพื้น 50 ทีเดี๋ยวนี้! ห้ามพักจนกว่าจะครบ!",
@@ -70,6 +80,20 @@ def get_priority_score(task_type):
         return 3
     return 4
 
+# 🧠 ฟังก์ชันคำนวณน้ำหนักการจัดเรียงรบ (Tactical Sorting Scores)
+def get_role_score(role):
+    if role == "Vanguard": return 1
+    if role == "Main": return 2
+    return 3
+
+def get_deadline_score(dl_str):
+    if not dl_str or dl_str == "": return 999999
+    try:
+        dl_date = datetime.strptime(dl_str, "%Y-%m-%d").date()
+        return (dl_date - today_date).days
+    except:
+        return 999999
+
 # 🔥 คำนวณ EXP และ การลดโอกาสล้มเหลวแบบ Dynamic + พ่วงระบบคูณโบนัส Streak
 def calculate_task_rewards(task, current_streak):
     score = get_priority_score(task.get("ประเภท", ""))
@@ -104,7 +128,7 @@ def calculate_task_rewards(task, current_streak):
         
     final_exp = int(raw_total_exp * multiplier)
     
-    # 3. คำนวณอัตราลดโอกาสล้มเหลว (ยิ่งงานโหด ยิ่งฟื้นฟูได้เยอะ)
+    # 3. คำนวณอัตราลดโอกาสล้มเหลว
     if score == 1:
         fail_reduce = 10
     elif score == 2:
@@ -197,6 +221,8 @@ if "current_user" not in st.session_state:
 
 with st.sidebar:
     st.title("🧠 สมรภูมิในสมอง")
+    st.caption(f"🗓️ เวลาสมรภูมิ: {today_str}") # แสดงเวลาให้เห็นชัดเจน
+    
     if st.session_state.current_user is None:
         auth_mode = st.radio("เลือกโหมด:", ["⚡ ล็อกอินด่วน", "➕ สร้างนักรบใหม่"])
         st.divider()
@@ -247,6 +273,7 @@ with st.sidebar:
                         user_data["target_name"] = "ทำ 10 ล้านวิว YouTube Shorts"
                         user_data["target_date"] = str(today_date + timedelta(days=90))
 
+                    # ⏱️ ระบบข้ามวัน (Midnight Reset Mechanism)
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
                         user_data["order_locked"] = False
@@ -272,7 +299,7 @@ with st.sidebar:
         
         scars = len(db.get("dopamine_fails", {}).get(safe_email, []))
         st.markdown(f"🩻 **รอยแผลเป็นความพ่ายแพ้: {scars} รอย**")
-        st.warning(f"🔥 สถิติไม่แพ้: {u_data['streak']} วัน")
+        st.warning(f"🔥 สถิติไม่แพ้ (Streak): {u_data['streak']} วัน")
         
         current_streak = u_data.get("streak", 0)
         if current_streak >= 30:
@@ -335,7 +362,6 @@ current_streak = user.get("streak", 0)
 overdue_count = 0
 for task in db["backlog"][safe_email]:
     try:
-        # เช็คว่ามีค่า deadline ถูกส่งมาเก็บไว้จริง (ไม่ใช่ค่าว่าง)
         if task.get("deadline") and task["deadline"] != "":
             dl_date = datetime.strptime(task["deadline"], "%Y-%m-%d").date()
             if dl_date < today_date and task.get("last_penalized") != today_str:
@@ -397,7 +423,13 @@ with colLeft:
     if not monk_mode:
         st.markdown("## 🗑️ THE BITCH ZONE (ฝั่งขยะ)")
         st.warning(random.choice(LAZY_VOICES))
-        st.metric("📉 โอกาสล้มเหลวในอนาคต", f"{user['failure_prob']}%")
+        
+        # 📊 อัปเกรดประสิทธิภาพ: หลอดพลังใจ (Mental Health Bar)
+        fail_prob = user.get('failure_prob', 10)
+        st.markdown(f"**📉 โอกาสพ่ายแพ้ต่อสิ่งเร้า: {fail_prob}%**")
+        fail_color = "red" if fail_prob > 70 else "orange" if fail_prob > 40 else "green"
+        st.progress(fail_prob / 100)
+        st.caption("🚨 ถ้าระเบิดถึง 100% มึงเตรียมตัวรับกรรมอย่างสาสมได้เลย!")
             
         with st.form("excuse_form", clear_on_submit=True):
             exc_text = st.text_input("ข้ออ้างขยะๆ วันนี้คืออะไร?:")
@@ -461,7 +493,6 @@ with colRight:
                 m_bounty = st.checkbox("⚔️ ตั้งค่าหัว! (เดิมพันศักดิ์ศรี: พลาดโดนหนี้ 100 ที)")
                 m_subtasks_text = st.text_area("🔪 สับท่อนซุง (ใส่ชื่อย่อยทีละบรรทัด, ไม่บังคับ):")
                 
-                # 🔥 V.36 อัปเกรด: ระบบเลือกประเภทการกำหนดเวลา (Dual Clock System)
                 m_dl_type = st.radio("⏰ ระบบเวลา (Dual Clock):", ["ไม่กำหนด (ชิลๆ)", "🗓️ Deadline ทางการ", "🎯 วันเป้าหมาย (กำหนดเอง)"], horizontal=True)
                 m_deadline = st.date_input("เลือกวันที่:")
                 
@@ -497,7 +528,13 @@ with colRight:
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active_missions if m.get("รอตรวจ", False)]
         
-        todo_missions.sort(key=lambda x: (0 if x.get("is_boss") else 1, x.get("custom_order", 99), get_priority_score(x.get("ประเภท", ""))))
+        # 🧠 V.37 อัปเกรด: AI จัดเรียงรบอัจฉริยะ (Role -> Deadline Proximity -> Priority)
+        todo_missions.sort(key=lambda x: (
+            get_role_score(x.get("battle_role", "Main")), 
+            0 if x.get("is_boss") else 1, 
+            get_deadline_score(x.get("deadline", "")),
+            get_priority_score(x.get("ประเภท", ""))
+        ))
         
         needs_queueing = [m for m in todo_missions if not m.get("is_queued", False)]
         
@@ -544,10 +581,9 @@ with colRight:
                     is_bounty = " ⚔️[เดิมพัน]" if m.get("bounty") else ""
                     is_boss = " 💀 **[BOSS]**" if m.get("is_boss") else ""
                     
-                    role_map = {"Vanguard": "⚡ [ทัพหน้า - First Strike]", "Main": "⚔️ [ทัพหลวง]", "Support": "🏹 [ทัพหนุน]"}
-                    order_badge = f" | {role_map.get(m.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
+                    # เรียกใช้ ROLE_MAP จาก Global scope อย่างถูกต้อง ไร้บัค
+                    order_badge = f" | {ROLE_MAP.get(m.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
                     
-                    # 🔥 V.36 อัปเกรด: ประมวลผลป้ายเวลาตามประเภท (Deadline ทางการ หรือ เป้าหมายที่ตั้งเอง)
                     is_overdue = False
                     deadline_badge = ""
                     dl_str = m.get("deadline", "")
@@ -569,6 +605,12 @@ with colRight:
                             pass
 
                     is_frozen = m.get("skip_today_date") == today_str
+                    # ตรวจจับว่าเกราะน้ำแข็งละลายหรือยัง (เลยเที่ยงคืนแล้ว)
+                    was_frozen_yesterday = m.get("skip_today_date") != "" and not is_frozen
+                    if was_frozen_yesterday:
+                        m["skip_today_date"] = "" # เคลียร์ขยะเก่า
+                        save_db(db)
+                        
                     if is_frozen:
                         if is_overdue: 
                             frozen_badge = " ❄️🚨 [เกราะแตก! แช่แข็งไร้ผลเพราะเลยกำหนดแล้ว]"
@@ -730,7 +772,6 @@ with colRight:
                 s_bounty = st.checkbox("⚔️ เดิมพันวิชาการ! (ถ้าพลาดโดนทำโทษหนักหนี้เลือดบวก 100 ที)")
                 s_subtasks_text = st.text_area("🔪 สับหัวข้อย่อย / บทเรียนที่ต้องเก็บให้ครบ (ใส่ทีละบรรทัด):")
                 
-                # 🔥 ระบบเวลางานการเรียน Dual Clock
                 s_dl_type = st.radio("⏰ ระบบเวลา (Dual Clock):", ["ไม่กำหนด (ชิลๆ)", "🗓️ Deadline ทางการ", "🎯 วันเป้าหมาย (กำหนดเอง)"], horizontal=True)
                 s_deadline = st.date_input("เลือกวันที่:")
                 
@@ -767,7 +808,13 @@ with colRight:
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
         pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
         
-        todo_study.sort(key=lambda x: (0 if x.get("is_boss") else 1, x.get("custom_order", 99), get_priority_score(x.get("ประเภท", ""))))
+        # 🧠 V.37 อัปเกรด: AI จัดเรียงรบอัจฉริยะ สำหรับฝั่งการเรียนด้วย
+        todo_study.sort(key=lambda x: (
+            get_role_score(x.get("battle_role", "Main")), 
+            0 if x.get("is_boss") else 1, 
+            get_deadline_score(x.get("deadline", "")),
+            get_priority_score(x.get("ประเภท", ""))
+        ))
         
         study_needs_queueing = [s for s in todo_study if not s.get("is_queued", False)]
         if study_needs_queueing:
@@ -813,7 +860,8 @@ with colRight:
                     is_bounty = " ⚔️[เดิมพันศึกษา]" if s.get("bounty") else ""
                     is_boss = " 💀 **[BOSS]**" if s.get("is_boss") else ""
                     
-                    order_badge = f" | {role_map.get(s.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
+                    # ซ่อมบัคเรียกตัวแปร
+                    order_badge = f" | {ROLE_MAP.get(s.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
                     
                     is_overdue = False
                     deadline_badge = ""
@@ -836,6 +884,11 @@ with colRight:
                             pass
 
                     is_frozen = s.get("skip_today_date") == today_str
+                    was_frozen_yesterday = s.get("skip_today_date") != "" and not is_frozen
+                    if was_frozen_yesterday:
+                        s["skip_today_date"] = ""
+                        save_db(db)
+                        
                     if is_frozen:
                         if is_overdue: 
                             frozen_badge = " ❄️🚨 [ค่ายกลแตก! เลยกำหนดเวลา]"
@@ -1032,7 +1085,6 @@ with colRight:
             b_subtasks_text = st.text_area("🔪 ซอยงานย่อย (Enter ขึ้นบรรทัดใหม่, ไม่บังคับ):")
             b_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
             
-            # 🔥 สมุดจดงานก็สามารถเลือกประเภทเดดไลน์และเป้าหมายได้
             b_dl_type = st.radio("⏰ ระบบเวลา (Dual Clock):", ["ไม่กำหนด (ชิลๆ)", "🗓️ Deadline ทางการ", "🎯 วันเป้าหมาย (กำหนดเอง)"], horizontal=True)
             b_deadline = st.date_input("วันกำหนดส่ง (เลือกวันที่):")
             
@@ -1058,7 +1110,6 @@ with colRight:
             active_m_slots = len([m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว") and not m.get("subtasks")])
             active_s_slots = len([s for s in db["study_missions"][safe_email] if not s.get("เสร็จแล้ว") and not s.get("subtasks")])
             
-            # เรียงลำดับงานใน Backlog ให้งานที่มีเดดไลน์โชว์ก่อน (ถ้าไม่มีเดดไลน์ให้ไปกองท้ายสุด)
             sorted_backlog = sorted(db["backlog"][safe_email], key=lambda x: x.get("deadline") if x.get("deadline") and x.get("deadline") != "" else "9999-12-31")
             
             for b_task in sorted_backlog:
