@@ -7,12 +7,15 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.37 - THE TIMELESS WARLORD)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.38 - THE SECURE WARLORD)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
-# ⚠️ ลิงก์ Firebase ของมึง
-FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app/" 
+# ⚠️ ลิงก์ Firebase ของมึง (ไม่ต้องใส่ / ข้างหลัง)
+FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app" 
+
+# 🔐 บัตรผ่าน VIP ลับ (สิทธิ์จอมทัพ)
+FIREBASE_SECRET = "Wv2Ha7WZrDLwnpJyKMt29z9I0MGb0kxitoOaaoGe"
 
 # ⏱️ ฟังก์ชันจับเวลา Absolute Real-time (แก้ปัญหาเปิดแอปค้างข้ามคืนแล้วเวลาไม่เดิน)
 def get_current_thai_time():
@@ -23,7 +26,7 @@ now_thai = get_current_thai_time()
 today_date = now_thai.date()
 today_str = str(today_date)
 
-# 🗺️ ซ่อมบัค: ประกาศ Dictionary ค่ายกลกระบวนทัพเป็น Global เพื่อให้ใช้ร่วมกันได้ทุกแท็บ
+# 🗺️ ค่ายกลกระบวนทัพรบ Global Scope
 ROLE_MAP = {
     "Vanguard": "⚡ [ทัพหน้า - First Strike]", 
     "Main": "⚔️ [ทัพหลวง]", 
@@ -148,25 +151,16 @@ def load_db():
         st.error("🚨 ไอ้เวร! ลิงก์ Firebase หายไปไหน กลับไปแก้เดี๋ยวนี้!")
         st.stop()
     try:
-        res = requests.get(f"{FIREBASE_URL}/db.json")
+        # 🔥 V.38: ยื่นบัตรผ่าน VIP (?auth=...) ให้เข้าถึงฐานข้อมูลทะลุกฎได้
+        res = requests.get(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}")
         if res.status_code == 200 and res.json() is not None:
             data = res.json()
             defaults = {
-                "users": {}, 
-                "missions": {}, 
-                "study_missions": {}, 
-                "backlog": {}, 
-                "dark_room": {}, 
-                "anti_simp": {}, 
-                "dopamine_fails": {}, 
-                "excuses": {}, 
-                "cookie_jar": {}, 
-                "deadlines": {}, 
-                "haters": {}, 
-                "finance": {}, 
-                "iron_habits": {},
-                "exams": {}, 
-                "beat_yesterday": {}, 
+                "users": {}, "missions": {}, "study_missions": {}, 
+                "backlog": {}, "dark_room": {}, "anti_simp": {}, 
+                "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, 
+                "deadlines": {}, "haters": {}, "finance": {}, 
+                "iron_habits": {}, "exams": {}, "beat_yesterday": {}, 
                 "limit_breaks": {}
             }
             for k, v in defaults.items():
@@ -175,28 +169,19 @@ def load_db():
             return data
     except: 
         pass
+    
     return {
-        "users": {}, 
-        "missions": {}, 
-        "study_missions": {},
-        "backlog": {}, 
-        "dark_room": {}, 
-        "anti_simp": {}, 
-        "dopamine_fails": {}, 
-        "excuses": {}, 
-        "cookie_jar": {}, 
-        "deadlines": {}, 
-        "haters": {}, 
-        "finance": {}, 
-        "iron_habits": {},
-        "exams": {}, 
-        "beat_yesterday": {}, 
+        "users": {}, "missions": {}, "study_missions": {}, "backlog": {}, 
+        "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, 
+        "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, 
+        "finance": {}, "iron_habits": {}, "exams": {}, "beat_yesterday": {}, 
         "limit_breaks": {}
     }
 
 def save_db(data):
     try: 
-        requests.put(f"{FIREBASE_URL}/db.json", json=data)
+        # 🔥 V.38: ยื่นบัตรผ่าน VIP ก่อนบันทึกข้อมูล
+        requests.put(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}", json=data)
     except: 
         st.error("🚨 เซฟข้อมูลลงฐานข้อมูลอมตะไม่สำเร็จ!")
 
@@ -221,7 +206,7 @@ if "current_user" not in st.session_state:
 
 with st.sidebar:
     st.title("🧠 สมรภูมิในสมอง")
-    st.caption(f"🗓️ เวลาสมรภูมิ: {today_str}") # แสดงเวลาให้เห็นชัดเจน
+    st.caption(f"🗓️ เวลาสมรภูมิ: {today_str}") 
     
     if st.session_state.current_user is None:
         auth_mode = st.radio("เลือกโหมด:", ["⚡ ล็อกอินด่วน", "➕ สร้างนักรบใหม่"])
@@ -528,7 +513,7 @@ with colRight:
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active_missions if m.get("รอตรวจ", False)]
         
-        # 🧠 V.37 อัปเกรด: AI จัดเรียงรบอัจฉริยะ (Role -> Deadline Proximity -> Priority)
+        # 🧠 AI จัดเรียงรบอัจฉริยะ (Role -> Deadline Proximity -> Priority)
         todo_missions.sort(key=lambda x: (
             get_role_score(x.get("battle_role", "Main")), 
             0 if x.get("is_boss") else 1, 
@@ -808,7 +793,7 @@ with colRight:
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
         pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
         
-        # 🧠 V.37 อัปเกรด: AI จัดเรียงรบอัจฉริยะ สำหรับฝั่งการเรียนด้วย
+        # 🧠 AI จัดเรียงรบอัจฉริยะ สำหรับฝั่งการเรียนด้วย
         todo_study.sort(key=lambda x: (
             get_role_score(x.get("battle_role", "Main")), 
             0 if x.get("is_boss") else 1, 
