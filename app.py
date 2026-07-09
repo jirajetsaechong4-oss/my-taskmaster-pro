@@ -9,14 +9,24 @@ import re
 import streamlit.components.v1 as components
 
 # ==========================================
-# 1. ตั้งค่าระบบ (V.41 - THE ABSOLUTE FULL EDITION)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.41 - THE SUPREME ARCHITECT)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
-# 🎨 Custom CSS แต่ง UI ให้พรีเมียม โหด ดุดัน (เอาโค้ดที่ทำให้เว็บพังออกแล้ว)
+# 🎨 Custom CSS แต่ง UI ให้พรีเมียม โหด ดุดัน
 st.markdown("""
 <style>
-    /* แต่ง Tab ให้โดดเด่นและสวยงาม */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    [data-testid="stVerticalBlock"] > [style*="flex-direction: column;"] > [data-testid="stVerticalBlock"] {
+        background-color: #1a1a24;
+        border-radius: 12px;
+        padding: 15px;
+        border: 1px solid #3a3a4f;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
     }
@@ -31,7 +41,6 @@ st.markdown("""
         font-weight: bold;
     }
     
-    /* เอฟเฟกต์ปุ่ม */
     .stButton>button {
         border-radius: 8px;
         font-weight: bold;
@@ -43,11 +52,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ⚠️ ลิงก์ Firebase และ รหัสลับ (Secret) ของมึง
+# ⚠️ ลิงก์ Firebase ของมึง
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app" 
 FIREBASE_SECRET = "Wv2Ha7WZrDLwnpJyKMt29z9I0MGb0kxitoOaaoGe"
 
-# ⏱️ ฟังก์ชันจับเวลา Absolute Real-time
 def get_current_thai_time():
     tz_thai = timezone(timedelta(hours=7))
     return datetime.now(tz_thai)
@@ -56,9 +64,8 @@ now_thai = get_current_thai_time()
 today_date = now_thai.date()
 today_str = str(today_date)
 
-# 🗺️ ค่ายกลกระบวนทัพรบ Global Scope
 ROLE_MAP = {
-    "Vanguard": "⚡ [ทัพหน้า - First Strike]", 
+    "Vanguard": "⚡ [ทัพหน้า]", 
     "Main": "⚔️ [ทัพหลวง]", 
     "Support": "🏹 [ทัพหนุน]"
 }
@@ -95,22 +102,15 @@ def get_safe_email(email):
     return email.replace(".", "-").replace("@", "-")
 
 def get_title(level):
-    if level < 3: 
-        return "🤡 ไอ้ลูกหมาขี้ขลาด"
-    elif level < 7: 
-        return "⚔️ นักรบฝึกหัดแบกซุง"
-    elif level < 12: 
-        return "🦍 แม่ทัพคุมโดพามีน"
-    else: 
-        return "👑 มหาจักรพรรดิผู้คุมชะตา"
+    if level < 3: return "🤡 ไอ้ลูกหมาขี้ขลาด"
+    elif level < 7: return "⚔️ นักรบฝึกหัดแบกซุง"
+    elif level < 12: return "🦍 แม่ทัพคุมโดพามีน"
+    else: return "👑 มหาจักรพรรดิผู้คุมชะตา"
 
 def get_priority_score(task_type):
-    if "🔴 ด่วนสุด" in task_type or "🔥 งานฉุกเฉิน" in task_type: 
-        return 1
-    if "🟡 ปานกลาง" in task_type: 
-        return 2
-    if "🟢 ชิลๆ" in task_type: 
-        return 3
+    if "🔴" in task_type: return 1
+    if "🟡" in task_type: return 2
+    if "🟢" in task_type: return 3
     return 4
 
 def get_role_score(role):
@@ -128,51 +128,22 @@ def get_deadline_score(dl_str):
 
 def calculate_task_rewards(task, current_streak):
     score = get_priority_score(task.get("ประเภท", ""))
-    
-    if score == 1:
-        base_exp = 40
-    elif score == 2:
-        base_exp = 20
-    else:
-        base_exp = 10
-    
+    base_exp = 40 if score == 1 else 20 if score == 2 else 10
     bonus_exp = 0
-    if task.get("is_boss"): 
-        bonus_exp += 100
-    if task.get("bounty"): 
-        bonus_exp += 50
-    if task.get("subtasks"):
-        bonus_exp += len(task["subtasks"]) * 10  
+    if task.get("is_boss"): bonus_exp += 100
+    if task.get("bounty"): bonus_exp += 50
+    if task.get("subtasks"): bonus_exp += len(task["subtasks"]) * 10  
         
     raw_total_exp = base_exp + bonus_exp
-    
-    multiplier = 1.0
-    if current_streak >= 30:
-        multiplier = 1.5
-    elif current_streak >= 7:
-        multiplier = 1.2
-    elif current_streak >= 3:
-        multiplier = 1.1
-        
+    multiplier = 1.5 if current_streak >= 30 else 1.2 if current_streak >= 7 else 1.1 if current_streak >= 3 else 1.0
     final_exp = int(raw_total_exp * multiplier)
     
-    if score == 1:
-        fail_reduce = 10
-    elif score == 2:
-        fail_reduce = 5
-    else:
-        fail_reduce = 2
-    
-    if task.get("is_boss"): 
-        fail_reduce += 15
-    if task.get("bounty"): 
-        fail_reduce += 5
+    fail_reduce = 10 if score == 1 else 5 if score == 2 else 2
+    if task.get("is_boss"): fail_reduce += 15
+    if task.get("bounty"): fail_reduce += 5
     
     return final_exp, fail_reduce
 
-# ==========================================
-# 🛠️ ฟังก์ชันฐานข้อมูล (Database Functions)
-# ==========================================
 def load_db():
     if FIREBASE_URL == "" or FIREBASE_URL is None:
         st.error("🚨 ไอ้เวร! ลิงก์ Firebase หายไปไหน กลับไปแก้เดี๋ยวนี้!")
@@ -195,7 +166,6 @@ def load_db():
             return data
     except: 
         pass
-    
     return {
         "users": {}, "missions": {}, "study_missions": {}, "backlog": {}, 
         "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, 
@@ -210,76 +180,110 @@ def save_db(data):
     except: 
         st.error("🚨 เซฟข้อมูลลงฐานข้อมูลอมตะไม่สำเร็จ!")
 
-db = load_db()
-
 # ==========================================
-# 🗺️ THE WAR MAP ENGINE (ฟังก์ชันวาดแผนผัง)
+# 🗺️ THE WAR MAP ENGINE (แกนวาดแผนผังใหม่ V.41 ใหญ่ สวย ล็อกออโต้)
 # ==========================================
 def render_war_map(missions_data, study_data):
-    all_tasks = missions_data + study_data
-    if not all_tasks:
-        st.info("🗺️ ยังไม่มีภารกิจในกระดาน แผนที่จึงว่างเปล่า!")
+    # ดึงเฉพาะงานค้าง
+    pending_missions = [m for m in missions_data if not m.get('เสร็จแล้ว', False)]
+    pending_study = [s for s in study_data if not s.get('เสร็จแล้ว', False)]
+    
+    if not pending_missions and not pending_study:
+        st.info("🗺️ กระดานยุทธศาสตร์ว่างเปล่า ไม่มีภารกิจค้าง!")
         return
 
-    mermaid_code = "graph TD\n"
-    # ตั้งค่าสีให้สวยงาม
-    mermaid_code += "classDef done fill:#1a4d1a,color:#fff,stroke:#2b7d2b,stroke-width:2px;\n"
-    mermaid_code += "classDef pending fill:#b37700,color:#fff,stroke:#ffaa00,stroke-width:2px;\n"
-    mermaid_code += "classDef blocked fill:#262626,color:#888,stroke:#4d4d4d,stroke-width:2px,stroke-dasharray: 5 5;\n"
-    mermaid_code += "classDef boss fill:#660000,color:#fff,stroke:#ff0000,stroke-width:3px;\n"
+    # เปลี่ยนเป็น graph LR (ซ้ายไปขวา) เพื่อความกว้างและอ่านง่าย
+    mermaid_code = "graph LR\n"
+    
+    # กำหนดสไตล์กล่องให้ใหญ่และสวยงาม
+    mermaid_code += "classDef active fill:#b37700,color:#fff,stroke:#ffaa00,stroke-width:3px,rx:10,ry:10;\n"
+    mermaid_code += "classDef blocked fill:#2a2a35,color:#888,stroke:#4d4d4d,stroke-width:2px,stroke-dasharray: 5 5,rx:10,ry:10;\n"
+    mermaid_code += "classDef boss fill:#8a0303,color:#fff,stroke:#ff3333,stroke-width:3px,rx:10,ry:10;\n"
 
-    # สร้าง Map ไว้เช็คสถานะ
-    task_status_map = {t['id']: t.get('เสร็จแล้ว', False) for t in all_tasks}
-
-    for t in all_tasks:
-        safe_id = t['id'].replace("-", "")
-        # ล้างอักขระพิเศษทั้งหมด เพื่อป้องกัน Mermaid โค้ดพัง
-        safe_name = re.sub(r'["\'\[\]{}()<>]', '', t['ภารกิจ'])
-        if len(safe_name) > 25: 
-            safe_name = safe_name[:25] + "..."
+    def build_chain(task_list, chain_id):
+        code = ""
+        # จัดเรียงลำดับตามคิวรบเป๊ะๆ (Vanguard -> Main -> Support)
+        task_list.sort(key=lambda x: (
+            get_role_score(x.get("battle_role", "Main")), 
+            0 if x.get("is_boss") else 1, 
+            get_deadline_score(x.get("deadline", "")),
+            get_priority_score(x.get("ประเภท", ""))
+        ))
         
-        prereq_id = t.get('prereq_id', None)
-        is_done = t.get('เสร็จแล้ว', False)
-        is_boss = t.get('is_boss', False)
+        prev_id = None
+        active_found = False
         
-        is_blocked = False
-        if prereq_id and not is_done:
-            if not task_status_map.get(prereq_id, True): 
+        for t in task_list:
+            safe_id = f"{chain_id}_{t['id'].replace('-', '')}"
+            # ล้างอักขระพิเศษ ป้องกันกราฟแตก
+            safe_name = re.sub(r'["\'\[\]{}()<>]', '', t['ภารกิจ'])
+            if len(safe_name) > 30: safe_name = safe_name[:30] + "..."
+            
+            is_frozen = t.get("skip_today_date") == today_str
+            is_overdue = False
+            if t.get("deadline"):
+                try: is_overdue = (datetime.strptime(t["deadline"], "%Y-%m-%d").date() < today_date)
+                except: pass
+            
+            eff_frozen = is_frozen and not is_overdue
+            
+            # การล็อกแบบออโต้ตามลำดับ
+            is_blocked = False
+            if eff_frozen:
                 is_blocked = True
+            else:
+                if not active_found:
+                    active_found = True
+                    is_blocked = False
+                else:
+                    is_blocked = True
+            
+            status_class = "boss" if t.get("is_boss") and not is_blocked else ("blocked" if is_blocked else "active")
+            prefix = "💀 " if t.get("is_boss") else ""
+            role_icon = "⚡" if t.get("battle_role") == "Vanguard" else "⚔️" if t.get("battle_role") == "Main" else "🏹"
+            
+            # วาดกล่องให้ใหญ่ขึ้น
+            label = f"{role_icon} {prefix}{safe_name}"
+            code += f'    {safe_id}["{label}"]\n'
+            code += f'    class {safe_id} {status_class};\n'
+            
+            # โยงเส้นอัตโนมัติจากอันที่แล้วมาอันปัจจุบัน
+            if prev_id:
+                code += f'    {prev_id} ==> {safe_id}\n'
+            prev_id = safe_id
+            
+        return code
 
-        status_class = "done" if is_done else ("blocked" if is_blocked else ("boss" if is_boss else "pending"))
-        prefix = "💀 " if is_boss else ("📚 " if t.get("is_study") else "🔪 ")
+    if pending_missions:
+        mermaid_code += "subgraph ⚔️ สายการรบ (Missions)\n"
+        mermaid_code += build_chain(pending_missions, "M")
+        mermaid_code += "end\n"
         
-        # เพิ่ม Node ลงไป
-        mermaid_code += f'    {safe_id}["{prefix}{safe_name}"]\n'
-        mermaid_code += f'    class {safe_id} {status_class};\n'
-        
-        # เพิ่มเส้นเชื่อม
-        if prereq_id and prereq_id in [x['id'] for x in all_tasks]:
-            safe_prereq_id = prereq_id.replace("-", "")
-            mermaid_code += f'    {safe_prereq_id} --> {safe_id}\n'
+    if pending_study:
+        mermaid_code += "subgraph 📚 สายวิชาการ (Study)\n"
+        mermaid_code += build_chain(pending_study, "S")
+        mermaid_code += "end\n"
 
-    # ใช้ Mermaid เวอร์ชันที่เสถียร
+    # HTML ฝัง Mermaid ควบคุมขนาด
     html_code = f"""
-    <div class="mermaid" style="background-color: #1a1a24; padding: 20px; border-radius: 12px; display: flex; justify-content: center; min-height: 300px;">
+    <style>
+        .mermaid svg {{ max-width: 100%; height: auto; font-family: 'Kanit', sans-serif; }}
+        .node text {{ font-size: 18px !important; font-weight: bold; }}
+        .cluster rect {{ fill: #1e1e2d !important; stroke: #3a3a4f !important; stroke-width: 2px !important; rx: 15px !important; }}
+        .cluster text {{ fill: #ffffff !important; font-size: 22px !important; font-weight: bold !important; }}
+        .edgePath path {{ stroke: #888 !important; stroke-width: 3px !important; }}
+    </style>
+    <div class="mermaid" style="background-color: #12121c; padding: 30px; border-radius: 12px; display: flex; justify-content: center; min-height: 400px; overflow-x: auto;">
         {mermaid_code}
     </div>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
     <script>
-        mermaid.initialize({{ startOnLoad: true, theme: 'dark', securityLevel: 'loose' }});
+        mermaid.initialize({{ startOnLoad: true, theme: 'dark', flowchart: {{ curve: 'basis', htmlLabels: true, nodeSpacing: 60, rankSpacing: 80 }} }});
     </script>
     """
-    components.html(html_code, height=450, scrolling=True)
+    components.html(html_code, height=550, scrolling=True)
 
-# ฟังก์ชันดึงชื่องานที่ยังไม่เสร็จเอาไว้ทำ Dropdown (Prerequisites)
-def get_pending_task_options(task_list):
-    options = {"🟢 ไม่มี (ทำได้เลย)": None}
-    for t in task_list:
-        if not t.get("เสร็จแล้ว", False):
-            prefix = "📚 " if t.get("is_study") else "🔪 "
-            options[f"{prefix}{t['ภารกิจ']}"] = t['id']
-    return options
-
+db = load_db()
 
 # ==========================================
 # 2. OVERLAY นรก (PUNISHMENT ACTIVE)
@@ -291,7 +295,6 @@ if "punishment_active" in st.session_state:
         del st.session_state.punishment_active
         st.rerun()
     st.stop() 
-
 
 # ==========================================
 # 3. ระบบล็อกอิน
@@ -353,11 +356,9 @@ with st.sidebar:
                         user_data["target_name"] = "ทำ 10 ล้านวิว YouTube Shorts"
                         user_data["target_date"] = str(today_date + timedelta(days=90))
 
-                    # ⏱️ ระบบข้ามวัน (Midnight Reset Mechanism)
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
                         user_data["order_locked"] = False
-                        
                         unpaid_bounties = [m for m in db.get("missions", {}).get(safe_email, []) if m.get("bounty") and not m.get("เสร็จแล้ว")]
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
                             penalty = 100 + (len(unpaid_bounties) * 100)
@@ -366,7 +367,6 @@ with st.sidebar:
                             user_data["streak"] = 0
                             user_data["blood_debt"] += penalty
                             user_data["failure_prob"] = min(100, user_data["failure_prob"] + 20)
-                            
                         user_data["last_login"] = today_str
                         user_data["cleared_yesterday"] = False
                         save_db(db)
@@ -407,8 +407,7 @@ with st.sidebar:
                 u_data["exp"] = 0
             needs_save = True
             
-        if needs_save:
-            save_db(db)
+        if needs_save: save_db(db)
             
         prog_val = max(0.0, min(1.0, u_data["exp"] / 100))
         st.progress(prog_val, text=f"Lv.{u_data['level']} | EXP: {u_data['exp']}/100")
@@ -419,7 +418,6 @@ with st.sidebar:
             st.session_state.current_user = None
             st.rerun()
 
-# บล็อกคนยังไม่ล็อกอิน
 if st.session_state.current_user is None:
     st.title("🧠 THE BRAIN WAR")
     st.info("👈 เลือกชื่อตัวเองแล้วกดปุ่ม 'เปิดสมอง!' เพื่อเข้าใช้งาน!")
@@ -427,7 +425,7 @@ if st.session_state.current_user is None:
 
 safe_email = st.session_state.current_user
 
-# คอนฟิกโครงสร้าง Database ให้ครบ 100% ไม่มีตกหล่น
+# คอนฟิกโครงสร้าง Database ทุกหัวข้อ
 for k in ["missions", "study_missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "finance", "iron_habits", "exams", "beat_yesterday", "limit_breaks"]:
     if safe_email not in db[k] or db[k][safe_email] is None: 
         if k == "finance": 
@@ -460,14 +458,11 @@ if overdue_count > 0:
     save_db(db)
     st.error(f"🚨 ไอ้หน้าโง่! มึงมีงานดอง (หรือหลุดเป้าหมาย) เกินกำหนด {overdue_count} งาน! แท่นพิพากษายัดหนี้เลือดมึงแล้ว รีบไปเคลียร์ซะ!")
 
-
 # ==========================================
 # 🎯 ส่วนหัว: ปลุกพลัง & ระบบนับถอยหลังอนาคต (FUTURE COUNTDOWN)
 # ==========================================
-try: 
-    t_date = datetime.strptime(user["target_date"], "%Y-%m-%d").date()
-except: 
-    t_date = today_date + timedelta(days=90)
+try: t_date = datetime.strptime(user["target_date"], "%Y-%m-%d").date()
+except: t_date = today_date + timedelta(days=90)
 days_left = (t_date - today_date).days
 
 colTop1, colTop2, colTop3 = st.columns([1, 1, 3])
@@ -487,12 +482,9 @@ with colTop3:
         if st.button("บันทึกเป้าหมายชี้ชะตา"):
             user["target_name"] = new_t_name
             user["target_date"] = str(new_t_date)
-            save_db(db)
-            st.rerun()
+            save_db(db); st.rerun()
 
-if user.get("in_cage"): 
-    st.error("🚨 **มึงอยู่ในกรง!** วิดพื้นจ่ายหนี้เลือดซะ!")
-
+if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!** วิดพื้นจ่ายหนี้เลือดซะ!")
 
 # ==========================================
 # 5. DUAL REALITY DASHBOARD
@@ -502,15 +494,14 @@ if monk_mode:
     st.markdown("## 🧘‍♂️ MONK MODE ACTIVE: สมาธิขั้นสุด!")
     colLeft, colRight = st.columns([0.01, 1]) 
 else: 
-    colLeft, colRight = st.columns([1, 2.5]) # ให้พื้นที่ฝั่งขวาเยอะๆ สำหรับวางข้อมูลงาน
+    colLeft, colRight = st.columns([1, 2.3]) # ปรับสัดส่วนให้พื้นที่ตรงกลางใหญ่ขึ้น
 
 with colLeft:
     if not monk_mode:
         with st.container(border=True):
-            st.markdown("## 🗑️ THE BITCH ZONE (ฝั่งขยะ)")
+            st.markdown("### 🗑️ THE BITCH ZONE")
             st.warning(random.choice(LAZY_VOICES))
             
-            # 📊 หลอดพลังใจ (Mental Health Bar)
             fail_prob = user.get('failure_prob', 10)
             st.markdown(f"**📉 โอกาสพ่ายแพ้ต่อสิ่งเร้า: {fail_prob}%**")
             st.progress(fail_prob / 100)
@@ -522,8 +513,7 @@ with colLeft:
                     if exc_text:
                         db["excuses"][safe_email].append({"วันที่": today_str, "ข้ออ้าง": exc_text})
                         user["failure_prob"] = min(100, user["failure_prob"] + 10)
-                        save_db(db)
-                        st.rerun()
+                        save_db(db); st.rerun()
                         
             if st.button("💀 แท่นประหาร: กูแพ้ให้สิ่งเร้าขยะ", use_container_width=True):
                 db["dopamine_fails"][safe_email].append(today_str)
@@ -531,17 +521,15 @@ with colLeft:
                 user["blood_debt"] += 50
                 user["in_cage"] = True
                 user["failure_prob"] = min(100, user["failure_prob"] + 20)
-                save_db(db)
-                st.rerun()
+                save_db(db); st.rerun()
 
-            st.markdown("### 🩸 บัญชีแค้น (THE HATER'S WALL)")
+            st.markdown("#### 🩸 บัญชีแค้น (THE HATER'S WALL)")
             with st.form("hater_form", clear_on_submit=True):
                 h_text = st.text_input("คำดูถูกที่มึงเจอ:")
                 if st.form_submit_button("ฝังความแค้น"):
                     if h_text: 
                         db["haters"][safe_email].append(h_text)
-                        save_db(db)
-                        st.rerun()
+                        save_db(db); st.rerun()
             if db["haters"][safe_email]: 
                 st.error(f"🤬 คำดูถูก: \"{random.choice(db['haters'][safe_email])}\"")
 
@@ -549,16 +537,8 @@ with colRight:
     st.markdown("## ⚔️ THE SAVAGE ZONE (นักรบฝั่งขวา)")
     st.success(random.choice(SAVAGE_VOICES))
     
-    # 📌 สร้างตัวแปรดึงงานทั้งหมด เพื่อใช้เป็นตัวเลือกให้ระบบ "โยงเส้น (Prerequisite)"
-    all_active_tasks_for_link = db["missions"][safe_email] + db["study_missions"][safe_email]
-    prereq_options = get_pending_task_options(all_active_tasks_for_link)
-    
-    # สร้าง Map ตรวจสอบสถานะงานว่าเสร็จหรือยัง เพื่อเอาไปเช็คล็อก
-    task_done_map = {t['id']: t.get('เสร็จแล้ว', False) for t in all_active_tasks_for_link}
-
-    # 🗺️ วางแผนผัง War Map ไว้ข้างบนสุดให้เห็นง่ายๆ
-    with st.expander("🗺️ กางแผนผังยุทธศาสตร์ (The War Map) - กดเพื่อดูภาพรวม!", expanded=False):
-        st.markdown("<span style='color:#2b7d2b;'>🟢 สีเขียว = เสร็จแล้ว</span> | <span style='color:#b37700;'>🟡 สีส้ม = รอทำ</span> | <span style='color:#4d4d4d;'>⚪ สีเทาเส้นประ = ติดล็อกอยู่</span> | <span style='color:#ff0000;'>🔴 กรอบแดง = BOSS</span>", unsafe_allow_html=True)
+    # 📌 เปิดแผนผังรบแบบใหญ่ยักษ์ อลังการ
+    with st.expander("🗺️ เปิดแผนผังยุทธศาสตร์ (The War Map)", expanded=True):
         render_war_map(db["missions"][safe_email], db["study_missions"][safe_email])
     
     tab_missions, tab_study, tab_habits, tab_backlog, tab_cookie, tab_academic = st.tabs([
@@ -584,12 +564,8 @@ with colRight:
         
         with st.expander("➕ เพิ่มงานด่วนวันนี้ (ไม่ผ่านสมุด)"):
             with st.form("mission_form", clear_on_submit=True):
-                c_f1, c_f2 = st.columns(2)
-                m_name = c_f1.text_input("ชื่อภารกิจ:")
-                m_type = c_f2.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
-                
-                # ระบบโยงเส้น
-                m_prereq_name = st.selectbox("🔗 ต้องรอให้งานไหนเสร็จก่อนไหม? (Prerequisite)", list(prereq_options.keys()))
+                m_name = st.text_input("ชื่อภารกิจ:")
+                m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (คอขาดบาดตาย)", "🔥 งานฉุกเฉิน / Special Event", "🟡 ปานกลาง (ต้องเสร็จ)", "🟢 ชิลๆ (ทำตอนว่าง)"])
                 
                 c_b1, c_b2 = st.columns(2)
                 m_is_boss = c_b1.checkbox("💀 ตั้งเป็น THE BOSS FIGHT (งานกลืนกบประจำวัน! หนี=หนี้เลือด x3)")
@@ -597,7 +573,7 @@ with colRight:
                 
                 m_subtasks_text = st.text_area("🔪 สับท่อนซุง (ใส่ชื่อย่อยทีละบรรทัด, ไม่บังคับ):")
                 
-                m_dl_type = st.radio("⏰ ระบบเวลา (Dual Clock):", ["ไม่กำหนด (ชิลๆ)", "🗓️ Deadline ทางการ", "🎯 วันเป้าหมาย (กำหนดเอง)"], horizontal=True)
+                m_dl_type = st.radio("⏰ ระบบเวลา:", ["ไม่กำหนด (ชิลๆ)", "🗓️ Deadline ทางการ", "🎯 วันเป้าหมาย (กำหนดเอง)"], horizontal=True)
                 m_deadline = st.date_input("เลือกวันที่:")
                 
                 if st.form_submit_button("เพิ่มภารกิจ"):
@@ -608,7 +584,6 @@ with colRight:
                             st.error("🤡 ตะบัดสัตย์! โควตางานเดี่ยวเต็มแล้ว ระบบบล็อกไม่ให้เพิ่ม บังคับให้สับข้อย่อยท่อนซุงซะ!")
                         else:
                             final_dl = str(m_deadline) if m_dl_type != "ไม่กำหนด (ชิลๆ)" else ""
-                            prereq_id = prereq_options[m_prereq_name]
                             
                             db["missions"][safe_email].append({
                                 "id": str(uuid.uuid4()), 
@@ -625,8 +600,7 @@ with colRight:
                                 "เสร็จแล้ว": False, 
                                 "รอตรวจ": False,
                                 "deadline": final_dl,
-                                "deadline_type": m_dl_type,
-                                "prereq_id": prereq_id
+                                "deadline_type": m_dl_type
                             })
                             save_db(db)
                             st.rerun()
@@ -634,7 +608,7 @@ with colRight:
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active_missions if m.get("รอตรวจ", False)]
         
-        # 🧠 AI จัดเรียงรบอัจฉริยะ (Role -> Deadline Proximity -> Priority)
+        # จัดเรียงลำดับการรบ
         todo_missions.sort(key=lambda x: (
             get_role_score(x.get("battle_role", "Main")), 
             0 if x.get("is_boss") else 1, 
@@ -659,14 +633,11 @@ with colRight:
                                                    key=f"setup_role_{m['id']}")
                         
                         if "ทัพหน้า" in role_choice:
-                            updated_orders[m["id"]] = 1
-                            updated_roles[m["id"]] = "Vanguard"
+                            updated_orders[m["id"]] = 1; updated_roles[m["id"]] = "Vanguard"
                         elif "ทัพหลวง" in role_choice:
-                            updated_orders[m["id"]] = 2
-                            updated_roles[m["id"]] = "Main"
+                            updated_orders[m["id"]] = 2; updated_roles[m["id"]] = "Main"
                         else:
-                            updated_orders[m["id"]] = 3
-                            updated_roles[m["id"]] = "Support"
+                            updated_orders[m["id"]] = 3; updated_roles[m["id"]] = "Support"
                     
                     if st.form_submit_button("🔒 ล็อกค่ายกลกระบวนทัพ! (ห้ามตระบัดสัตย์)"):
                         for m in db["missions"][safe_email]:
@@ -678,18 +649,32 @@ with colRight:
                         st.success("⚔️ จัดทัพเสร็จสิ้น! บัญญัติชะตากรรมเรียบร้อย!")
                         st.rerun()
 
+        # 🔥 วิเคราะห์การล็อกลำดับแบบ ออโต้ (ตัวแรกรอด ตัวถัดมาโดนล็อก)
+        active_m_found = False
+        for m in todo_missions:
+            is_frozen = m.get("skip_today_date") == today_str
+            is_overdue = False
+            if m.get("deadline"):
+                try: is_overdue = (datetime.strptime(m["deadline"], "%Y-%m-%d").date() < today_date)
+                except: pass
+            
+            eff_frozen = is_frozen and not is_overdue
+            if eff_frozen:
+                m['_is_blocked'] = True
+            else:
+                if not active_m_found:
+                    m['_is_blocked'] = False
+                    active_m_found = True
+                else:
+                    m['_is_blocked'] = True
+
         if todo_missions:
             for m in todo_missions:
                 with st.container(border=True):
                     c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6]) 
                     
-                    # 🔒 ตรวจสอบสถานะการล็อก (Dependency Check)
-                    prereq_id = m.get("prereq_id", None)
-                    is_blocked = False
-                    if prereq_id is not None:
-                        if not task_done_map.get(prereq_id, True):
-                            is_blocked = True
-
+                    is_blocked = m.get('_is_blocked', False)
+                    
                     task_mode_badge = "🔪 **[งานใหญ่]**" if m.get("subtasks") else "⚡ **[ม้วนเดียวจบ]**"
                     is_bounty = " ⚔️[เดิมพัน]" if m.get("bounty") else ""
                     is_boss = " 💀 **[BOSS]**" if m.get("is_boss") else ""
@@ -705,32 +690,26 @@ with colRight:
                         try:
                             dl_date = datetime.strptime(dl_str, "%Y-%m-%d").date()
                             days_left_task = (dl_date - today_date).days
-                            if days_left_task > 0: 
-                                deadline_badge = f" {dl_icon} (เหลือ {days_left_task} วัน)"
-                            elif days_left_task == 0: 
-                                deadline_badge = f" 🚨 **(ต้องเสร็จวันนี้!)**"
+                            if days_left_task > 0: deadline_badge = f" {dl_icon} (เหลือ {days_left_task} วัน)"
+                            elif days_left_task == 0: deadline_badge = f" 🚨 **(ต้องเสร็จวันนี้!)**"
                             else: 
                                 deadline_badge = f" 💀 **(เลยกำหนดมาแล้ว {-days_left_task} วัน)**"
                                 is_overdue = True 
-                        except: 
-                            pass
+                        except: pass
 
                     is_frozen = m.get("skip_today_date") == today_str
                     was_frozen_yesterday = m.get("skip_today_date") != "" and not is_frozen
                     if was_frozen_yesterday:
-                        m["skip_today_date"] = "" # เคลียร์ขยะเก่า
-                        save_db(db)
+                        m["skip_today_date"] = ""; save_db(db)
                         
                     frozen_badge = ""
                     if is_frozen:
-                        if is_overdue: 
-                            frozen_badge = " ❄️🚨 [เกราะแตก! แช่แข็งไร้ผลเพราะเลยกำหนดแล้ว]"
-                        else: 
-                            frozen_badge = " ❄️ [เปิดเกราะแช่แข็งหนีภัยฉุกเฉิน]"
+                        if is_overdue: frozen_badge = " ❄️🚨 [เกราะแตก!]"
+                        else: frozen_badge = " ❄️ [แช่แข็ง]"
 
                     if is_blocked:
-                        c1.markdown(f"🔒 **<span style='color:#888;'>[ติดล็อกรอคิว] {m['ภารกิจ']}{is_boss}</span>**", unsafe_allow_html=True)
-                        c1.caption(f"⚠️ *ต้องรองานต้นทางเสร็จก่อน ถึงจะปลดล็อกได้!*")
+                        c1.markdown(f"🔒 **<span style='color:#888;'>[ติดล็อกรอคิวทัพหน้า] {m['ภารกิจ']}{is_boss}</span>**", unsafe_allow_html=True)
+                        c1.caption(f"⚠️ *ต้องทำภารกิจด้านบนให้เสร็จก่อน ถึงจะปลดล็อกได้!*")
                     else:
                         c1.write(f"**{m.get('ประเภท','')}** | {task_mode_badge}{is_boss}{is_bounty} {m['ภารกิจ']}{order_badge}{deadline_badge}{frozen_badge}")
                     
@@ -751,21 +730,10 @@ with colRight:
                             is_locked = is_done and done_date != today_str
                             
                             label = f"{stask['name']}"
-                            if is_locked and done_date:
-                                try:
-                                    d_dt = datetime.strptime(done_date, "%Y-%m-%d").date()
-                                    diff_days = (today_date - d_dt).days
-                                    if diff_days == 1: 
-                                        label += " 🔒 (ผนึกเมื่อวานนี้)"
-                                    elif diff_days > 1: 
-                                        label += f" 🔒 (ผนึกเมื่อ {diff_days} วันที่แล้ว)"
-                                    else: 
-                                        label += f" 🔒 (ผนึกแล้ว)"
-                                except: 
-                                    label += f" 🔒 (ผนึกเมื่อ: {done_date})"
+                            if is_locked and done_date: label += f" 🔒 (ผนึกแล้ว)"
                                 
                             can_interact = not is_locked and (not is_frozen or is_overdue) and not is_blocked
-                            checked = st.checkbox(label, value=is_done, disabled=not can_interact, key=f"stask_{m['id']}_{i}")
+                            checked = st.checkbox(label, value=is_done, disabled=not can_interact, key=f"st_{m['id']}_{i}")
                             
                             if can_interact:
                                 if checked != is_done:
@@ -782,42 +750,34 @@ with colRight:
 
                         if not is_blocked:
                             if is_frozen:
-                                if is_overdue: 
-                                    st.markdown("🔴 *⚠️ [เกราะแตก! แช่แข็งไร้ผลเพราะงานเลยกำหนดเวลา มึงโดนพิพากษาแน่!]*")
-                                else: 
-                                    st.markdown("❄️ *[เปิดเกราะแช่แข็ง รอดพ้นศาลเตี้ยคืนนี้]*")
-                            elif has_today_progress: 
-                                st.markdown("🟢 *[รอดตาย! วันนี้มึงสับงานย่อยแล้ว]*")
-                            else: 
-                                st.markdown("🔴 *⚠️ [วิกฤต! วันนี้ยังไม่ขยับเลย ระวังแท่นพิพากษา!]*")
+                                if is_overdue: st.markdown("🔴 *⚠️ [เกราะแตก! แช่แข็งไร้ผลเพราะงานเลยกำหนดเวลา]*")
+                                else: st.markdown("❄️ *[เปิดเกราะแช่แข็ง รอดพ้นศาลเตี้ยคืนนี้]*")
+                            elif has_today_progress: st.markdown("🟢 *[รอดตาย! วันนี้มึงสับงานย่อยแล้ว]*")
+                            else: st.markdown("🔴 *⚠️ [วิกฤต! วันนี้ยังไม่ขยับเลย ระวังแท่นพิพากษา!]*")
                     else:
                         if not is_blocked:
                             if is_frozen:
-                                if is_overdue: 
-                                    st.markdown("🔴 *⚠️ [เกราะแตก! แช่แข็งไร้ผลเพราะเลยกำหนดเวลา]*")
-                                else: 
-                                    st.markdown("❄️ *[เปิดเกราะแช่แข็ง รอดพ้นศาลเตี้ยคืนนี้]*")
+                                if is_overdue: st.markdown("🔴 *⚠️ [เกราะแตก!]*")
+                                else: st.markdown("❄️ *[เปิดเกราะแช่แข็ง]*")
                             else: 
-                                st.caption("⚡ *งานนี้ไม่มีงานย่อย ต้องกดปุ่ม [✅ สำเร็จ] ม้วนเดียวให้จบภายในวันนี้!*")
+                                st.caption("⚡ *ม้วนเดียวให้จบภายในวันนี้!*")
                         all_done = True 
 
                     if not is_blocked:
                         if is_frozen:
-                            if c4.button("🔥 ปลดล็อก", key=f"unfrz_m_{m['id']}", use_container_width=True):
+                            if c4.button("🔥 ปลดล็อก", key=f"unfrz_{m['id']}", use_container_width=True):
                                 m["skip_today_date"] = ""
-                                save_db(db)
-                                st.rerun()
+                                save_db(db); st.rerun()
                         else:
-                            if c4.button("❄️ เลื่อนฉุกเฉิน", key=f"frz_m_{m['id']}", use_container_width=True, help="แช่แข็งงานนี้ชั่วคราวเนื่องจากติดภารกิจโครงงานฉุกเฉิน!"):
+                            if c4.button("❄️ เลื่อนฉุกเฉิน", key=f"frz_{m['id']}", use_container_width=True):
                                 m["skip_today_date"] = today_str
-                                save_db(db)
-                                st.rerun()
+                                save_db(db); st.rerun()
 
                     if is_blocked:
-                        c2.error("🔒 ติดล็อก")
+                        c2.error("🔒 รอคิวทัพหน้า")
                         c3.empty()
                     elif all_done and (not is_frozen or is_overdue):
-                        if c2.button("✅ สำเร็จ", key=f"btn_succ_m_{m['id']}"):
+                        if c2.button("✅ สำเร็จ", key=f"m_{m['id']}"):
                             m["เสร็จแล้ว"] = True
                             exp_gain, fail_reduce = calculate_task_rewards(m, current_streak)
                             
@@ -827,24 +787,18 @@ with colRight:
                                 
                             user["exp"] += exp_gain
                             user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
-                            save_db(db)
-                            st.balloons()
-                            st.rerun()
+                            save_db(db); st.balloons(); st.rerun()
                             
-                        if c3.button("📤 ส่ง/รอตรวจ", key=f"btn_pend_m_{m['id']}"):
+                        if c3.button("📤 ส่ง/รอตรวจ", key=f"pend_{m['id']}"):
                             m["รอตรวจ"] = True
-                            save_db(db)
-                            st.rerun()
+                            save_db(db); st.rerun()
                     else:
-                        if is_frozen and not is_overdue: 
-                            c2.caption("❄️ แช่แข็งชั่วคราว")
-                        else: 
-                            c2.caption("🔒 งานย่อยยังคาอยู่")
+                        if is_frozen and not is_overdue: c2.caption("❄️ แช่แข็งชั่วคราว")
+                        else: c2.caption("🔒 งานย่อยยังคาอยู่")
                         
                     if c5.button("🗑️", key=f"del_m_{m['id']}"):
                         db["missions"][safe_email].remove(m)
-                        save_db(db)
-                        st.rerun()
+                        save_db(db); st.rerun()
         else: 
             st.success("✅ วันนี้เคลียร์ภารกิจหลักหมดแล้ว เยี่ยมมากไอ้เสือ!")
 
@@ -855,7 +809,7 @@ with colRight:
                 c1, c2, c3 = st.columns([5, 2, 2])
                 is_boss = "💀 " if m.get("is_boss") else ""
                 c1.caption(f"⏳ {is_boss}{m['ภารกิจ']}")
-                if c2.button("✅ ตรวจผ่าน (รับ EXP)", key=f"appr_m_{m['id']}"):
+                if c2.button("✅ ตรวจผ่าน (รับ EXP)", key=f"appr_{m['id']}"):
                     m["เสร็จแล้ว"] = True
                     m["รอตรวจ"] = False
                     
@@ -863,16 +817,13 @@ with colRight:
                     user["exp"] += exp_gain
                     user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
                     
-                    save_db(db)
-                    st.balloons()
-                    st.rerun()
-                if c3.button("⏪ ดึงกลับมาทำ", key=f"rev_m_{m['id']}"):
+                    save_db(db); st.balloons(); st.rerun()
+                if c3.button("⏪ ดึงกลับมาทำ", key=f"revert_{m['id']}"):
                     m["รอตรวจ"] = False
-                    save_db(db)
-                    st.rerun()
+                    save_db(db); st.rerun()
 
     # ----------------------------------------------------
-    # 📖 TAB 2: ภารกิจการเรียนและการทบทวน (Study Missions Module)
+    # 📖 TAB 2: ภารกิจการเรียนและการทบทวน
     # ----------------------------------------------------
     with tab_study:
         st.markdown("### 📚 The Academic Siege (กระดานคุมการเรียนและการทบทวน)")
@@ -881,61 +832,43 @@ with colRight:
         active_single_study = [s for s in raw_active_study if not s.get("รอตรวจ", False) and not s.get("subtasks")]
         
         if len(active_single_study) >= 3:
-            st.error("🚨 **กฎเหล็กวิชาการ:** โควตาวิชาทบทวนเดี่ยวเต็ม 3 Slot แล้ว! รีบเคลียร์วิชาเก่า หรือเพิ่มเนื้อหาเป็นแบบสับข้อย่อยท่อนซุงเท่านั้น!")
+            st.error("🚨 **กฎเหล็กวิชาการ:** โควตาวิชาทบทวนเดี่ยวเต็ม 3 Slot แล้ว!")
             
         with st.expander("➕ เพิ่มวิชา/เนื้อหาที่ต้องทบทวน"):
             with st.form("study_form", clear_on_submit=True):
-                c_s1, c_s2 = st.columns(2)
-                s_name = c_s1.text_input("วิชา / หัวข้อที่ต้องติวทบทวน:")
-                s_type = c_s2.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (สอบพรุ่งนี้/มะรืน)", "🔥 ติวเข้ม Special Event", "🟡 ปานกลาง (ทบทวนเรื่อยๆ)", "🟢 ชิลๆ (อ่านฆ่าเวลา)"])
-                
-                s_prereq_name = st.selectbox("🔗 ต้องรอให้อ่านหรือทำงานไหนเสร็จก่อนไหม? (Prerequisite)", list(prereq_options.keys()))
+                s_name = st.text_input("วิชา / หัวข้อ:")
+                s_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด (สอบพรุ่งนี้/มะรืน)", "🔥 ติวเข้ม Special Event", "🟡 ปานกลาง (ทบทวนเรื่อยๆ)", "🟢 ชิลๆ (อ่านฆ่าเวลา)"])
                 
                 c_sb1, c_sb2 = st.columns(2)
-                s_is_boss = c_sb1.checkbox("💀 ตั้งเป็นบทโหดไฟลุก (BOSS FIGHT ของการเรียน)")
-                s_bounty = c_sb2.checkbox("⚔️ เดิมพันวิชาการ! (ถ้าพลาดโดนทำโทษหนักหนี้เลือดบวก 100 ที)")
+                s_is_boss = c_sb1.checkbox("💀 ตั้งเป็นบทโหดไฟลุก (BOSS FIGHT)")
+                s_bounty = c_sb2.checkbox("⚔️ เดิมพันวิชาการ!")
                 
                 s_subtasks_text = st.text_area("🔪 สับหัวข้อย่อย / บทเรียนที่ต้องเก็บให้ครบ (ใส่ทีละบรรทัด):")
                 
-                s_dl_type = st.radio("⏰ ระบบเวลา (Dual Clock):", ["ไม่กำหนด (ชิลๆ)", "🗓️ Deadline ทางการ", "🎯 วันเป้าหมาย (กำหนดเอง)"], horizontal=True)
+                s_dl_type = st.radio("⏰ ระบบเวลา:", ["ไม่กำหนด", "🗓️ Deadline ทางการ", "🎯 วันเป้าหมาย"], horizontal=True)
                 s_deadline = st.date_input("เลือกวันที่:")
                 
                 if st.form_submit_button("บรรจุเข้าหลักสูตร"):
                     if s_name:
-                        subtasks = [{"name": stk.strip(), "done": False, "done_date": ""} for stk in s_subtasks_text.split('\n') if stk.strip()]
+                        subtasks = [{"name": s.strip(), "done": False, "done_date": ""} for s in s_subtasks_text.split('\n') if s.strip()]
                         
                         if not subtasks and len(active_single_study) >= 3:
-                            st.error("🤡 ตะบัดสัตย์! โควตาวิชาเดี่ยวเต็ม 3 แล้ว ระบบบล็อก! จงแอดเป็นบทย่อยท่อนซุงซะ!")
+                            st.error("🤡 ระบบบล็อก! จงแอดเป็นบทย่อยท่อนซุงซะ!")
                         else:
-                            final_dl = str(s_deadline) if s_dl_type != "ไม่กำหนด (ชิลๆ)" else ""
-                            prereq_id = prereq_options[s_prereq_name]
+                            final_dl = str(s_deadline) if s_dl_type != "ไม่กำหนด" else ""
                             
                             db["study_missions"][safe_email].append({
-                                "id": str(uuid.uuid4()), 
-                                "วันที่": today_str, 
-                                "ภารกิจ": s_name, 
-                                "ประเภท": s_type, 
-                                "bounty": s_bounty, 
-                                "is_boss": s_is_boss,
-                                "custom_order": 99, 
-                                "battle_role": "Main",
-                                "is_queued": False, 
-                                "skip_today_date": "",
-                                "subtasks": subtasks, 
-                                "เสร็จแล้ว": False, 
-                                "รอตรวจ": False,
-                                "deadline": final_dl,
-                                "deadline_type": s_dl_type,
-                                "is_study": True,
-                                "prereq_id": prereq_id
+                                "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": s_name, 
+                                "ประเภท": s_type, "bounty": s_bounty, "is_boss": s_is_boss,
+                                "custom_order": 99, "battle_role": "Main", "is_queued": False, 
+                                "skip_today_date": "", "subtasks": subtasks, "เสร็จแล้ว": False, 
+                                "รอตรวจ": False, "deadline": final_dl, "deadline_type": s_dl_type, "is_study": True
                             })
-                            save_db(db)
-                            st.rerun()
+                            save_db(db); st.rerun()
                             
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
         pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
         
-        # 🧠 AI จัดเรียงรบอัจฉริยะ สำหรับฝั่งการเรียนด้วย
         todo_study.sort(key=lambda x: (
             get_role_score(x.get("battle_role", "Main")), 
             0 if x.get("is_boss") else 1, 
@@ -945,28 +878,21 @@ with colRight:
         
         study_needs_queueing = [s for s in todo_study if not s.get("is_queued", False)]
         if study_needs_queueing:
-            with st.expander("⚔️📖 บัญชาการค่ายกลกระบวนทัพการเรียน (Academic Strategic Formation)", expanded=True):
+            with st.expander("⚔️📖 บัญชาการค่ายกลกระบวนทัพการเรียน", expanded=True):
                 with st.form("lock_study_order_form"):
-                    st.write("เลือกตำแหน่งกระบวนทัพศึกษาให้หัวข้อวิชาใหม่ (ทัพหน้าศึกษาได้โบนัส +20 EXP ยามสำเร็จ)")
                     updated_s_orders = {}
                     updated_s_roles = {}
                     for s in study_needs_queueing:
                         is_boss_str = "💀 [BOSS] " if s.get("is_boss") else ""
                         role_choice = st.selectbox(f"วางตำแหน่งวิชา: {is_boss_str}{s['ภารกิจ']}", 
-                                                   ["⚡ ทัพหน้า (Vanguard - ชิงเปิดอ่านรับโบนัส +20 EXP)", 
-                                                    "⚔️ ทัพหลวง (Main Force - แกนกลางการสอบ)", 
-                                                    "🏹 ทัพหนุน (Support - อ่านเสริมทบทวน)"], 
+                                                   ["⚡ ทัพหน้า (Vanguard - โบนัส +20 EXP)", "⚔️ ทัพหลวง (Main Force)", "🏹 ทัพหนุน (Support)"], 
                                                    key=f"setup_s_role_{s['id']}")
-                        
                         if "ทัพหน้า" in role_choice:
-                            updated_s_orders[s["id"]] = 1
-                            updated_s_roles[s["id"]] = "Vanguard"
+                            updated_s_orders[s["id"]] = 1; updated_s_roles[s["id"]] = "Vanguard"
                         elif "ทัพหลวง" in role_choice:
-                            updated_s_orders[s["id"]] = 2
-                            updated_s_roles[s["id"]] = "Main"
+                            updated_s_orders[s["id"]] = 2; updated_s_roles[s["id"]] = "Main"
                         else:
-                            updated_s_orders[s["id"]] = 3
-                            updated_s_roles[s["id"]] = "Support"
+                            updated_s_orders[s["id"]] = 3; updated_s_roles[s["id"]] = "Support"
                             
                     if st.form_submit_button("🔒 ล็อกค่ายกลการศึกษา!"):
                         for s in db["study_missions"][safe_email]:
@@ -974,62 +900,65 @@ with colRight:
                                 s["custom_order"] = updated_s_orders[s["id"]]
                                 s["battle_role"] = updated_s_roles[s["id"]]
                                 s["is_queued"] = True
-                        save_db(db)
-                        st.success("📚 ตรึงค่ายกลการเรียนเรียบร้อย!")
-                        st.rerun()
+                        save_db(db); st.rerun()
+
+        # 🔥 วิเคราะห์การล็อกลำดับออโต้ฝั่งการเรียน
+        active_s_found = False
+        for s in todo_study:
+            is_frozen = s.get("skip_today_date") == today_str
+            is_overdue = False
+            if s.get("deadline"):
+                try: is_overdue = (datetime.strptime(s["deadline"], "%Y-%m-%d").date() < today_date)
+                except: pass
+            
+            eff_frozen = is_frozen and not is_overdue
+            if eff_frozen:
+                s['_is_blocked'] = True
+            else:
+                if not active_s_found:
+                    s['_is_blocked'] = False
+                    active_s_found = True
+                else:
+                    s['_is_blocked'] = True
 
         if todo_study:
             for s in todo_study:
                 with st.container(border=True):
                     c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6])
                     
-                    prereq_id = s.get("prereq_id", None)
-                    is_blocked = False
-                    if prereq_id is not None:
-                        if not task_done_map.get(prereq_id, True):
-                            is_blocked = True
+                    is_blocked = s.get('_is_blocked', False)
                     
-                    task_mode_badge = "📖 **[ติวโครงการใหญ่]**" if s.get("subtasks") else "⚡ **[ทบทวนรอบเดียวจบ]**"
-                    is_bounty = " ⚔️[เดิมพันศึกษา]" if s.get("bounty") else ""
+                    task_mode_badge = "📖 **[โครงการใหญ่]**" if s.get("subtasks") else "⚡ **[ทบทวนรอบเดียว]**"
+                    is_bounty = " ⚔️" if s.get("bounty") else ""
                     is_boss = " 💀 **[BOSS]**" if s.get("is_boss") else ""
                     order_badge = f" | {ROLE_MAP.get(s.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
                     
                     is_overdue = False
                     deadline_badge = ""
                     dl_str = s.get("deadline", "")
-                    dl_type = s.get("deadline_type", "🗓️ Deadline ทางการ")
+                    dl_type = s.get("deadline_type", "🗓️")
                     dl_icon = "🎯" if "เป้าหมาย" in dl_type else "⏳"
                     
                     if dl_str and dl_str != "":
                         try:
                             dl_date = datetime.strptime(dl_str, "%Y-%m-%d").date()
                             days_left_task = (dl_date - today_date).days
-                            if days_left_task > 0: 
-                                deadline_badge = f" {dl_icon} (เหลือเวลาอีก {days_left_task} วัน)"
-                            elif days_left_task == 0: 
-                                deadline_badge = f" 🚨 **(ถึงกำหนดวันนี้!)**"
+                            if days_left_task > 0: deadline_badge = f" {dl_icon} (เหลือ {days_left_task} วัน)"
+                            elif days_left_task == 0: deadline_badge = f" 🚨 **(ถึงกำหนดวันนี้!)**"
                             else: 
-                                deadline_badge = f" 💀 **(เลยกำหนดมาแล้ว {-days_left_task} วัน)**"
+                                deadline_badge = f" 💀 **(เลยมา {-days_left_task} วัน)**"
                                 is_overdue = True
-                        except: 
-                            pass
+                        except: pass
 
                     is_frozen = s.get("skip_today_date") == today_str
                     was_frozen_yesterday = s.get("skip_today_date") != "" and not is_frozen
                     if was_frozen_yesterday:
-                        s["skip_today_date"] = ""
-                        save_db(db)
+                        s["skip_today_date"] = ""; save_db(db)
                         
-                    frozen_badge = ""
-                    if is_frozen:
-                        if is_overdue: 
-                            frozen_badge = " ❄️🚨 [ค่ายกลแตก! เลยกำหนดเวลา]"
-                        else: 
-                            frozen_badge = " ❄️ [แช่แข็งวิชานี้ชั่วคราว]"
+                    frozen_badge = " ❄️🚨 [ค่ายกลแตก!]" if (is_frozen and is_overdue) else " ❄️ [แช่แข็ง]" if is_frozen else ""
 
                     if is_blocked:
-                        c1.markdown(f"🔒 **<span style='color:#888;'>[ติดล็อกรอคิว] {s['ภารกิจ']}{is_boss}</span>**", unsafe_allow_html=True)
-                        c1.caption(f"⚠️ *ต้องรองานหรือวิชาต้นทางเสร็จก่อน ถึงจะปลดล็อกอ่านบทนี้ได้!*")
+                        c1.markdown(f"🔒 **<span style='color:#888;'>[รอคิวอ่านวิชาด้านบน] {s['ภารกิจ']}{is_boss}</span>**", unsafe_allow_html=True)
                     else:
                         c1.write(f"**{s.get('ประเภท','')}** | {task_mode_badge}{is_boss}{is_bounty} {s['ภารกิจ']}{order_badge}{deadline_badge}{frozen_badge}")
                     
@@ -1040,31 +969,17 @@ with colRight:
                         total_subs = len(s["subtasks"])
                         done_subs = len([stk for stk in s["subtasks"] if stk.get("done")])
                         progress_pct = done_subs / total_subs if total_subs > 0 else 0
-                        st.progress(progress_pct, text=f"📈 ความคืบหน้าการอ่าน: {done_subs} / {total_subs} บท ({int(progress_pct*100)}%)")
+                        st.progress(progress_pct, text=f"📈 ความคืบหน้า: {done_subs} / {total_subs} ({int(progress_pct*100)}%)")
 
-                        st.caption("🔒 *บทเรียนย่อยที่อ่านแล้วจะถูกผนึก! ข้ามวันใหม่มึงต้องเปิดสับหน้าถัดไปห้ามอ่านซ้ำรอยเดิม!*")
                         for i, stask in enumerate(s["subtasks"]):
                             is_done = stask.get("done", False)
                             done_date = stask.get("done_date", "")
-                            
                             is_locked = is_done and done_date != today_str
                             
-                            label = f"{stask['name']}"
-                            if is_locked and done_date:
-                                try:
-                                    d_dt = datetime.strptime(done_date, "%Y-%m-%d").date()
-                                    diff_days = (today_date - d_dt).days
-                                    if diff_days == 1: 
-                                        label += " 🔒 (ติวแล้วเมื่อวานนี้)"
-                                    elif diff_days > 1: 
-                                        label += f" 🔒 (ติวเสร็จเมื่อ {diff_days} วันก่อน)"
-                                    else: 
-                                        label += f" 🔒 (ติวแล้ว)"
-                                except: 
-                                    label += f" 🔒 (ติวแล้วเมื่อ: {done_date})"
+                            label = f"{stask['name']} 🔒" if is_locked else f"{stask['name']}"
                                 
                             can_interact = not is_locked and (not is_frozen or is_overdue) and not is_blocked
-                            checked = st.checkbox(label, value=is_done, disabled=not can_interact, key=f"stask_study_{s['id']}_{i}")
+                            checked = st.checkbox(label, value=is_done, disabled=not can_interact, key=f"st_stud_{s['id']}_{i}")
                             
                             if can_interact:
                                 if checked != is_done:
@@ -1081,74 +996,50 @@ with colRight:
 
                         if not is_blocked:
                             if is_frozen:
-                                if is_overdue: 
-                                    st.markdown("🔴 *⚠️ [ค่ายกลแตก! แช่แข็งไร้ผลเพราะวิชาเลยกำหนดเวลา มึงโดนพิพากษาแน่!]*")
-                                else: 
-                                    st.markdown("❄️ *[วิชานี้โดนแช่แข็งคุมทัพชั่วคราว รอดพ้นศาลเตี้ยคืนนี้]*")
-                            elif has_today_progress: 
-                                st.markdown("🟢 *[รอดตาย! วันนี้มึงสับเนื้อหาติววิชานี้แล้ว]*")
-                            else: 
-                                st.markdown("🔴 *⚠️ [วิกฤตความรู้! วันนี้ยังไม่ทบทวนวิชานี้เลย ระวังศาลเตี้ยลงทัณฑ์!]*")
+                                if is_overdue: st.markdown("🔴 *⚠️ [ค่ายกลแตก!]*")
+                                else: st.markdown("❄️ *[แช่แข็งวิชานี้ไว้]*")
+                            elif has_today_progress: st.markdown("🟢 *[รอดตาย! วันนี้มึงสับเนื้อหาแล้ว]*")
+                            else: st.markdown("🔴 *⚠️ [วิกฤตความรู้! วันนี้ยังไม่ทบทวนเลย!]*")
                     else:
                         if not is_blocked:
                             if is_frozen:
-                                if is_overdue: 
-                                    st.markdown("🔴 *⚠️ [ค่ายกลแตก! เลยกำหนดเวลา]*")
-                                else: 
-                                    st.markdown("❄️ *[แช่แข็งวิชานี้ไว้ชั่วคราว]*")
-                            else: 
-                                st.caption("⚡ *วิชานี้ไม่มีข้อย่อย อ่านครบจบเล่มแล้วกดปุ่ม [✅ ติวสำเร็จ] ม้วนเดียวจบซะ!*")
+                                if is_overdue: st.markdown("🔴 *⚠️ [ค่ายกลแตก!]*")
+                                else: st.markdown("❄️ *[แช่แข็งวิชานี้ไว้]*")
                         all_done = True
 
                     if not is_blocked:
                         if is_frozen:
                             if c4.button("🔥 ปลดแช่แข็ง", key=f"unfrz_stud_{s['id']}", use_container_width=True):
-                                s["skip_today_date"] = ""
-                                save_db(db)
-                                st.rerun()
+                                s["skip_today_date"] = ""; save_db(db); st.rerun()
                         else:
-                            if c4.button("❄️ เลื่อนวิชานี้", key=f"frz_stud_{s['id']}", use_container_width=True, help="แช่แข็งเนื้อหานี้ชั่วคราวเนื่องจากติดเหตุฉุกเฉิน!"):
-                                s["skip_today_date"] = today_str
-                                save_db(db)
-                                st.rerun()
+                            if c4.button("❄️ เลื่อนวิชานี้", key=f"frz_stud_{s['id']}", use_container_width=True):
+                                s["skip_today_date"] = today_str; save_db(db); st.rerun()
 
                     if is_blocked:
-                        c2.error("🔒 ติดล็อก")
+                        c2.error("🔒 รอวิชาบน")
                         c3.empty()
                     elif all_done and (not is_frozen or is_overdue):
-                        if c2.button("✅ ติวสำเร็จ", key=f"btn_succ_s_{s['id']}", use_container_width=True):
+                        if c2.button("✅ ติวสำเร็จ", key=f"stud_win_{s['id']}", use_container_width=True):
                             s["เสร็จแล้ว"] = True
                             exp_gain, fail_reduce = calculate_task_rewards(s, current_streak)
-                            
-                            if s.get("battle_role") == "Vanguard":
-                                exp_gain += 20
-                                st.toast("⚡ FIRST STRIKE! ชิงลงมืออ่านทัพหน้าสำเร็จ รับโบนัสความไวแสง +20 EXP!", icon="⚡")
-                                
+                            if s.get("battle_role") == "Vanguard": exp_gain += 20
                             user["exp"] += exp_gain
                             user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
-                            save_db(db)
-                            st.balloons()
-                            st.rerun()
-                        if c3.button("📤 ส่งรออนุมัติ", key=f"btn_pend_s_{s['id']}", use_container_width=True):
-                            s["รอตรวจ"] = True
-                            save_db(db)
-                            st.rerun()
+                            save_db(db); st.balloons(); st.rerun()
+                        if c3.button("📤 ส่งรออนุมัติ", key=f"pend_stud_{s['id']}", use_container_width=True):
+                            s["รอตรวจ"] = True; save_db(db); st.rerun()
                     else:
-                        if is_frozen and not is_overdue: 
-                            c2.caption("❄️ แช่แข็งชั่วคราว")
-                        else: 
-                            c2.caption("🔒 เหลือบทเรียนคาอยู่")
+                        if is_frozen and not is_overdue: c2.caption("❄️ แช่แข็ง")
+                        else: c2.caption("🔒 เหลือบทเรียนคาอยู่")
                             
                     if c5.button("🗑️", key=f"del_stud_{s['id']}"):
-                        db["study_missions"][safe_email].remove(s)
-                        save_db(db)
-                        st.rerun()
+                        db["study_missions"][safe_email].remove(s); save_db(db); st.rerun()
         else: 
             st.success("📚 ติวทบทวนเนื้อหาครบหมดแล้ว ร่างสมองมึงแกร่งกล้าพร้อมรบทุกห้องสอบ!")
 
         if pending_study:
             st.divider()
-            st.markdown("### ⏳ วิชาที่รออนุมัติความรู้ผ่านเกณฑ์")
+            st.markdown("### ⏳ วิชาที่รออนุมัติความรู้")
             for s in pending_study:
                 c1, c2, c3 = st.columns([5, 2, 2])
                 c1.caption(f"⏳ [ภารกิจเรียน] {s['ภารกิจ']}")
@@ -1158,13 +1049,9 @@ with colRight:
                     exp_gain, fail_reduce = calculate_task_rewards(s, current_streak)
                     user["exp"] += exp_gain
                     user["failure_prob"] = max(0, user["failure_prob"] - fail_reduce)
-                    save_db(db)
-                    st.balloons()
-                    st.rerun()
-                if c3.button("⏪ ดึงกลับมาอ่านใหม่", key=f"rev_stud_{s['id']}"):
-                    s["รอตรวจ"] = False
-                    save_db(db)
-                    st.rerun()
+                    save_db(db); st.balloons(); st.rerun()
+                if c3.button("⏪ ดึงกลับมาอ่านใหม่", key=f"revert_stud_{s['id']}"):
+                    s["รอตรวจ"] = False; save_db(db); st.rerun()
 
     # ----------------------------------------------------
     # TAB 3: วินัยเหล็ก (THE IRON HABITS) 
@@ -1177,8 +1064,7 @@ with colRight:
             if st.form_submit_button("เพิ่มวินัยเหล็ก"):
                 if h_name:
                     db["iron_habits"][safe_email].append({"id": str(uuid.uuid4()), "name": h_name, "last_done_date": ""})
-                    save_db(db)
-                    st.rerun()
+                    save_db(db); st.rerun()
                     
         if db["iron_habits"][safe_email]:
             for h in db["iron_habits"][safe_email]:
@@ -1189,28 +1075,13 @@ with colRight:
                 else:
                     if c2.button("🔥 กูทำสำเร็จ!", key=f"h_done_{h['id']}"):
                         h["last_done_date"] = today_str
-                        
-                        bonus = 5
-                        fail_sub = 2 
-                        
-                        if current_streak >= 30: 
-                            bonus = 10
-                            fail_sub = 5 
-                        elif current_streak >= 7: 
-                            bonus = 7
-                            fail_sub = 3 
-                            
+                        bonus = 10 if current_streak >= 30 else 7 if current_streak >= 7 else 5
+                        fail_sub = 5 if current_streak >= 30 else 3 if current_streak >= 7 else 2
                         user["exp"] += bonus
                         user["failure_prob"] = max(0, user["failure_prob"] - fail_sub) 
-                        
-                        save_db(db)
-                        st.toast(f"🛡️ วินัยเหล็กสำแดงผล! โอกาสล้มเหลวถดถอยลดลง -{fail_sub}%!", icon="🛡️")
-                        st.balloons()
-                        st.rerun()
+                        save_db(db); st.toast(f"🛡️ โอกาสล้มเหลวลดลง -{fail_sub}%!", icon="🛡️"); st.balloons(); st.rerun()
                 if c3.button("🗑️", key=f"del_h_{h['id']}"):
-                    db["iron_habits"][safe_email].remove(h)
-                    save_db(db)
-                    st.rerun()
+                    db["iron_habits"][safe_email].remove(h); save_db(db); st.rerun()
         else:
             st.success("ยังไม่มีวินัยเหล็ก! สร้างมันขึ้นมาซะ!")
 
@@ -1231,20 +1102,12 @@ with colRight:
             if st.form_submit_button("💾 บันทึกลงสมุด"):
                 if b_name:
                     b_subtasks = [{"name": s.strip(), "done": False, "done_date": ""} for s in b_subtasks_text.split('\n') if s.strip()]
-                    
                     final_b_dl = str(b_deadline) if b_dl_type != "ไม่กำหนด (ชิลๆ)" else ""
-                    
                     db["backlog"][safe_email].append({
-                        "id": str(uuid.uuid4()), 
-                        "ภารกิจ": b_name, 
-                        "รายละเอียด": b_detail,
-                        "subtasks": b_subtasks, 
-                        "ประเภท": b_type, 
-                        "deadline": final_b_dl,
-                        "deadline_type": b_dl_type
+                        "id": str(uuid.uuid4()), "ภารกิจ": b_name, "รายละเอียด": b_detail,
+                        "subtasks": b_subtasks, "ประเภท": b_type, "deadline": final_b_dl, "deadline_type": b_dl_type
                     })
-                    save_db(db)
-                    st.rerun()
+                    save_db(db); st.rerun()
                     
         if db["backlog"][safe_email]:
             active_m_slots = len([m for m in db["missions"][safe_email] if not m.get("เสร็จแล้ว") and not m.get("subtasks")])
@@ -1265,14 +1128,10 @@ with colRight:
                         try:
                             dl_date = datetime.strptime(b_dl_str, "%Y-%m-%d").date()
                             days_left_b = (dl_date - today_date).days
-                            if days_left_b > 0: 
-                                days_badge = f"⏳ เหลือ {days_left_b} วัน"
-                            elif days_left_b == 0: 
-                                days_badge = f"🚨 **ถึงกำหนดวันนี้!**"
-                            else: 
-                                days_badge = f"💀 **เลยกำหนดมา {-days_left_b} วัน**"
-                        except: 
-                            pass
+                            if days_left_b > 0: days_badge = f"⏳ เหลือ {days_left_b} วัน"
+                            elif days_left_b == 0: days_badge = f"🚨 **ถึงกำหนดวันนี้!**"
+                            else: days_badge = f"💀 **เลยกำหนดมา {-days_left_b} วัน**"
+                        except: pass
                             
                     display_dl = f" {b_icon} กำหนดเวลา: {b_dl_str} ({days_badge})" if b_dl_str else " ไม่ระบุเวลา"
 
@@ -1286,58 +1145,32 @@ with colRight:
                     else:
                         if c2.button("⚡ ดึงเข้าช่องงาน", key=f"pull_m_{b_task['id']}", type="primary"):
                             db["missions"][safe_email].append({
-                                "id": b_task["id"], 
-                                "วันที่": today_str, 
-                                "ภารกิจ": b_task["ภารกิจ"],
-                                "ประเภท": b_task["ประเภท"], 
-                                "bounty": False, 
-                                "is_boss": False,
+                                "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
+                                "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False,
                                 "custom_order": 1 if "🔴" in b_task["ประเภท"] else 99, 
-                                "battle_role": "Main",
-                                "is_queued": False, 
-                                "skip_today_date": "",
-                                "deadline": b_task.get("deadline", ""),
-                                "deadline_type": b_task.get("deadline_type", "🗓️ Deadline ทางการ"),
-                                "subtasks": b_task.get("subtasks", []), 
-                                "เสร็จแล้ว": False, 
-                                "รอตรวจ": False,
-                                "prereq_id": None
+                                "battle_role": "Main", "is_queued": False, "skip_today_date": "",
+                                "deadline": b_task.get("deadline", ""), "deadline_type": b_task.get("deadline_type", "🗓️ Deadline ทางการ"),
+                                "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False
                             })
-                            db["backlog"][safe_email].remove(b_task)
-                            save_db(db)
-                            st.rerun()
+                            db["backlog"][safe_email].remove(b_task); save_db(db); st.rerun()
                             
                     if not has_subtasks and active_s_slots >= 3:
                         c3.button("📖 ดึงเข้าช่องเรียน", key=f"pull_s_{b_task['id']}", disabled=True, help="โควตาวิชาเรียนเดี่ยวเต็ม 3Slot แล้ว! ดึงเข้าไม่ได้!")
                     else:
                         if c3.button("📖 ดึงเข้าช่องเรียน", key=f"pull_s_{b_task['id']}", type="secondary"):
                             db["study_missions"][safe_email].append({
-                                "id": b_task["id"], 
-                                "วันที่": today_str, 
-                                "ภารกิจ": b_task["ภารกิจ"],
-                                "ประเภท": b_task["ประเภท"], 
-                                "bounty": False, 
-                                "is_boss": False,
+                                "id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"],
+                                "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False,
                                 "custom_order": 1 if "🔴" in b_task["ประเภท"] else 99,
-                                "battle_role": "Main",
-                                "is_queued": False, 
-                                "skip_today_date": "",
-                                "deadline": b_task.get("deadline", ""),
-                                "deadline_type": b_task.get("deadline_type", "🗓️ Deadline ทางการ"),
-                                "subtasks": b_task.get("subtasks", []), 
-                                "เสร็จแล้ว": False, 
-                                "รอตรวจ": False,
-                                "is_study": True,
-                                "prereq_id": None
+                                "battle_role": "Main", "is_queued": False, "skip_today_date": "",
+                                "deadline": b_task.get("deadline", ""), "deadline_type": b_task.get("deadline_type", "🗓️ Deadline ทางการ"),
+                                "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False,
+                                "is_study": True
                             })
-                            db["backlog"][safe_email].remove(b_task)
-                            save_db(db)
-                            st.rerun()
+                            db["backlog"][safe_email].remove(b_task); save_db(db); st.rerun()
                     
                     if c4.button("🗑️", key=f"del_b_{b_task['id']}"):
-                        db["backlog"][safe_email].remove(b_task)
-                        save_db(db)
-                        st.rerun()
+                        db["backlog"][safe_email].remove(b_task); save_db(db); st.rerun()
         else: 
             st.success("สมุดจดว่างเปล่า!")
 
@@ -1353,14 +1186,11 @@ with colRight:
                 if win_text:
                     db["cookie_jar"][safe_email].append({"วันที่": today_str, "ชัยชนะ": win_text})
                     user["exp"] += int(5 * (1.5 if current_streak>=30 else 1.2 if current_streak>=7 else 1.0))
-                    save_db(db)
-                    st.success("✅ เก็บชัยชนะลงโหลเรียบร้อย! มึงแม่งสุดยอด!")
-                    st.rerun()
+                    save_db(db); st.success("✅ เก็บชัยชนะลงโหลเรียบร้อย! มึงแม่งสุดยอด!"); st.rerun()
         
         if db["cookie_jar"][safe_email]:
             st.markdown("**ความสำเร็จล่าสุดของมึง:**")
-            for c in reversed(db["cookie_jar"][safe_email][-5:]):
-                st.success(f"🏆 **[{c['วันที่']}]** {c['ชัยชนะ']}")
+            for c in reversed(db["cookie_jar"][safe_email][-5:]): st.success(f"🏆 **[{c['วันที่']}]** {c['ชัยชนะ']}")
 
     # ----------------------------------------------------
     # TAB 6: ลานประลองปัญญา (EXAM & BEAT YESTERDAY) 📚
@@ -1375,13 +1205,11 @@ with colRight:
             e_score = st.number_input("คะแนนที่ได้ล่าสุด:", min_value=0.0, step=0.1)
             if st.form_submit_button("บันทึกคะแนนสอบ"):
                 if e_subj:
-                    if e_subj not in db["exams"][safe_email]:
-                        db["exams"][safe_email][e_subj] = []
+                    if e_subj not in db["exams"][safe_email]: db["exams"][safe_email][e_subj] = []
+                    history = db["exams"][safe_email][e_subj]
                     
-                    history_scores = db["exams"][safe_email][e_subj]
-                    
-                    if len(history_scores) > 0:
-                        last_score = history_scores[-1]
+                    if len(history) > 0:
+                        last_score = history[-1]
                         if e_score > last_score:
                             user["exp"] += int(30 * (1.5 if current_streak>=30 else 1.0))
                             st.success(f"🔥 โคตรเถื่อน! มึงเก่งขึ้นกว่าครั้งที่แล้ว ({last_score} -> {e_score}) รับ EXP ท่วมๆ!")
@@ -1393,8 +1221,7 @@ with colRight:
                             st.warning("คะแนนเท่าเดิม... อย่าหยุดพัฒนาสิวะไอ้เวร!")
                     
                     db["exams"][safe_email][e_subj].append(e_score)
-                    save_db(db)
-                    st.rerun()
+                    save_db(db); st.rerun()
 
         if db["exams"][safe_email]:
             cols = st.columns(3)
@@ -1419,23 +1246,19 @@ with colRight:
             if st.form_submit_button("ทุบสถิติตัวเอง"):
                 if by_metric:
                     db["beat_yesterday"][safe_email]["metric_name"] = by_metric
-                    if "history" not in db["beat_yesterday"][safe_email]:
-                        db["beat_yesterday"][safe_email]["history"] = {}
-                    
+                    if "history" not in db["beat_yesterday"][safe_email]: db["beat_yesterday"][safe_email]["history"] = {}
                     y_val = db["beat_yesterday"][safe_email]["history"].get(yesterday_str, 0)
                     
                     if by_val > y_val:
                         user["exp"] += int(20 * (1.2 if current_streak>=7 else 1.0))
                         st.success(f"🔥 มึงชนะไอ้ขี้แพ้เมื่อวานได้แล้ว! ({y_val} -> {by_val})")
-                    elif by_val == y_val:
-                        st.warning("มึงแค่เสมอตัวกับเมื่อวาน! พรุ่งนี้ต้องดีกว่านี้!")
+                    elif by_val == y_val: st.warning("มึงแค่เสมอตัวกับเมื่อวาน! พรุ่งนี้ต้องดีกว่านี้!")
                     else:
                         user["blood_debt"] += 30
                         st.error(f"🚨 วันนี้มึงกากกว่าเมื่อวาน! ({y_val} -> {by_val}) รับหนี้เลือดไป 30 ที!")
                         
                     db["beat_yesterday"][safe_email]["history"][today_str] = by_val
-                    save_db(db)
-                    st.rerun()
+                    save_db(db); st.rerun()
 
         if "history" in db["beat_yesterday"].get(safe_email, {}) and db["beat_yesterday"][safe_email].get("metric_name"):
             st.caption(f"สถิติ: **{db['beat_yesterday'][safe_email]['metric_name']}**")
@@ -1453,10 +1276,8 @@ with colRight:
                 user["exp"] += int(50 * (1.5 if current_streak>=30 else 1.0))
                 user["failure_prob"] = max(0, user["failure_prob"] - 15)
                 save_db(db)
-                st.balloons()
-                st.success("🦍 พลังใจมึงมันระดับสัตว์ประหลาด! เอา EXP ทวีคูณไป และลดโอกาสล้มเหลวลง 15%!")
-            else:
-                st.warning("วันนี้มึงทะลุขีดจำกัดไปแล้ว! เก็บแรงไว้ลุยพรุ่งนี้บ้างไอ้บ้าพลัง!")
+                st.balloons(); st.success("🦍 พลังใจมึงมันระดับสัตว์ประหลาด! เอา EXP ทวีคูณไป และลดโอกาสล้มเหลวลง 15%!")
+            else: st.warning("วันนี้มึงทะลุขีดจำกัดไปแล้ว! เก็บแรงไว้ลุยพรุ่งนี้บ้างไอ้บ้าพลัง!")
 
     st.divider()
     st.markdown("### 💰 คลังสมบัตินักรบ (ทุนสร้างฝัน)")
@@ -1472,16 +1293,13 @@ with colRight:
             new_g_name = st.text_input("ชื่อเป้าหมาย:", value=finance.get('goal_name', ''))
             new_g_amt = st.number_input("จำนวนเงินเป้าหมาย:", value=finance.get('goal_amount', 0))
             if st.button("ตั้งเป้าหมาย"):
-                finance['goal_name'] = new_g_name
-                finance['goal_amount'] = new_g_amt
-                save_db(db)
-                st.rerun()
+                finance['goal_name'] = new_g_name; finance['goal_amount'] = new_g_amt
+                save_db(db); st.rerun()
             st.divider()
             add_amt = st.number_input("บวก/ลด เงิน:", value=0)
             if st.button("บันทึกเงิน"):
                 finance['current'] += add_amt
-                save_db(db)
-                st.rerun()
+                save_db(db); st.rerun()
 
 # ==========================================
 # 6. หนี้เลือด & THE JUDGMENT FEED (แท่นพิพากษาไร้ปรานีประจำวัน)
@@ -1497,25 +1315,19 @@ with c_bot2:
     st.metric("หนี้วิดพื้นที่ต้องจ่าย", f"{user.get('blood_debt', 0)} ที")
     if user.get("blood_debt", 0) > 0:
         if st.button("กูวิดพื้นใช้หนี้หมดแล้ว! (ปลดกรง)"):
-            user["blood_debt"] = 0
-            user["in_cage"] = False
-            save_db(db)
-            st.rerun()
+            user["blood_debt"] = 0; user["in_cage"] = False
+            save_db(db); st.rerun()
 
 st.divider()
 st.markdown("<h2>⚖️ THE JUDGMENT FEED (พิพากษาก่อนนอน)</h2>", unsafe_allow_html=True)
 if user.get("ambush_task", "") != "":
     st.error(f"🚨 **โดนซุ่มโจมตี!** คำสั่ง: **{user['ambush_task']}**")
     if st.button("🔥 กูทำเสร็จแล้ว!"):
-        user["ambush_task"] = ""
-        user["exp"] += 20
-        save_db(db)
-        st.rerun()
+        user["ambush_task"] = ""; user["exp"] += 20; save_db(db); st.rerun()
 elif user.get("cleared_yesterday"): 
     st.success("🔥 พิพากษาเสร็จสิ้น! มึงรอดไปได้อีกหนึ่งวัน!")
 else:
     active_for_judgment = []
-    
     combined_missions = db["missions"][safe_email] + db["study_missions"][safe_email]
     
     for m in combined_missions:
@@ -1525,20 +1337,14 @@ else:
                 if m.get("deadline") and m["deadline"] != "":
                     try:
                         dl_dt = datetime.strptime(m["deadline"], "%Y-%m-%d").date()
-                        if dl_dt < today_date: 
-                            is_task_overdue = True 
-                    except: 
-                        pass
-                
-                if not is_task_overdue:
-                    continue 
+                        if dl_dt < today_date: is_task_overdue = True 
+                    except: pass
+                if not is_task_overdue: continue 
                 
             if m.get("subtasks"):
                 has_today_progress = any(stask.get("done", False) and stask.get("done_date", "") == today_str for stask in m["subtasks"])
-                if not has_today_progress: 
-                    active_for_judgment.append(m)
-            else:
-                active_for_judgment.append(m)
+                if not has_today_progress: active_for_judgment.append(m)
+            else: active_for_judgment.append(m)
 
     incomplete_habits = [h for h in db["iron_habits"][safe_email] if h.get("last_done_date") != today_str]
     incomplete_bosses = [m for m in active_for_judgment if m.get("is_boss")]
@@ -1546,13 +1352,9 @@ else:
     if incomplete_bosses:
         st.error("💀 ไอ้สวะ! มึงดองงาน BOSS FIGHT (ไม่ว่าจะงานหรือเรียน)! แท่นพิพากษาสั่งลงโทษหนัก!")
         if st.button("🩸 ยอมรับความกาก (รับหนี้เลือด 300 ที!)"):
-            user["blood_debt"] += 300
-            user["failure_prob"] = min(100, user["failure_prob"] + 30)
-            user["in_cage"] = True
-            user["cleared_yesterday"] = True
-            user["streak"] = 0 
-            save_db(db)
-            st.rerun()
+            user["blood_debt"] += 300; user["failure_prob"] = min(100, user["failure_prob"] + 30)
+            user["in_cage"] = True; user["cleared_yesterday"] = True; user["streak"] = 0 
+            save_db(db); st.rerun()
             
     elif active_for_judgment or incomplete_habits: 
         st.error("❌ มึงกำลังหักหลังตัวเอง! ศาลเตี้ยพบงาน/วิชาเรียน/วินัยที่มึงละทิ้งในวันนี้:")
@@ -1562,10 +1364,8 @@ else:
             is_overdue_check = False
             if m.get("deadline") and m["deadline"] != "":
                 try:
-                    if datetime.strptime(m["deadline"], "%Y-%m-%d").date() < today_date: 
-                        is_overdue_check = True
-                except: 
-                    pass
+                    if datetime.strptime(m["deadline"], "%Y-%m-%d").date() < today_date: is_overdue_check = True
+                except: pass
             
             domain_label = "[📚 วิชาเรียน]" if m.get("is_study") else "[🔪 ภารกิจงาน]"
             time_label = "เลยเป้าหมายที่ตั้งไว้" if "เป้าหมาย" in m.get("deadline_type", "") else "เลยกำหนดเดดไลน์"
@@ -1574,10 +1374,8 @@ else:
             task_penalty = 100 if task_score == 1 else 70 if task_score == 2 else 50
             total_blood_penalty += task_penalty
             
-            if is_overdue_check: 
-                mode = f"{domain_label} 🚨 เกราะแตก! {time_label} (หนี้เลือด +{task_penalty})"
-            else: 
-                mode = f"{domain_label} 🔪 โครงการใหญ่ ไม่ยอมทำ (หนี้เลือด +{task_penalty})" if m.get("subtasks") else f"{domain_label} ⚡ ม้วนเดียวจบ ดองข้ามวัน (หนี้เลือด +{task_penalty})"
+            if is_overdue_check: mode = f"{domain_label} 🚨 เกราะแตก! {time_label} (หนี้เลือด +{task_penalty})"
+            else: mode = f"{domain_label} 🔪 โครงการใหญ่ ไม่ยอมทำ (หนี้เลือด +{task_penalty})" if m.get("subtasks") else f"{domain_label} ⚡ ม้วนเดียวจบ ดองข้ามวัน (หนี้เลือด +{task_penalty})"
             st.write(f"👉 **{m['ภารกิจ']}** [{mode}]")
             
         for h in incomplete_habits:
@@ -1590,11 +1388,8 @@ else:
             penalty_count = len(active_for_judgment) + len(incomplete_habits)
             user["blood_debt"] += total_blood_penalty
             user["failure_prob"] = min(100, user["failure_prob"] + (10 * penalty_count))
-            user["in_cage"] = True
-            user["cleared_yesterday"] = True 
-            user["streak"] = 0 
-            save_db(db)
-            st.rerun()
+            user["in_cage"] = True; user["cleared_yesterday"] = True; user["streak"] = 0 
+            save_db(db); st.rerun()
             
     elif user.get("in_cage") or user.get("blood_debt", 0) > 0: 
         st.error("❌ มึงติดหนี้เลือดอยู่ ชดใช้กรรมซะก่อนถึงจะปิดวันได้!")
@@ -1603,22 +1398,15 @@ else:
         j_col1, j_col2 = st.columns(2)
         with j_col1:
             if st.button("📉 สู้ไม่เต็มที่ (แค่ 40%)"):
-                user["exp"] -= 30
-                user["cleared_yesterday"] = True
-                user["failure_prob"] = min(100, user["failure_prob"] + 10)
-                user["streak"] = 0 
-                save_db(db)
-                st.rerun()
+                user["exp"] -= 30; user["cleared_yesterday"] = True; user["failure_prob"] = min(100, user["failure_prob"] + 10)
+                user["streak"] = 0; save_db(db); st.rerun()
         with j_col2:
             if st.button("🔥 กูใช้พลังทั้งหมด 100%!"):
-                if random.random() < 0.2: 
-                    user["ambush_task"] = random.choice(AMBUSH_TASKS)
+                if random.random() < 0.2: user["ambush_task"] = random.choice(AMBUSH_TASKS)
                 else: 
-                    user["cleared_yesterday"] = True
-                    user["streak"] += 1
+                    user["cleared_yesterday"] = True; user["streak"] += 1
                     user["exp"] += int(25 * (1.5 if current_streak>=30 else 1.2 if current_streak>=7 else 1.0))
-                save_db(db)
-                st.rerun()
+                save_db(db); st.rerun()
 
 # ==========================================
 # 8. 📜 พงศาวดารความทรงจำ (HISTORY LOG)
@@ -1626,33 +1414,26 @@ else:
 st.divider()
 if not monk_mode:
     st.markdown("## 📜 พงศาวดารความทรงจำ (HISTORY LOG)")
-    tab_hist1, tab_hist2, tab_hist3, tab_hist4 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 บันทึกการแบกซุง (ตาราง)", "📊 BATTLE ANALYTICS"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🍪 คลังแสง (ความสำเร็จ)", "🤡 บัญชีหนังหมา (ข้ออ้าง)", "🪵 บันทึกการแบกซุง (ตาราง)", "📊 BATTLE ANALYTICS"])
 
-    with tab_hist1:
+    with tab1:
         if db["cookie_jar"].get(safe_email):
-            for item in reversed(db["cookie_jar"][safe_email]): 
-                st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
-        else: 
-            st.write("ยังไม่มีความสำเร็จอะไรเลย ไปทำซะ!")
+            for item in reversed(db["cookie_jar"][safe_email]): st.success(f"🏆 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ชัยชนะ', '')}")
+        else: st.write("ยังไม่มีความสำเร็จอะไรเลย ไปทำซะ!")
 
-    with tab_hist2:
+    with tab2:
         if db["excuses"].get(safe_email):
-            for item in reversed(db["excuses"][safe_email]): 
-                st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
-        else: 
-            st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
+            for item in reversed(db["excuses"][safe_email]): st.error(f"🤡 **[{item.get('วันที่', 'ไม่ระบุ')}]** : {item.get('ข้ออ้าง', '')}")
+        else: st.write("ดีมาก! ยังไม่มีข้ออ้างขยะๆ ให้รกหูรกตา!")
 
-    with tab_hist3:
+    with tab3:
         total_missions_list = db["missions"].get(safe_email, []) + db["study_missions"].get(safe_email, [])
         if total_missions_list:
             mission_history = []
             for item in reversed(total_missions_list):
-                if item.get("เสร็จแล้ว"): 
-                    status = "✅ เสร็จแล้ว"
-                elif item.get("รอตรวจ", False): 
-                    status = "⏳ รอตรวจ"
-                else: 
-                    status = "❌ ยังดองอยู่"
+                if item.get("เสร็จแล้ว"): status = "✅ เสร็จแล้ว"
+                elif item.get("รอตรวจ", False): status = "⏳ รอตรวจ"
+                else: status = "❌ ยังดองอยู่"
                 
                 domain_type = "📚 เรียน" if item.get("is_study") else "🔪 งาน"
                 
@@ -1667,27 +1448,26 @@ if not monk_mode:
                 })
             df_missions = pd.DataFrame(mission_history)
             st.dataframe(df_missions, use_container_width=True, hide_index=True)
-        else: 
-            st.write("ยังไม่มีประวัติการแบกซุงเลยไอ้ลูกหมา ไปหางานทำซะ!")
+        else: st.write("ยังไม่มีประวัติการแบกซุงเลยไอ้ลูกหมา ไปหางานทำซะ!")
 
-    with tab_hist4:
-        all_m_for_stats = db["missions"].get(safe_email, []) + db["study_missions"].get(safe_email, [])
-        total_m_count = len(all_m_for_stats)
-        done_m_count = len([m for m in all_m_for_stats if m.get("เสร็จแล้ว")])
-        boss_killed_count = len([m for m in all_m_for_stats if m.get("เสร็จแล้ว") and m.get("is_boss")])
-        win_rate_pct = (done_m_count / total_m_count * 100) if total_m_count > 0 else 0
+    with tab4:
+        all_m = db["missions"].get(safe_email, []) + db["study_missions"].get(safe_email, [])
+        total_m = len(all_m)
+        done_m = len([m for m in all_m if m.get("เสร็จแล้ว")])
+        boss_killed = len([m for m in all_m if m.get("เสร็จแล้ว") and m.get("is_boss")])
+        win_rate = (done_m / total_m * 100) if total_m > 0 else 0
         
-        win_count_stats = len(db["cookie_jar"].get(safe_email, []))
-        fail_count_stats = len(db["excuses"].get(safe_email, []))
+        win_count = len(db["cookie_jar"].get(safe_email, []))
+        fail_count = len(db["excuses"].get(safe_email, []))
         
         st.markdown("#### 📊 สรุปผลประกอบการสมอง (BATTLE ANALYTICS)")
         c_stat1, c_stat2, c_stat3, c_stat4 = st.columns(4)
-        c_stat1.metric("อัตราการชนะ (Win Rate)", f"{win_rate_pct:.1f}%")
-        c_stat2.metric("บอสที่ฆ่าได้ (Boss Kills)", f"{boss_killed_count} ตัว")
-        c_stat3.metric("ภารกิจที่สำเร็จ (Missions)", f"{done_m_count} / {total_m_count}")
-        c_stat4.metric("รอยแผลความขี้เกียจ", f"{fail_count_stats} รอย")
+        c_stat1.metric("อัตราการชนะ (Win Rate)", f"{win_rate:.1f}%")
+        c_stat2.metric("บอสที่ฆ่าได้ (Boss Kills)", f"{boss_killed} ตัว")
+        c_stat3.metric("ภารกิจที่สำเร็จ (Missions)", f"{done_m} / {total_m}")
+        c_stat4.metric("รอยแผลความขี้เกียจ", f"{fail_count} รอย")
         
-        if win_count_stats + fail_count_stats > 0:
+        if win_count + fail_count > 0:
             st.markdown("**กราฟเปรียบเทียบ: ร่างทอง (ชนะใจตัวเอง) VS ร่างขยะ (พ่ายแพ้ปล่อยข้ออ้าง)**")
-            chart_data = pd.DataFrame({"จำนวนครั้ง": [win_count_stats, fail_count_stats]}, index=["Savage (ชนะ)", "Bitch (ข้ออ้าง)"])
+            chart_data = pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Savage (ชนะ)", "Bitch (ข้ออ้าง)"])
             st.bar_chart(chart_data)
