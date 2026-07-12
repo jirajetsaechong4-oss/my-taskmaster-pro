@@ -11,13 +11,12 @@ import random
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
-# ⚠️ ลิงก์ Firebase ของมึง (ไม่ต้องใส่ / ข้างหลัง)
+# ⚠️ ลิงก์ Firebase ของมึง
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app" 
-
-# 🔐 บัตรผ่าน VIP ลับ (สิทธิ์จอมทัพ)
+# 🔐 บัตรผ่าน VIP ลับ 
 FIREBASE_SECRET = "Wv2Ha7WZrDLwnpJyKMt29z9I0MGb0kxitoOaaoGe"
 
-# ⏱️ ฟังก์ชันจับเวลา Absolute Real-time (แก้ปัญหาเปิดแอปค้างข้ามคืนแล้วเวลาไม่เดิน)
+# ⏱️ ฟังก์ชันจับเวลา Absolute Real-time
 def get_current_thai_time():
     tz_thai = timezone(timedelta(hours=7))
     return datetime.now(tz_thai)
@@ -75,15 +74,11 @@ def get_title(level):
         return "👑 มหาจักรพรรดิผู้คุมชะตา"
 
 def get_priority_score(task_type):
-    if "🔴 ด่วนสุด" in task_type or "🔥 งานฉุกเฉิน" in task_type: 
-        return 1
-    if "🟡 ปานกลาง" in task_type: 
-        return 2
-    if "🟢 ชิลๆ" in task_type: 
-        return 3
+    if "🔴 ด่วนสุด" in task_type or "🔥 งานฉุกเฉิน" in task_type: return 1
+    if "🟡 ปานกลาง" in task_type: return 2
+    if "🟢 ชิลๆ" in task_type: return 3
     return 4
 
-# 🧠 ฟังก์ชันคำนวณน้ำหนักการจัดเรียงรบ (Tactical Sorting Scores)
 def get_role_score(role):
     if role == "Vanguard": return 1
     if role == "Main": return 2
@@ -97,52 +92,33 @@ def get_deadline_score(dl_str):
     except:
         return 999999
 
-# 🔥 คำนวณ EXP และ การลดโอกาสล้มเหลวแบบ Dynamic + พ่วงระบบคูณโบนัส Streak
 def calculate_task_rewards(task, current_streak):
     score = get_priority_score(task.get("ประเภท", ""))
     
-    # 1. คำนวณ Base EXP
-    if score == 1:
-        base_exp = 40
-    elif score == 2:
-        base_exp = 20
-    else:
-        base_exp = 10
+    if score == 1: base_exp = 40
+    elif score == 2: base_exp = 20
+    else: base_exp = 10
     
-    # 2. คำนวณ Bonus EXP
     bonus_exp = 0
-    if task.get("is_boss"): 
-        bonus_exp += 100
-    if task.get("bounty"): 
-        bonus_exp += 50
-    if task.get("subtasks"):
-        bonus_exp += len(task["subtasks"]) * 10  
+    if task.get("is_boss"): bonus_exp += 100
+    if task.get("bounty"): bonus_exp += 50
+    if task.get("subtasks"): bonus_exp += len(task["subtasks"]) * 10  
         
     raw_total_exp = base_exp + bonus_exp
     
-    # 🔥 The Savage Multiplier (คูณโบนัสความต่อเนื่อง)
     multiplier = 1.0
-    if current_streak >= 30:
-        multiplier = 1.5
-    elif current_streak >= 7:
-        multiplier = 1.2
-    elif current_streak >= 3:
-        multiplier = 1.1
+    if current_streak >= 30: multiplier = 1.5
+    elif current_streak >= 7: multiplier = 1.2
+    elif current_streak >= 3: multiplier = 1.1
         
     final_exp = int(raw_total_exp * multiplier)
     
-    # 3. คำนวณอัตราลดโอกาสล้มเหลว
-    if score == 1:
-        fail_reduce = 10
-    elif score == 2:
-        fail_reduce = 5
-    else:
-        fail_reduce = 2
+    if score == 1: fail_reduce = 10
+    elif score == 2: fail_reduce = 5
+    else: fail_reduce = 2
     
-    if task.get("is_boss"): 
-        fail_reduce += 15
-    if task.get("bounty"): 
-        fail_reduce += 5
+    if task.get("is_boss"): fail_reduce += 15
+    if task.get("bounty"): fail_reduce += 5
     
     return final_exp, fail_reduce
 
@@ -151,10 +127,12 @@ def load_db():
         st.error("🚨 ไอ้เวร! ลิงก์ Firebase หายไปไหน กลับไปแก้เดี๋ยวนี้!")
         st.stop()
     try:
-        # 🔥 V.38: ยื่นบัตรผ่าน VIP (?auth=...) ให้เข้าถึงฐานข้อมูลทะลุกฎได้
         res = requests.get(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}")
         if res.status_code == 200 and res.json() is not None:
             data = res.json()
+            # 🛡️ FIX 1: ดักจับถ้าฐานข้อมูลเพี้ยนส่งมาเป็น List จะไม่พัง
+            if not isinstance(data, dict):
+                data = {}
             defaults = {
                 "users": {}, "missions": {}, "study_missions": {}, 
                 "backlog": {}, "dark_room": {}, "anti_simp": {}, 
@@ -164,7 +142,7 @@ def load_db():
                 "limit_breaks": {}
             }
             for k, v in defaults.items():
-                if k not in data: 
+                if k not in data or data[k] is None: 
                     data[k] = v
             return data
     except: 
@@ -180,7 +158,6 @@ def load_db():
 
 def save_db(data):
     try: 
-        # 🔥 V.38: ยื่นบัตรผ่าน VIP ก่อนบันทึกข้อมูล
         requests.put(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}", json=data)
     except: 
         st.error("🚨 เซฟข้อมูลลงฐานข้อมูลอมตะไม่สำเร็จ!")
@@ -247,7 +224,8 @@ with st.sidebar:
             if not db.get("users"): 
                 st.warning("ยังไม่มีนักรบในระบบ ไปสร้างนักรบใหม่ก่อน!")
             else:
-                user_options = {f"{data['username']}": email for email, data in db["users"].items()}
+                # 🛡️ FIX 2: ป้องกัน Error ถ้าระบบหา Key username ไม่เจอ
+                user_options = {f"{data.get('username', 'Unknown Warrior')}": email for email, data in db["users"].items() if isinstance(data, dict)}
                 selected_display = st.selectbox("เลือกบัญชีของคุณ:", list(user_options.keys()))
                 
                 if st.button("🔥 เปิดสมอง! (เข้าสู่ระบบ)"):
@@ -258,7 +236,6 @@ with st.sidebar:
                         user_data["target_name"] = "ทำ 10 ล้านวิว YouTube Shorts"
                         user_data["target_date"] = str(today_date + timedelta(days=90))
 
-                    # ⏱️ ระบบข้ามวัน (Midnight Reset Mechanism)
                     if user_data["last_login"] != today_str:
                         user_data["ghost_exp"] += 25 
                         user_data["order_locked"] = False
@@ -366,7 +343,7 @@ if overdue_count > 0:
 # 🎯 ส่วนหัว: ปลุกพลัง & ระบบนับถอยหลังอนาคต (FUTURE COUNTDOWN)
 # ==========================================
 try: 
-    t_date = datetime.strptime(user["target_date"], "%Y-%m-%d").date()
+    t_date = datetime.strptime(user.get("target_date", str(today_date)), "%Y-%m-%d").date()
 except: 
     t_date = today_date + timedelta(days=90)
 days_left = (t_date - today_date).days
@@ -409,7 +386,6 @@ with colLeft:
         st.markdown("## 🗑️ THE BITCH ZONE (ฝั่งขยะ)")
         st.warning(random.choice(LAZY_VOICES))
         
-        # 📊 อัปเกรดประสิทธิภาพ: หลอดพลังใจ (Mental Health Bar)
         fail_prob = user.get('failure_prob', 10)
         st.markdown(f"**📉 โอกาสพ่ายแพ้ต่อสิ่งเร้า: {fail_prob}%**")
         fail_color = "red" if fail_prob > 70 else "orange" if fail_prob > 40 else "green"
@@ -442,7 +418,8 @@ with colLeft:
                     db["haters"][safe_email].append(h_text)
                     save_db(db)
                     st.rerun()
-        if db["haters"][safe_email]: 
+        # 🛡️ FIX 3: เช็ค Haters ให้ละเอียด ไม่ให้ดึงจากความว่างเปล่า
+        if safe_email in db["haters"] and isinstance(db["haters"][safe_email], list) and len(db["haters"][safe_email]) > 0:
             st.error(f"🤬 คำดูถูก: \"{random.choice(db['haters'][safe_email])}\"")
 
 with colRight:
@@ -513,7 +490,6 @@ with colRight:
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active_missions if m.get("รอตรวจ", False)]
         
-        # 🧠 AI จัดเรียงรบอัจฉริยะ (Role -> Deadline Proximity -> Priority)
         todo_missions.sort(key=lambda x: (
             get_role_score(x.get("battle_role", "Main")), 
             0 if x.get("is_boss") else 1, 
@@ -566,7 +542,6 @@ with colRight:
                     is_bounty = " ⚔️[เดิมพัน]" if m.get("bounty") else ""
                     is_boss = " 💀 **[BOSS]**" if m.get("is_boss") else ""
                     
-                    # เรียกใช้ ROLE_MAP จาก Global scope อย่างถูกต้อง ไร้บัค
                     order_badge = f" | {ROLE_MAP.get(m.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
                     
                     is_overdue = False
@@ -590,10 +565,9 @@ with colRight:
                             pass
 
                     is_frozen = m.get("skip_today_date") == today_str
-                    # ตรวจจับว่าเกราะน้ำแข็งละลายหรือยัง (เลยเที่ยงคืนแล้ว)
                     was_frozen_yesterday = m.get("skip_today_date") != "" and not is_frozen
                     if was_frozen_yesterday:
-                        m["skip_today_date"] = "" # เคลียร์ขยะเก่า
+                        m["skip_today_date"] = ""
                         save_db(db)
                         
                     if is_frozen:
@@ -635,7 +609,7 @@ with colRight:
                                         label += f" 🔒 (ผนึกแล้ว)"
                                 except: 
                                     label += f" 🔒 (ผนึกเมื่อ: {done_date})"
-                                
+                            
                             can_interact = not is_locked and (not is_frozen or is_overdue)
                             checked = st.checkbox(label, value=is_done, disabled=not can_interact, key=f"st_{m['id']}_{i}")
                             
@@ -793,7 +767,6 @@ with colRight:
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
         pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
         
-        # 🧠 AI จัดเรียงรบอัจฉริยะ สำหรับฝั่งการเรียนด้วย
         todo_study.sort(key=lambda x: (
             get_role_score(x.get("battle_role", "Main")), 
             0 if x.get("is_boss") else 1, 
@@ -845,7 +818,6 @@ with colRight:
                     is_bounty = " ⚔️[เดิมพันศึกษา]" if s.get("bounty") else ""
                     is_boss = " 💀 **[BOSS]**" if s.get("is_boss") else ""
                     
-                    # ซ่อมบัคเรียกตัวแปร
                     order_badge = f" | {ROLE_MAP.get(s.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
                     
                     is_overdue = False
