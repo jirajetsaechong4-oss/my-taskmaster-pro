@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.40 - TITANIUM ARMOR)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.41 - ABSOLUTE ORDER)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -298,7 +298,7 @@ for k in list_keys:
         # ถ้าเผลอเป็น Dict ให้แปลงกลับเป็น List
         if isinstance(db[k][safe_email], dict):
             db[k][safe_email] = list(db[k][safe_email].values())
-        # กำจัด Null (None) ทิ้งให้เหี้ยน! (นี่แหละตัวทำแอปขาวโพลน)
+        # กำจัด Null (None) ทิ้งให้เหี้ยน!
         if isinstance(db[k][safe_email], list):
             db[k][safe_email] = [item for item in db[k][safe_email] if item is not None]
 
@@ -314,7 +314,7 @@ current_streak = user.get("streak", 0)
 # ===== 🚨 CHECK OVERDUE BACKLOG =====
 overdue_count = 0
 for task in db["backlog"][safe_email]:
-    if not isinstance(task, dict): continue # ป้องกันดึงค่าจาก String
+    if not isinstance(task, dict): continue 
     try:
         if task.get("deadline") and task["deadline"] != "":
             dl_date = datetime.strptime(task["deadline"], "%Y-%m-%d").date()
@@ -441,7 +441,7 @@ with colRight:
                             final_dl = str(m_deadline) if m_dl_type != "ไม่กำหนด (ชิลๆ)" else ""
                             db["missions"][safe_email].append({
                                 "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
-                                "custom_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "subtasks": subtasks, "เสร็จแล้ว": False, 
+                                "custom_order": 99, "user_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "subtasks": subtasks, "เสร็จแล้ว": False, 
                                 "รอตรวจ": False, "deadline": final_dl, "deadline_type": m_dl_type
                             })
                             save_db(db); safe_rerun()
@@ -449,7 +449,9 @@ with colRight:
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active_missions if m.get("รอตรวจ", False)]
         
-        todo_missions.sort(key=lambda x: (get_role_score(x.get("battle_role", "Main")), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
+        # 🔥 อัปเกรดระบบ Sorting ดึงเอา user_order มาคำนวณเป็นอันดับแรกสุด!
+        todo_missions.sort(key=lambda x: (x.get("user_order", 99), get_role_score(x.get("battle_role", "Main")), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
+        
         needs_queueing = [m for m in todo_missions if not m.get("is_queued", False)]
         
         if needs_queueing:
@@ -471,7 +473,17 @@ with colRight:
         if todo_missions:
             for m in todo_missions:
                 with st.container(border=True):
-                    c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6]) 
+                    # 🔥 ปรับ Columns ใหม่ เพิ่มช่องสำหรับพิมพ์เลขลำดับ (c_ord)
+                    c_ord, c1, c2, c3, c4, c5 = st.columns([1, 3.2, 1.8, 1.8, 1.6, 0.6]) 
+                    
+                    # 🛠️ ปุ่มเปลี่ยนคิวแบบ Real-Time
+                    c_ord.markdown("**🎯 คิวรบ:**")
+                    new_order = c_ord.number_input("ลำดับ", min_value=1, max_value=99, value=m.get("user_order", 99), step=1, key=f"ord_{m['id']}", label_visibility="collapsed")
+                    if new_order != m.get("user_order", 99):
+                        m["user_order"] = new_order
+                        save_db(db)
+                        safe_rerun()
+
                     task_mode_badge = "🔪 **[งานใหญ่]**" if m.get("subtasks") else "⚡ **[ม้วนเดียวจบ]**"
                     is_bounty = " ⚔️" if m.get("bounty") else ""; is_boss = " 💀 **[BOSS]**" if m.get("is_boss") else ""
                     order_badge = f" | {ROLE_MAP.get(m.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
@@ -583,7 +595,7 @@ with colRight:
                             final_dl = str(s_deadline) if "ไม่กำหนด" not in s_dl_type else ""
                             db["study_missions"][safe_email].append({
                                 "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": s_name, "ประเภท": s_type, "bounty": s_bounty, "is_boss": s_is_boss,
-                                "custom_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "subtasks": subtasks, "เสร็จแล้ว": False, 
+                                "custom_order": 99, "user_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "subtasks": subtasks, "เสร็จแล้ว": False, 
                                 "รอตรวจ": False, "deadline": final_dl, "deadline_type": s_dl_type, "is_study": True
                             })
                             save_db(db); safe_rerun()
@@ -591,7 +603,9 @@ with colRight:
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
         pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
         
-        todo_study.sort(key=lambda x: (get_role_score(x.get("battle_role", "Main")), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
+        # 🔥 อัปเกรดระบบ Sorting การเรียนด้วย (ใช้ user_order เป็นหลัก)
+        todo_study.sort(key=lambda x: (x.get("user_order", 99), get_role_score(x.get("battle_role", "Main")), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
+        
         study_needs_queueing = [s for s in todo_study if not s.get("is_queued", False)]
         
         if study_needs_queueing:
@@ -611,7 +625,17 @@ with colRight:
         if todo_study:
             for s in todo_study:
                 with st.container(border=True):
-                    c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6])
+                    # 🔥 ปรับ Columns ใหม่ เพิ่มช่องสำหรับพิมพ์เลขลำดับ (c_ord)
+                    c_ord, c1, c2, c3, c4, c5 = st.columns([1, 3.2, 1.8, 1.8, 1.6, 0.6])
+                    
+                    # 🛠️ ปุ่มเปลี่ยนคิวแบบ Real-Time (ฝั่งการเรียน)
+                    c_ord.markdown("**🎯 คิวเรียน:**")
+                    new_order = c_ord.number_input("ลำดับ", min_value=1, max_value=99, value=s.get("user_order", 99), step=1, key=f"ord_stud_{s['id']}", label_visibility="collapsed")
+                    if new_order != s.get("user_order", 99):
+                        s["user_order"] = new_order
+                        save_db(db)
+                        safe_rerun()
+
                     task_mode_badge = "📖 **[ติวโครงการใหญ่]**" if s.get("subtasks") else "⚡ **[ทบทวนรอบเดียวจบ]**"
                     is_bounty = " ⚔️" if s.get("bounty") else ""; is_boss = " 💀 **[BOSS]**" if s.get("is_boss") else ""
                     order_badge = f" | {ROLE_MAP.get(s.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
@@ -747,13 +771,13 @@ with colRight:
                     if not has_subtasks and active_m_slots >= 3: c2.button("⚡ ดึงเข้าช่องงาน", key=f"pull_m_{b_task['id']}", disabled=True)
                     else:
                         if c2.button("⚡ ดึงเข้าช่องงาน", key=f"pull_m_{b_task['id']}", type="primary"):
-                            db["missions"][safe_email].append({"id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"], "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False, "custom_order": 1 if "🔴" in b_task.get("ประเภท", "") else 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "deadline": b_task.get("deadline", ""), "deadline_type": b_task.get("deadline_type", "🗓️"), "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False})
+                            db["missions"][safe_email].append({"id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"], "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False, "custom_order": 1 if "🔴" in b_task.get("ประเภท", "") else 99, "user_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "deadline": b_task.get("deadline", ""), "deadline_type": b_task.get("deadline_type", "🗓️"), "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False})
                             db["backlog"][safe_email].remove(b_task); save_db(db); safe_rerun()
                             
                     if not has_subtasks and active_s_slots >= 3: c3.button("📖 ดึงเข้าช่องเรียน", key=f"pull_s_{b_task['id']}", disabled=True)
                     else:
                         if c3.button("📖 ดึงเข้าช่องเรียน", key=f"pull_s_{b_task['id']}", type="secondary"):
-                            db["study_missions"][safe_email].append({"id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"], "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False, "custom_order": 1 if "🔴" in b_task.get("ประเภท", "") else 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "deadline": b_task.get("deadline", ""), "deadline_type": b_task.get("deadline_type", "🗓️"), "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False, "is_study": True})
+                            db["study_missions"][safe_email].append({"id": b_task["id"], "วันที่": today_str, "ภารกิจ": b_task["ภารกิจ"], "ประเภท": b_task["ประเภท"], "bounty": False, "is_boss": False, "custom_order": 1 if "🔴" in b_task.get("ประเภท", "") else 99, "user_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "deadline": b_task.get("deadline", ""), "deadline_type": b_task.get("deadline_type", "🗓️"), "subtasks": b_task.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False, "is_study": True})
                             db["backlog"][safe_email].remove(b_task); save_db(db); safe_rerun()
                     
                     if c4.button("🗑️", key=f"del_b_{b_task['id']}"): db["backlog"][safe_email].remove(b_task); save_db(db); safe_rerun()
