@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.41 - ABSOLUTE ORDER)
+# 1. ตั้งค่าระบบ (THE IMMORTAL SOUL V.42 - STRATEGIC COMMAND)
 # ==========================================
 st.set_page_config(page_title="THE BRAIN WAR", layout="wide", page_icon="🧠")
 
@@ -290,15 +290,12 @@ safe_email = st.session_state.current_user
 list_keys = ["missions", "study_missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "iron_habits", "limit_breaks"]
 dict_keys = ["finance", "exams", "beat_yesterday"]
 
-# ป้องกันบัค Firebase ยัด Null หรือแปลง List เป็น Dict แบบเด็ดขาด
 for k in list_keys:
     if safe_email not in db[k] or db[k][safe_email] is None: 
         db[k][safe_email] = []
     else:
-        # ถ้าเผลอเป็น Dict ให้แปลงกลับเป็น List
         if isinstance(db[k][safe_email], dict):
             db[k][safe_email] = list(db[k][safe_email].values())
-        # กำจัด Null (None) ทิ้งให้เหี้ยน!
         if isinstance(db[k][safe_email], list):
             db[k][safe_email] = [item for item in db[k][safe_email] if item is not None]
 
@@ -449,7 +446,7 @@ with colRight:
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
         pending_missions = [m for m in raw_active_missions if m.get("รอตรวจ", False)]
         
-        # 🔥 อัปเกรดระบบ Sorting ดึงเอา user_order มาคำนวณเป็นอันดับแรกสุด!
+        # จัดเรียงภารกิจ โดยให้ความสำคัญกับคิว (user_order) เป็นอันดับหนึ่ง!
         todo_missions.sort(key=lambda x: (x.get("user_order", 99), get_role_score(x.get("battle_role", "Main")), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
         
         needs_queueing = [m for m in todo_missions if not m.get("is_queued", False)]
@@ -457,6 +454,7 @@ with colRight:
         if needs_queueing:
             with st.expander("⚔️🛡️ จัดค่ายกลกระบวนทัพรบ", expanded=True):
                 with st.form("lock_order_form"):
+                    st.caption("เซ็ตตำแหน่งทัพของงานที่เพิ่งเข้ามาใหม่")
                     updated_orders, updated_roles = {}, {}
                     for m in needs_queueing:
                         is_boss_str = "💀 [BOSS] " if m.get("is_boss") else ""
@@ -464,29 +462,44 @@ with colRight:
                         if "ทัพหน้า" in role_choice: updated_orders[m["id"]] = 1; updated_roles[m["id"]] = "Vanguard"
                         elif "ทัพหลวง" in role_choice: updated_orders[m["id"]] = 2; updated_roles[m["id"]] = "Main"
                         else: updated_orders[m["id"]] = 3; updated_roles[m["id"]] = "Support"
-                    if st.form_submit_button("🔒 ล็อกค่ายกลกระบวนทัพ!"):
+                    if st.form_submit_button("🔒 ล็อกค่ายกล!"):
                         for m in db["missions"][safe_email]:
                             if isinstance(m, dict) and m.get("id") in updated_orders:
                                 m["custom_order"] = updated_orders[m["id"]]; m["battle_role"] = updated_roles[m["id"]]; m["is_queued"] = True
                         save_db(db); st.success("⚔️ จัดทัพเสร็จสิ้น!"); safe_rerun()
 
+        # 🔥 ศูนย์บัญชาการล็อคคิวรบ (The Absolute Strategic Lock!)
+        if todo_missions:
+            with st.expander("🎯 จัดลำดับคิวรบ (ล็อคแผน 1-2-3)", expanded=False):
+                with st.form("set_order_form"):
+                    st.info("พิมพ์เลขคิว 1, 2, 3... ให้ครบทุกงานแล้วค่อยกดปุ่มล็อคลำดับด้านล่างทีเดียว! (จอจะไม่เด้งหนี)")
+                    new_orders = {}
+                    for m in todo_missions:
+                        col_q, col_n = st.columns([1, 4])
+                        new_orders[m["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=m.get("user_order", 99), step=1, key=f"q_{m['id']}", label_visibility="collapsed")
+                        is_boss_lbl = "💀 [BOSS] " if m.get("is_boss") else ""
+                        col_n.write(f"{is_boss_lbl}{m['ภารกิจ']}")
+                    
+                    if st.form_submit_button("🔒 ล็อคลำดับทั้งหมด! (เซฟแผน)"):
+                        for m in db["missions"][safe_email]:
+                            if isinstance(m, dict) and m.get("id") in new_orders:
+                                m["user_order"] = new_orders[m["id"]]
+                        save_db(db)
+                        st.success("✅ ล็อคลำดับกระบวนทัพเสร็จสมบูรณ์!")
+                        safe_rerun()
+
         if todo_missions:
             for m in todo_missions:
                 with st.container(border=True):
-                    # 🔥 ปรับ Columns ใหม่ เพิ่มช่องสำหรับพิมพ์เลขลำดับ (c_ord)
-                    c_ord, c1, c2, c3, c4, c5 = st.columns([1, 3.2, 1.8, 1.8, 1.6, 0.6]) 
+                    c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6]) 
                     
-                    # 🛠️ ปุ่มเปลี่ยนคิวแบบ Real-Time
-                    c_ord.markdown("**🎯 คิวรบ:**")
-                    new_order = c_ord.number_input("ลำดับ", min_value=1, max_value=99, value=m.get("user_order", 99), step=1, key=f"ord_{m['id']}", label_visibility="collapsed")
-                    if new_order != m.get("user_order", 99):
-                        m["user_order"] = new_order
-                        save_db(db)
-                        safe_rerun()
-
                     task_mode_badge = "🔪 **[งานใหญ่]**" if m.get("subtasks") else "⚡ **[ม้วนเดียวจบ]**"
                     is_bounty = " ⚔️" if m.get("bounty") else ""; is_boss = " 💀 **[BOSS]**" if m.get("is_boss") else ""
                     order_badge = f" | {ROLE_MAP.get(m.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
+                    
+                    # 🔥 ติดป้าย Badge ว่าคิวที่เท่าไหร่!
+                    q_num = m.get("user_order", 99)
+                    q_badge = f"🎯 **[Q{q_num}]** " if q_num != 99 else ""
                     
                     is_overdue, deadline_badge = False, ""
                     dl_str = m.get("deadline", "")
@@ -509,7 +522,7 @@ with colRight:
                     if is_frozen: frozen_badge = " ❄️🚨 [เกราะแตก!]" if is_overdue else " ❄️ [แช่แข็ง]"
                     else: frozen_badge = ""
 
-                    c1.write(f"**{m.get('ประเภท','')}** | {task_mode_badge}{is_boss}{is_bounty} {m['ภารกิจ']}{order_badge}{deadline_badge}{frozen_badge}")
+                    c1.write(f"**{m.get('ประเภท','')}** | {q_badge}{task_mode_badge}{is_boss}{is_bounty} {m['ภารกิจ']}{order_badge}{deadline_badge}{frozen_badge}")
                     
                     all_done, has_today_progress = True, False
                     if m.get("subtasks"):
@@ -603,7 +616,7 @@ with colRight:
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
         pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
         
-        # 🔥 อัปเกรดระบบ Sorting การเรียนด้วย (ใช้ user_order เป็นหลัก)
+        # จัดเรียงวิชาเรียน โดยให้ความสำคัญกับคิว (user_order) เป็นอันดับหนึ่ง!
         todo_study.sort(key=lambda x: (x.get("user_order", 99), get_role_score(x.get("battle_role", "Main")), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
         
         study_needs_queueing = [s for s in todo_study if not s.get("is_queued", False)]
@@ -611,6 +624,7 @@ with colRight:
         if study_needs_queueing:
             with st.expander("⚔️📖 บัญชาการค่ายกลกระบวนทัพการเรียน", expanded=True):
                 with st.form("lock_study_order_form"):
+                    st.caption("เซ็ตตำแหน่งทัพของวิชาที่เพิ่งเข้ามาใหม่")
                     updated_s_orders, updated_s_roles = {}, {}
                     for s in study_needs_queueing:
                         role_choice = st.selectbox(f"วางตำแหน่งวิชา: {'💀 ' if s.get('is_boss') else ''}{s['ภารกิจ']}", ["⚡ ทัพหน้า", "⚔️ ทัพหลวง", "🏹 ทัพหนุน"], key=f"setup_s_role_{s['id']}")
@@ -622,24 +636,39 @@ with colRight:
                             if isinstance(s, dict) and s.get("id") in updated_s_orders: s["custom_order"] = updated_s_orders[s["id"]]; s["battle_role"] = updated_s_roles[s["id"]]; s["is_queued"] = True
                         save_db(db); st.success("📚 ตรึงค่ายกลการเรียนเรียบร้อย!"); safe_rerun()
 
+        # 🔥 ศูนย์บัญชาการล็อคคิวเรียน
+        if todo_study:
+            with st.expander("🎯 จัดลำดับคิวเรียน (ล็อคแผน 1-2-3)", expanded=False):
+                with st.form("set_study_order_form"):
+                    st.info("พิมพ์เลขคิว 1, 2, 3... ให้ครบทุกวิชาแล้วค่อยกดปุ่มล็อคลำดับด้านล่างทีเดียว! (จอจะไม่เด้งหนี)")
+                    new_s_orders = {}
+                    for s in todo_study:
+                        col_q, col_n = st.columns([1, 4])
+                        new_s_orders[s["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=s.get("user_order", 99), step=1, key=f"q_s_{s['id']}", label_visibility="collapsed")
+                        is_boss_lbl = "💀 [BOSS] " if s.get("is_boss") else ""
+                        col_n.write(f"{is_boss_lbl}{s['ภารกิจ']}")
+                    
+                    if st.form_submit_button("🔒 ล็อคลำดับทั้งหมด! (เซฟแผน)"):
+                        for s in db["study_missions"][safe_email]:
+                            if isinstance(s, dict) and s.get("id") in new_s_orders:
+                                s["user_order"] = new_s_orders[s["id"]]
+                        save_db(db)
+                        st.success("✅ ล็อคลำดับการเรียนเสร็จสมบูรณ์!")
+                        safe_rerun()
+
         if todo_study:
             for s in todo_study:
                 with st.container(border=True):
-                    # 🔥 ปรับ Columns ใหม่ เพิ่มช่องสำหรับพิมพ์เลขลำดับ (c_ord)
-                    c_ord, c1, c2, c3, c4, c5 = st.columns([1, 3.2, 1.8, 1.8, 1.6, 0.6])
+                    c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6])
                     
-                    # 🛠️ ปุ่มเปลี่ยนคิวแบบ Real-Time (ฝั่งการเรียน)
-                    c_ord.markdown("**🎯 คิวเรียน:**")
-                    new_order = c_ord.number_input("ลำดับ", min_value=1, max_value=99, value=s.get("user_order", 99), step=1, key=f"ord_stud_{s['id']}", label_visibility="collapsed")
-                    if new_order != s.get("user_order", 99):
-                        s["user_order"] = new_order
-                        save_db(db)
-                        safe_rerun()
-
                     task_mode_badge = "📖 **[ติวโครงการใหญ่]**" if s.get("subtasks") else "⚡ **[ทบทวนรอบเดียวจบ]**"
                     is_bounty = " ⚔️" if s.get("bounty") else ""; is_boss = " 💀 **[BOSS]**" if s.get("is_boss") else ""
                     order_badge = f" | {ROLE_MAP.get(s.get('battle_role', 'Main'), '⚔️ [ทัพหลวง]')}"
                     
+                    # 🔥 ติดป้าย Badge ว่าคิวที่เท่าไหร่!
+                    q_num = s.get("user_order", 99)
+                    q_badge = f"🎯 **[Q{q_num}]** " if q_num != 99 else ""
+
                     is_overdue, deadline_badge = False, ""
                     dl_str = s.get("deadline", "")
                     if dl_str and dl_str != "":
@@ -657,7 +686,7 @@ with colRight:
                         
                     frozen_badge = " ❄️🚨 [ค่ายกลแตก!]" if is_frozen and is_overdue else " ❄️ [แช่แข็ง]" if is_frozen else ""
 
-                    c1.write(f"**{s.get('ประเภท','')}** | {task_mode_badge}{is_boss}{is_bounty} {s['ภารกิจ']}{order_badge}{deadline_badge}{frozen_badge}")
+                    c1.write(f"**{s.get('ประเภท','')}** | {q_badge}{task_mode_badge}{is_boss}{is_bounty} {s['ภารกิจ']}{order_badge}{deadline_badge}{frozen_badge}")
                     
                     all_done, has_today_progress = True, False
                     if s.get("subtasks"):
