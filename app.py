@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.46 - FULL SPECTRUM)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.47 - THE MASTER PLAN)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️")
 
@@ -137,7 +137,7 @@ def load_db():
                 "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, 
                 "deadlines": {}, "haters": {}, "finance": {}, 
                 "iron_habits": {}, "exams": {}, "beat_yesterday": {}, 
-                "limit_breaks": {}, "weakness_fuel": {}
+                "limit_breaks": {}, "weakness_fuel": {}, "notes": {}
             }
             for k, v in defaults.items():
                 if k not in data or data[k] is None: 
@@ -151,7 +151,7 @@ def load_db():
         "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, 
         "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, 
         "finance": {}, "iron_habits": {}, "exams": {}, "beat_yesterday": {}, 
-        "limit_breaks": {}, "weakness_fuel": {}
+        "limit_breaks": {}, "weakness_fuel": {}, "notes": {}
     }
 
 def save_db(data):
@@ -278,7 +278,7 @@ with st.sidebar:
             safe_rerun()
 
 if st.session_state.current_user is None:
-    st.title("⚙️ DISCIPLINE ARC: FULL SPECTRUM")
+    st.title("⚙️ DISCIPLINE ARC: THE MASTER PLAN")
     st.info("👈 ล็อกอินด้านซ้ายเพื่อเผชิญหน้ากับปีศาจในใจและสร้างวินัยเหล็ก!")
     st.stop()
 
@@ -287,7 +287,7 @@ safe_email = st.session_state.current_user
 # ==========================================
 # 🔥 คอนฟิกโครงสร้าง Database
 # ==========================================
-list_keys = ["missions", "study_missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "iron_habits", "limit_breaks", "weakness_fuel"]
+list_keys = ["missions", "study_missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "iron_habits", "limit_breaks", "weakness_fuel", "notes"]
 dict_keys = ["finance", "exams", "beat_yesterday"]
 
 for k in list_keys:
@@ -356,30 +356,30 @@ if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!**
 st.divider()
 
 # ==========================================
-# 🗺️ THE ROADMAP (แผนผังชีวิตแนวดิ่ง - รวมงาน+เรียน+วินัย)
+# 🗺️ THE ROADMAP (แผนผังชีวิตบังคับกฎ: งาน -> เรียน -> วินัย)
 # ==========================================
 st.markdown("## 🗺️ THE ULTIMATE ROADMAP (แผนผังชีวิตประจำวัน)")
-st.caption("ลำดับถูกสร้างจาก 'คิว (Q)' ทั้งงาน เรียน และวินัยเหล็ก ทำตามแผนจากบนลงล่าง ห้ามข้ามขั้นเด็ดขาด!")
+st.caption("กฎเหล็กของ Roadmap: งาน (Missions) ➔ เรียน (Study) ➔ วินัยเหล็ก (Habits) ห้ามทำข้ามสเต็ปเด็ดขาด!")
 
 raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date") != today_str]
 raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date") != today_str]
-
-# ดึงวินัยเหล็กที่ยังไม่ทำในวันนี้มารวมในแผนผัง
 raw_h = []
 for h in db["iron_habits"][safe_email]:
     if isinstance(h, dict) and h.get("last_done_date") != today_str:
         raw_h.append({
-            "ภารกิจ": h["name"],
-            "user_order": h.get("user_order", 99),
-            "battle_role": "Support", 
-            "is_boss": False,
-            "ประเภท": "🟢 ชิลๆ",
-            "is_habit": True
+            "ภารกิจ": h["name"], "user_order": h.get("user_order", 99), "battle_role": "Support", "is_boss": False, "ประเภท": "🟢 ชิลๆ", "is_habit": True
         })
 
 all_active_tasks = raw_m + raw_s + raw_h
-# เรียงลำดับตามคิว Q เป็นหลัก
-all_active_tasks.sort(key=lambda x: (x.get("user_order", 99), get_role_score(x.get("battle_role", "Main")), 0 if x.get("is_boss") else 1, get_priority_score(x.get("ประเภท", ""))))
+
+# 🔥 การบังคับลำดับ Hierarchy: 1=Mission, 2=Study, 3=Habit
+def get_hierarchy_score(t):
+    if t.get("is_habit"): return 3
+    if t.get("is_study"): return 2
+    return 1
+
+# เรียงลำดับตาม: ประเภท(Hierarchy) -> แล้วค่อยตามด้วยเลขคิว(Q)
+all_active_tasks.sort(key=lambda x: (get_hierarchy_score(x), x.get("user_order", 99)))
 
 if not all_active_tasks:
     st.success("✅ Roadmap ว่างเปล่า! วันนี้เคลียร์แผนผังชีวิตหมดแล้ว ยอดเยี่ยมมาก!")
@@ -462,12 +462,13 @@ with colLeft:
             w_text = st.text_input("ความอ่อนแอที่มึงเคยทำพลาด:", key="input_weakness")
             if st.form_submit_button("🔥 เผาความกากเป็นพลัง!"):
                 if w_text: 
-                    db["weakness_fuel"][safe_email].append(w_text)
+                    db["weakness_fuel"][safe_email].append({"id": str(uuid.uuid4()), "text": w_text})
                     save_db(db); safe_rerun()
                     
         if safe_email in db.get("weakness_fuel", {}) and len(db["weakness_fuel"][safe_email]) > 0:
             random_weakness = random.choice(db["weakness_fuel"][safe_email])
-            st.error(f"🩸 **มึงเคยกากแบบนี้:**\n\n\"{random_weakness}\"\n\n*(จงแค้นตัวเอง และห้ามกลับไปเป็นไอ้ขี้แพ้แบบเดิม!)*")
+            w_disp = random_weakness.get("text", "") if isinstance(random_weakness, dict) else random_weakness
+            st.error(f"🩸 **มึงเคยกากแบบนี้:**\n\n\"{w_disp}\"\n\n*(จงแค้นตัวเอง และห้ามกลับไปเป็นไอ้ขี้แพ้แบบเดิม!)*")
 
         st.markdown("#### 🗣️ THE HATER'S WALL")
         with st.form("hater_form", clear_on_submit=True):
@@ -481,8 +482,8 @@ with colLeft:
 with colRight:
     st.markdown("## ⚙️ DISCIPLINE ZONE (พื้นที่ลงมือทำ)")
     
-    tab_missions, tab_study, tab_habits, tab_backlog, tab_cookie, tab_academic = st.tabs([
-        "🔪 ภารกิจงาน", "📖 ภารกิจเรียน", "⛓️ วินัยเหล็ก", "📝 สมุดจดแผน", "🍪 คลังชัยชนะ", "📚 ลานประลอง"
+    tab_missions, tab_study, tab_habits, tab_notes, tab_backlog, tab_cookie, tab_academic = st.tabs([
+        "🔪 งาน", "📖 เรียน", "⛓️ วินัยเหล็ก", "📓 โน้ตบัญชาการ", "📝 สมุดจดแผน", "🍪 ชัยชนะ", "📚 ลานประลอง"
     ])
     
     # ----------------------------------------------------
@@ -578,7 +579,6 @@ with colRight:
 
                 c1.write(f"**{m.get('ประเภท','')}** | {q_badge}{task_mode_badge}{is_boss}{is_bounty} {m['ภารกิจ']}{deadline_badge}{frozen_badge}")
                 
-                # แสดงรายละเอียดถ้ามี
                 if m.get("รายละเอียด"):
                     with st.expander("📝 ดูรายละเอียดงาน"):
                         st.write(m["รายละเอียด"])
@@ -718,7 +718,6 @@ with colRight:
 
                     c1.write(f"**{s.get('ประเภท','')}** | {q_badge}{task_mode_badge}{is_boss} {s['ภารกิจ']}{deadline_badge}{frozen_badge}")
                     
-                    # แสดงรายละเอียดถ้ามี
                     if s.get("รายละเอียด"):
                         with st.expander("📝 ดูขอบเขต/รายละเอียด"):
                             st.write(s["รายละเอียด"])
@@ -833,7 +832,41 @@ with colRight:
                     if c3.button("🗑️", key=f"del_h_{h['id']}"): db["iron_habits"][safe_email].remove(h); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 4: สมุดจดแผน (Backlog)
+    # TAB 4: โน้ตบัญชาการ (Command Notes System) 📓
+    # ----------------------------------------------------
+    with tab_notes:
+        st.markdown("### 📓 สมุดบัญชาการ (Command Notes)")
+        st.caption("จดเหตุการณ์สำคัญ แผนการล่วงหน้า หรือกลยุทธ์ต่างๆ เอาไว้ที่นี่ (แก้ไข / ลบได้ตลอดเวลา)")
+        
+        with st.form("note_form", clear_on_submit=True):
+            n_title = st.text_input("หัวข้อเรื่อง:", key="n_title")
+            n_content = st.text_area("รายละเอียดโน้ต / กลยุทธ์:", key="n_content")
+            if st.form_submit_button("💾 บันทึกโน้ต"):
+                if n_title:
+                    db["notes"][safe_email].append({
+                        "id": str(uuid.uuid4()), "date": today_str, "title": n_title, "content": n_content
+                    })
+                    save_db(db); st.success("✅ บันทึกกลยุทธ์เรียบร้อย!"); safe_rerun()
+
+        if db["notes"].get(safe_email):
+            st.divider()
+            for n in reversed(db["notes"][safe_email]):
+                if not isinstance(n, dict): continue
+                with st.expander(f"📝 {n['title']} (บันทึกเมื่อ: {n['date']})"):
+                    with st.form(f"edit_form_{n['id']}"):
+                        new_title = st.text_input("แก้หัวข้อ:", value=n['title'], key=f"edit_t_{n['id']}")
+                        new_content = st.text_area("แก้เนื้อหา:", value=n['content'], height=150, key=f"edit_c_{n['id']}")
+                        
+                        c1, c2 = st.columns([1, 1])
+                        if c1.form_submit_button("💾 บันทึกการแก้ไข"):
+                            n['title'] = new_title; n['content'] = new_content
+                            save_db(db); st.success("อัปเดตเรียบร้อย!"); safe_rerun()
+                        if c2.form_submit_button("🗑️ ลบทิ้ง"):
+                            db["notes"][safe_email].remove(n)
+                            save_db(db); safe_rerun()
+
+    # ----------------------------------------------------
+    # TAB 5: สมุดจดแผน (Backlog)
     # ----------------------------------------------------
     with tab_backlog:
         st.markdown("### 📝 แผนการในอนาคต (Backlog)")
@@ -883,7 +916,7 @@ with colRight:
                     if c4.button("🗑️", key=f"del_b_{b_task['id']}"): db["backlog"][safe_email].remove(b_task); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 5: โหลคุกกี้ (Cookie Jar) 🍪
+    # TAB 6: โหลคุกกี้ (Cookie Jar) 🍪
     # ----------------------------------------------------
     with tab_cookie:
         st.markdown("### 🍪 คลังเก็บความสำเร็จ (Cookie Jar)")
@@ -891,14 +924,14 @@ with colRight:
             win_text = st.text_input("วันนี้ทำอะไรสำเร็จบ้างที่ภูมิใจ?:", key="win_input")
             if st.form_submit_button("เก็บเข้าคลัง!"):
                 if win_text:
-                    db["cookie_jar"][safe_email].append({"วันที่": today_str, "ชัยชนะ": win_text})
+                    db["cookie_jar"][safe_email].append({"id": str(uuid.uuid4()), "วันที่": today_str, "ชัยชนะ": win_text})
                     user["exp"] += int(5 * (1.5 if current_streak>=30 else 1.2 if current_streak>=7 else 1.0)); save_db(db); st.success("✅ เก็บชัยชนะเรียบร้อย!"); safe_rerun()
         if db["cookie_jar"][safe_email]:
             for c in reversed(db["cookie_jar"][safe_email][-5:]):
                 if isinstance(c, dict): st.success(f"🏆 **[{c.get('วันที่', '-')}]** {c.get('ชัยชนะ', '')}")
 
     # ----------------------------------------------------
-    # TAB 6: ลานประลองปัญญา (EXAM & BEAT YESTERDAY) 📚
+    # TAB 7: ลานประลองปัญญา (EXAM & BEAT YESTERDAY) 📚
     # ----------------------------------------------------
     with tab_academic:
         st.markdown("### 📚 ลานประลอง (วัดผลความก้าวหน้า)")
@@ -1031,26 +1064,83 @@ else:
                 save_db(db); safe_rerun()
 
 # ==========================================
-# 8. 📜 ประวัติศาสตร์เส้นทางวินัย (HISTORY LOG)
+# 8. 📜 ประวัติศาสตร์เส้นทางวินัย (HISTORY LOG - REBUILT)
 # ==========================================
 st.divider()
 if not monk_mode:
     st.markdown("## 📜 ประวัติศาสตร์เส้นทางวินัย (HISTORY LOG)")
-    tab1, tab2, tab3, tab4 = st.tabs(["🏆 ความสำเร็จ", "🤡 ความกากในอดีต", "🗺️ บันทึกเดินทาง", "📊 BATTLE ANALYTICS"])
+    st.caption("ระบบประวัติแบบใหม่! แสดงเฉพาะงานที่ทำเสร็จแล้ว และลบข้อมูลเก่าๆ ทิ้งได้หากต้องการ!")
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["🗺️ บันทึกเดินทาง (ภารกิจ)", "🏆 โหลคุกกี้ (สำเร็จ)", "🤡 ความกาก & ข้ออ้าง", "📊 BATTLE ANALYTICS"])
 
+    # ----------------------------------------------------
+    # TAB 1: ประวัติงาน/เรียนที่ทำเสร็จแล้ว (ลบได้)
+    # ----------------------------------------------------
     with tab1:
-        if db["cookie_jar"].get(safe_email):
-            for item in reversed(db["cookie_jar"][safe_email]):
-                if isinstance(item, dict): st.success(f"🏆 **[{item.get('วันที่', '-')}]** : {item.get('ชัยชนะ', '')}")
+        st.markdown("### 🗺️ ประวัติภารกิจที่พิชิตแล้ว")
+        completed_m = sorted([m for m in db["missions"].get(safe_email, []) if isinstance(m, dict) and m.get("เสร็จแล้ว")], key=lambda x: x.get("วันที่", ""), reverse=True)
+        completed_s = sorted([s for s in db["study_missions"].get(safe_email, []) if isinstance(s, dict) and s.get("เสร็จแล้ว")], key=lambda x: x.get("วันที่", ""), reverse=True)
+        all_completed = completed_m + completed_s
+        
+        if not all_completed: st.info("ยังไม่มีภารกิจที่ทำสำเร็จ ไปลุยซะ!")
+        
+        for idx, item in enumerate(all_completed):
+            c1, c2 = st.columns([10, 1])
+            icon = "📖 เรียน" if item.get("is_study") else "🔪 งาน"
+            c1.info(f"✅ **[{item.get('วันที่', '-')}]** | {icon} | {item.get('ภารกิจ', '')} *(ความสำคัญ: {item.get('ประเภท','')})*")
+            if c2.button("🗑️", key=f"del_hm_{idx}_{item.get('id', idx)}"):
+                if item.get("is_study"): db["study_missions"][safe_email].remove(item)
+                else: db["missions"][safe_email].remove(item)
+                save_db(db); safe_rerun()
+
+    # ----------------------------------------------------
+    # TAB 2: ประวัติความสำเร็จ (โหลคุกกี้ - ลบได้)
+    # ----------------------------------------------------
+    with tab1: pass # just for logic grouping 
     with tab2:
-        if db["weakness_fuel"].get(safe_email):
-            for item in reversed(db["weakness_fuel"][safe_email]):
-                st.error(f"🩸 **[เชื้อเพลิงความแค้น]** : {item}")
+        st.markdown("### 🏆 โหลคุกกี้ (ความภูมิใจ)")
+        if not db["cookie_jar"].get(safe_email): st.info("ยังไม่มีความภูมิใจสะสมไว้")
+        for idx, c in enumerate(reversed(db["cookie_jar"].get(safe_email, []))):
+            c1, c2 = st.columns([10, 1])
+            if isinstance(c, dict):
+                c1.success(f"🏆 **[{c.get('วันที่', '-')}]** {c.get('ชัยชนะ', '')}")
+                if c2.button("🗑️", key=f"del_cj_{idx}_{c.get('id', idx)}"):
+                    db["cookie_jar"][safe_email].remove(c)
+                    save_db(db); safe_rerun()
+            else: # Fallback data เก่า
+                c1.success(f"🏆 {c}")
+                if c2.button("🗑️", key=f"del_cj_old_{idx}"):
+                    db["cookie_jar"][safe_email].remove(c)
+                    save_db(db); safe_rerun()
+
+    # ----------------------------------------------------
+    # TAB 3: ประวัติความกากและข้ออ้าง (ลบได้)
+    # ----------------------------------------------------
     with tab3:
-        total_missions_list = [m for m in db["missions"].get(safe_email, []) if isinstance(m, dict)] + [s for s in db["study_missions"].get(safe_email, []) if isinstance(s, dict)]
-        if total_missions_list:
-            mission_history = [{"วันที่เริ่ม": i.get('วันที่', '-'), "สมรภูมิ": "📖 เรียน" if i.get("is_study") else "🔪 งาน", "ภารกิจ": i.get('ภารกิจ', ''), "ความสำคัญ": i.get('ประเภท','-'), "สถานะ": "✅ เสร็จแล้ว" if i.get("เสร็จแล้ว") else "⏳ รอตรวจ" if i.get("รอตรวจ", False) else "❌ ดองอยู่"} for i in reversed(total_missions_list)]
-            st.dataframe(pd.DataFrame(mission_history), use_container_width=True, hide_index=True)
+        st.markdown("### 🩸 เชื้อเพลิงความแค้น (ความกากในอดีต)")
+        if not db["weakness_fuel"].get(safe_email): st.info("ยังไม่มีประวัติความกากที่จดไว้ (ดีมาก!)")
+        for idx, w in enumerate(reversed(db["weakness_fuel"].get(safe_email, []))):
+            c1, c2 = st.columns([10, 1])
+            w_text = w.get("text", "") if isinstance(w, dict) else w
+            c1.error(f"🩸 **[เชื้อเพลิงความแค้น]** : {w_text}")
+            if c2.button("🗑️", key=f"del_wf_{idx}"):
+                db["weakness_fuel"][safe_email].remove(w)
+                save_db(db); safe_rerun()
+                
+        st.divider()
+        st.markdown("### 🤡 ข้ออ้างที่เคยใช้")
+        if not db["excuses"].get(safe_email): st.info("ยังไม่มีข้ออ้างขยะๆ (รักษาความดีนี้ไว้!)")
+        for idx, e in enumerate(reversed(db["excuses"].get(safe_email, []))):
+            c1, c2 = st.columns([10, 1])
+            if isinstance(e, dict):
+                c1.warning(f"🤡 **[{e.get('วันที่', '-')}]** : {e.get('ข้ออ้าง', '')}")
+                if c2.button("🗑️", key=f"del_ex_{idx}"):
+                    db["excuses"][safe_email].remove(e)
+                    save_db(db); safe_rerun()
+
+    # ----------------------------------------------------
+    # TAB 4: BATTLE ANALYTICS
+    # ----------------------------------------------------
     with tab4:
         all_m = [m for m in db["missions"].get(safe_email, []) if isinstance(m, dict)] + [s for s in db["study_missions"].get(safe_email, []) if isinstance(s, dict)]
         total_m = len(all_m)
