@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.44 - ABSOLUTE FOCUS)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.45 - THE WAR OF MINDS)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️")
 
@@ -35,40 +35,31 @@ ROLE_MAP = {
 }
 
 PUNISHMENTS = [
-    "ไปดันพื้น 50 ทีเดี๋ยวนี้! ลงโทษความไม่มีวินัย!",
-    "แพลงก์ 2 นาที! เอาความเจ็บปวดสร้าง Discipline!",
+    "ไปดันพื้น 50 ทีเดี๋ยวนี้! ลงโทษความอ่อนแอ!",
+    "แพลงก์ 2 นาที! เอาความเจ็บปวดล้างสมองซะ!",
     "ลุกไปอาบน้ำเย็นจัด 5 นาทีเดี๋ยวนี้ ไป!",
     "กระโดดตบ 100 ครั้ง สลัดความขี้เกียจทิ้งไป!",
-    "ห้ามจับมือถือ 1 ชั่วโมงนับจากนี้! นั่งสมาธิทบทวนตัวเอง!",
+    "ห้ามจับมือถือ 1 ชั่วโมงนับจากนี้! นั่งสมาธิทบทวนความกากของตัวเอง!",
     "สควอช (ลุกนั่ง) 60 ที เอาให้ขาเบิร์น!",
     "เดินไปตะโกนใส่กำแพงว่า 'กูจะไม่ยอมกลับไปกระจอกอีก!' 10 รอบ!"
 ]
 
-LAZY_VOICES = [
-    "🤡 ข้ออ้าง: 'พักเถอะมึง วันนี้เหนื่อยมาเยอะแล้ว...'",
-    "🤡 ข้ออ้าง: 'พรุ่งนี้ค่อยทำก็ได้น่า ไม่มีใครรู้หรอก...'",
-    "🤡 ข้ออ้าง: 'เล่นเกมแป๊บเดียวเอง ไม่หลุด Discipline หรอก...'"
+# เสียงจากก้นเหว (ไซโคให้ดิ่งลง ดึงงานมาพูด)
+ABYSS_VOICES = [
+    "มึงทำ '{task}' ไม่ได้หรอก... ยอมแพ้แล้วกลับไปนอนโง่ๆ ซะเถอะ...",
+    "ดอง '{task}' ไว้ก่อนสิ ไม่มีใครรู้หรอก พักก่อน... มึงมันก็แค่ไอ้ขี้แพ้คนเดิมนั่นแหละ!",
+    "ถ้า '{task}' มันยากนัก ก็เทมันทิ้งไปสิ มึงจะได้กลับไปใช้ชีวิตกากๆ แบบที่มึงคู่ควรไง...",
+    "วันนี้มึงหนี '{task}' พรุ่งนี้มึงก็จะแพ้ทุกอย่างในชีวิต! ล้มเลิกซะเถอะ!",
+    "เวลาของมึงกำลังจะหมด... มึงทำ '{task}' ไม่ทันหรอก หลับตาแล้วยอมรับความพ่ายแพ้ซะ!"
 ]
 
-SAVAGE_VOICES = [
-    "⚙️ เสียงวินัย: 'หุบปาก! อารมณ์ไม่เกี่ยว กูมีหน้าที่ทำตามแผนที่วางไว้!'",
-    "⚙️ เสียงวินัย: 'ความเจ็บปวดจากการมีวินัย ดีกว่าความเจ็บปวดจากความเสียใจ!'",
-    "⚙️ เสียงวินัย: 'Discipline Arc เริ่มต้นที่ก้าวนี้ ลุยต่อ!'"
-]
-
+# เสียงแม่ทัพเหล็ก (กระชากขึ้นมาสู้)
 COMMANDER_VOICES = [
-    "⚔️ แม่ทัพเหล็ก: 'ไม่ต้องคิดเยอะ! สมองมีไว้สั่ง ร่างกายมีไว้ทำ! ลุยดิวะ!'",
-    "⚔️ แม่ทัพเหล็ก: 'เป้าหมายอยู่ตรงหน้า ข้ามศพความขี้เกียจของมึงไปซะ!'",
-    "⚔️ แม่ทัพเหล็ก: 'ความสำเร็จไม่เคยปรานีคนอ่อนแอ! จับอาวุธของมึงขึ้นมา!'"
-]
-
-# ข้อความหลอกหลอน (ดึงชื่อเป้าหมายมาใส่)
-HAUNTING_VOICES = [
-    "ถ้ามึงไม่ยอมทำ '{task}' ให้เสร็จ... มึงก็เตรียมตัวกลับไปเป็นไอ้กระจอกคนเดิมได้เลย!",
-    "ดอง '{task}' ไว้ทำไม? อยากให้คนอื่นเหยียบหัวมึงไปตลอดชีวิตเหรอวะ?",
-    "วันนี้มึงแพ้ให้ '{task}' พรุ่งนี้มึงก็จะแพ้ทุกอย่างในชีวิต! จำไว้!",
-    "หลับตาลงคืนนี้ มึงจะภูมิใจตัวเองได้ไง ถ้าแค่งาน '{task}' มึงยังหนีมัน!",
-    "เวลาของมึงกำลังหมดลง! ถ้า '{task}' ยังไม่ขยับ มึงก็คือคนขี้แพ้!"
+    "อย่าไปฟังเสียงสวะนั่น! ลุกขึ้นมา! ร่างกายนี้มึงคุม ไปฟาด '{task}' ให้แหลกคามือ!",
+    "เป้าหมายอยู่ตรงหน้า! เหยียบหัวความขี้เกียจแล้วลุย '{task}' เดี๋ยวนี้!",
+    "ความเจ็บปวดจากการมีวินัย ดีกว่าความเจ็บปวดจากความเสียใจ! จับอาวุธไปลุย '{task}' ซะ!",
+    "สู้ดิวะไอ้เสือ! แค่ '{task}' มันจะไปยากอะไรสำหรับมึง! ลุกไปลุย!",
+    "ความสำเร็จไม่เคยปรานีคนอ่อนแอ! ปิดหูแล้วเดินหน้าชน '{task}' ตอนนี้เลย!"
 ]
 
 AMBUSH_TASKS = [
@@ -81,9 +72,9 @@ def get_safe_email(email):
     return email.replace(".", "-").replace("@", "-")
 
 def get_title(level):
-    if level < 3: return "🤡 ไอ้ลูกหมาไร้วินัย"
-    elif level < 7: return "⚙️ ผู้เริ่มต้นสร้างเส้นทาง (Discipline Seeker)"
-    elif level < 12: return "🦍 นักรบผู้คุมจิตใจ (Mind Master)"
+    if level < 3: return "🤡 ไอ้ขี้แพ้ที่รอการพิสูจน์"
+    elif level < 7: return "⚙️ ผู้ทุบทำลายขีดจำกัด (Limit Breaker)"
+    elif level < 12: return "🦍 นักรบผู้คุมปีศาจในใจ (Mind Master)"
     else: return "👑 ปรมาจารย์แห่งวินัยเหล็ก (Discipline God)"
 
 def get_priority_score(task_type):
@@ -148,7 +139,7 @@ def load_db():
                 "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, 
                 "deadlines": {}, "haters": {}, "finance": {}, 
                 "iron_habits": {}, "exams": {}, "beat_yesterday": {}, 
-                "limit_breaks": {}
+                "limit_breaks": {}, "weakness_fuel": {}
             }
             for k, v in defaults.items():
                 if k not in data or data[k] is None: 
@@ -162,7 +153,7 @@ def load_db():
         "dark_room": {}, "anti_simp": {}, "dopamine_fails": {}, 
         "excuses": {}, "cookie_jar": {}, "deadlines": {}, "haters": {}, 
         "finance": {}, "iron_habits": {}, "exams": {}, "beat_yesterday": {}, 
-        "limit_breaks": {}
+        "limit_breaks": {}, "weakness_fuel": {}
     }
 
 def save_db(data):
@@ -259,7 +250,7 @@ with st.sidebar:
         st.info(f"🛡️ ฉายา: {get_title(u_data['level'])}")
         
         scars = len(db.get("dopamine_fails", {}).get(safe_email, []))
-        st.markdown(f"🩻 **รอยแผลที่แพ้ต่อใจตัวเอง: {scars} รอย**")
+        st.markdown(f"🩻 **รอยแผลความพ่ายแพ้: {scars} รอย**")
         st.warning(f"🔥 ความต่อเนื่อง (Consistency): {u_data['streak']} วัน")
         
         current_streak = u_data.get("streak", 0)
@@ -289,8 +280,8 @@ with st.sidebar:
             safe_rerun()
 
 if st.session_state.current_user is None:
-    st.title("⚙️ DISCIPLINE ARC: LIFE MANAGEMENT")
-    st.info("👈 ล็อกอินด้านซ้ายเพื่อเริ่มต้นสร้างวินัยให้ชีวิต!")
+    st.title("⚙️ DISCIPLINE ARC: THE WAR OF MINDS")
+    st.info("👈 ล็อกอินด้านซ้ายเพื่อเผชิญหน้ากับปีศาจในใจและสร้างวินัยเหล็ก!")
     st.stop()
 
 safe_email = st.session_state.current_user
@@ -298,7 +289,7 @@ safe_email = st.session_state.current_user
 # ==========================================
 # 🔥 คอนฟิกโครงสร้าง Database
 # ==========================================
-list_keys = ["missions", "study_missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "iron_habits", "limit_breaks"]
+list_keys = ["missions", "study_missions", "backlog", "dark_room", "anti_simp", "dopamine_fails", "excuses", "cookie_jar", "deadlines", "haters", "iron_habits", "limit_breaks", "weakness_fuel"]
 dict_keys = ["finance", "exams", "beat_yesterday"]
 
 for k in list_keys:
@@ -350,7 +341,7 @@ with colTop1:
         safe_rerun()
 with colTop2:
     if st.button("⚡ ปลุกวินัย\n(Focus Now!)", use_container_width=True, key="btn_boost"):
-        st.toast(f"🔊 {random.choice(SAVAGE_VOICES)}", icon="⚙️")
+        st.toast("🔥 อย่าถอย! ลุยดิวะ!", icon="⚙️")
 with colTop3:
     st.error(f"⏳ **ชะตาชีวิต:** {user.get('target_name', 'เป้าหมายสูงสุด')} ในอีก **{days_left}** วัน!")
     with st.popover("⚙️ ตั้งค่านับถอยหลัง"):
@@ -381,11 +372,9 @@ all_active_tasks.sort(key=lambda x: (x.get("user_order", 99), get_role_score(x.g
 if not all_active_tasks:
     st.success("✅ Roadmap ว่างเปล่า! วันนี้เคลียร์แผนผังชีวิตหมดแล้ว ยอดเยี่ยมมาก!")
 else:
-    # 📌 สร้าง Flowchart แนวนอนลงมาแนวดิ่ง (TD)
     mermaid_str = "graph TD\n"
-    # กำหนด Style ให้กล่องที่ต้องทำเป็นอันดับ 1 เด่นกระแทกตา
-    mermaid_str += "classDef targetNode fill:#ff4b4b,stroke:#ffffff,stroke-width:4px,color:#ffffff,font-size:16px,font-weight:bold;\n"
-    mermaid_str += "classDef pendingNode fill:#262730,stroke:#888888,stroke-width:2px,color:#ffffff,font-size:14px;\n"
+    mermaid_str += "classDef targetNode fill:#ff4b4b,stroke:#ffffff,stroke-width:4px,color:#ffffff,font-size:18px,font-weight:bold;\n"
+    mermaid_str += "classDef pendingNode fill:#262730,stroke:#888888,stroke-width:2px,color:#ffffff,font-size:16px;\n"
     mermaid_str += "START((🔥 เริ่มวัน)):::pendingNode --> "
     
     for idx, task in enumerate(all_active_tasks):
@@ -405,10 +394,21 @@ else:
     mermaid_str += f'{task_id} --> END((🌙 จบวัน/พักผ่อน)):::pendingNode\n'
     st.markdown(f"```mermaid\n{mermaid_str}\n```")
 
-    # 👻 ระบบหลอกหลอน
+    # ==========================================
+    # 🧠 THE INTERNAL CLASH (สงครามในหัวมึง)
+    # ==========================================
     next_task_name = all_active_tasks[0]['ภารกิจ']
-    haunting_msg = random.choice(HAUNTING_VOICES).format(task=next_task_name)
-    st.error(f"👻 **เสียงหลอกหลอนจากอนาคต:** {haunting_msg}")
+    st.divider()
+    st.markdown("### 🧠 สงครามในจิตใจ (The Clash of Minds)")
+    c_abyss, c_cmdr = st.columns(2)
+    
+    with c_abyss:
+        abyss_msg = random.choice(ABYSS_VOICES).format(task=next_task_name)
+        st.error(f"💀 **ก้นเหวแห่งความขี้เกียจ (ดึงลง):**\n\n\"{abyss_msg}\"")
+        
+    with c_cmdr:
+        cmdr_msg = random.choice(COMMANDER_VOICES).format(task=next_task_name)
+        st.success(f"⚔️ **แม่ทัพเหล็ก (กระชากขึ้น):**\n\n\"{cmdr_msg}\"")
 
 st.divider()
 
@@ -424,41 +424,40 @@ else:
 with colLeft:
     if not monk_mode:
         st.markdown("### 🗑️ ขยะในจิตใจ (Distractions)")
-        st.warning(random.choice(LAZY_VOICES))
-        
         fail_prob = user.get('failure_prob', 10)
         st.markdown(f"**📉 โอกาสหลุดวงโคจรวินัย: {fail_prob}%**")
         st.progress(fail_prob / 100)
-        st.caption("🚨 ถ้าระเบิดถึง 100% มึงเตรียมรับบทลงโทษได้เลย!")
-            
-        with st.form("excuse_form", clear_on_submit=True):
-            exc_text = st.text_input("วันนี้มึงมีข้ออ้างอะไรอีก?:", key="input_excuse")
-            if st.form_submit_button("บันทึกความอ่อนแอ"):
-                if exc_text:
-                    db["excuses"][safe_email].append({"วันที่": today_str, "ข้ออ้าง": exc_text})
-                    user["failure_prob"] = min(100, user["failure_prob"] + 10)
-                    save_db(db); safe_rerun()
-                    
+        
         if st.button("💀 กดยอมแพ้ให้สิ่งเร้า", key="btn_fail_dopamine", use_container_width=True):
             db["dopamine_fails"][safe_email].append(today_str)
             user["exp"] = 0; user["blood_debt"] += 50; user["in_cage"] = True
             user["failure_prob"] = min(100, user["failure_prob"] + 20)
             save_db(db); safe_rerun()
 
-        st.markdown("#### 🩸 THE HATER'S WALL")
+        st.markdown("#### 🩸 เชื้อเพลิงความแค้น (Vengeance Fuel)")
+        st.caption("จดความกากของตัวเองในอดีต เอาไว้ดูเพื่อความเจ็บใจ จะได้ไม่ทำตัวแบบนั้นอีก!")
+        with st.form("weakness_fuel_form", clear_on_submit=True):
+            w_text = st.text_input("ความอ่อนแอที่มึงเคยทำพลาด:", key="input_weakness")
+            if st.form_submit_button("🔥 เผาความกากเป็นพลัง!"):
+                if w_text: 
+                    db["weakness_fuel"][safe_email].append(w_text)
+                    save_db(db); safe_rerun()
+                    
+        if safe_email in db.get("weakness_fuel", {}) and len(db["weakness_fuel"][safe_email]) > 0:
+            random_weakness = random.choice(db["weakness_fuel"][safe_email])
+            st.error(f"🩸 **มึงเคยกากแบบนี้:**\n\n\"{random_weakness}\"\n\n*(จงแค้นตัวเอง และห้ามกลับไปเป็นไอ้ขี้แพ้แบบเดิม!)*")
+
+        st.markdown("#### 🗣️ THE HATER'S WALL")
         with st.form("hater_form", clear_on_submit=True):
             h_text = st.text_input("คำดูถูกที่ฝังใจ:", key="input_hater")
-            if st.form_submit_button("ฝังความแค้นไว้ผลักดัน"):
+            if st.form_submit_button("ฝังความแค้น"):
                 if h_text: 
                     db["haters"][safe_email].append(h_text); save_db(db); safe_rerun()
-        if safe_email in db["haters"] and isinstance(db["haters"][safe_email], list) and len(db["haters"][safe_email]) > 0:
-            st.error(f"🤬 \"{random.choice(db['haters'][safe_email])}\"")
+        if safe_email in db.get("haters", {}) and isinstance(db["haters"][safe_email], list) and len(db["haters"][safe_email]) > 0:
+            st.warning(f"🤬 \"{random.choice(db['haters'][safe_email])}\"")
 
 with colRight:
     st.markdown("## ⚙️ DISCIPLINE ZONE (พื้นที่ลงมือทำ)")
-    
-    # ⚔️ เสียงแม่ทัพเหล็กกระตุ้นใจ
-    st.success(random.choice(COMMANDER_VOICES))
     
     tab_missions, tab_study, tab_habits, tab_backlog, tab_cookie, tab_academic = st.tabs([
         "🔪 ภารกิจงาน", "📖 ภารกิจเรียน", "⛓️ วินัยเหล็ก", "📝 สมุดจดแผน", "🍪 คลังชัยชนะ", "📚 ลานประลอง"
@@ -505,7 +504,6 @@ with colRight:
         
         todo_missions.sort(key=lambda x: (x.get("user_order", 99), get_role_score(x.get("battle_role", "Main")), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
         
-        # 🔥 ล็อคคิวแบบรวดเดียว
         if todo_missions:
             with st.expander("🎯 วางแผนลำดับงาน (Q-Order Strategy)", expanded=False):
                 with st.form("set_order_form"):
@@ -525,7 +523,6 @@ with colRight:
 
         if todo_missions:
             for m in todo_missions:
-                # ไฮไลท์กรอบงานแรก
                 is_first_task = (m == todo_missions[0])
                 bg_style = "border: 2px solid #ff4b4b; padding: 10px; border-radius: 5px; margin-bottom: 10px;" if is_first_task else "border: 1px solid #444; padding: 10px; border-radius: 5px; margin-bottom: 10px;"
                 
@@ -968,16 +965,16 @@ else:
 st.divider()
 if not monk_mode:
     st.markdown("## 📜 ประวัติศาสตร์เส้นทางวินัย (HISTORY LOG)")
-    tab1, tab2, tab3, tab4 = st.tabs(["🏆 ความสำเร็จ", "🤡 ข้ออ้าง", "🗺️ บันทึกเดินทาง", "📊 BATTLE ANALYTICS"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🏆 ความสำเร็จ", "🤡 ความกากในอดีต", "🗺️ บันทึกเดินทาง", "📊 BATTLE ANALYTICS"])
 
     with tab1:
         if db["cookie_jar"].get(safe_email):
             for item in reversed(db["cookie_jar"][safe_email]):
                 if isinstance(item, dict): st.success(f"🏆 **[{item.get('วันที่', '-')}]** : {item.get('ชัยชนะ', '')}")
     with tab2:
-        if db["excuses"].get(safe_email):
-            for item in reversed(db["excuses"][safe_email]):
-                if isinstance(item, dict): st.error(f"🤡 **[{item.get('วันที่', '-')}]** : {item.get('ข้ออ้าง', '')}")
+        if db["weakness_fuel"].get(safe_email):
+            for item in reversed(db["weakness_fuel"][safe_email]):
+                st.error(f"🩸 **[เชื้อเพลิงความแค้น]** : {item}")
     with tab3:
         total_missions_list = [m for m in db["missions"].get(safe_email, []) if isinstance(m, dict)] + [s for s in db["study_missions"].get(safe_email, []) if isinstance(s, dict)]
         if total_missions_list:
@@ -988,9 +985,9 @@ if not monk_mode:
         total_m = len(all_m)
         done_m = len([m for m in all_m if m.get("เสร็จแล้ว")])
         win_rate = (done_m / total_m * 100) if total_m > 0 else 0
-        win_count, fail_count = len([c for c in db["cookie_jar"].get(safe_email, []) if isinstance(c, dict)]), len([e for e in db["excuses"].get(safe_email, []) if isinstance(e, dict)])
+        win_count, fail_count = len([c for c in db["cookie_jar"].get(safe_email, []) if isinstance(c, dict)]), len(db["weakness_fuel"].get(safe_email, []))
         
         c_stat1, c_stat2, c_stat3, c_stat4 = st.columns(4)
         c_stat1.metric("อัตราการรักษาวินัย", f"{win_rate:.1f}%"); c_stat2.metric("บอสที่จัดการได้", f"{len([m for m in all_m if m.get('เสร็จแล้ว') and m.get('is_boss')])} ตัว")
-        c_stat3.metric("เป้าหมายสำเร็จ", f"{done_m} / {total_m}"); c_stat4.metric("รอยแผลข้ออ้าง", f"{fail_count} รอย")
-        if win_count + fail_count > 0: st.bar_chart(pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Discipline (ชนะ)", "Bitch (แพ้ใจ)"]))
+        c_stat3.metric("เป้าหมายสำเร็จ", f"{done_m} / {total_m}"); c_stat4.metric("รอยแผลความกาก", f"{fail_count} รอย")
+        if win_count + fail_count > 0: st.bar_chart(pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Discipline (ชนะใจ)", "Weakness (เคยกาก)"]))
