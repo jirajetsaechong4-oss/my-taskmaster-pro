@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.50 - MAXIMUM OVERDRIVE)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.51 - THE IRON WILL)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️")
 
@@ -28,9 +28,9 @@ def safe_rerun():
     except AttributeError:
         st.experimental_rerun()
 
-# ----------------- ระบบสุ่มที่เสถียร (Stable Random) -----------------
+# ----------------- ระบบสุ่มที่เสถียร & เร็วที่สุด -----------------
 def get_stable_index(id_str, list_len):
-    """ใช้ Hash ID ของงาน เพื่อให้สุ่มได้ประโยคเดิมเสมอ ไม่กระพริบเปลี่ยนไปมาเวลาคลิกปุ่ม"""
+    """ใช้ Hash ID ของงาน เพื่อให้สุ่มได้ประโยคเดิมเสมอ โค้ดเสถียรและไวมาก"""
     return int(hashlib.md5(id_str.encode('utf-8')).hexdigest(), 16) % list_len
 
 ROLE_MAP = {
@@ -338,7 +338,7 @@ with st.sidebar:
             safe_rerun()
 
 if st.session_state.current_user is None:
-    st.title("⚙️ DISCIPLINE ARC: V.50 MAXIMUM OVERDRIVE")
+    st.title("⚙️ DISCIPLINE ARC: V.51 THE IRON WILL")
     st.info("👈 ล็อกอินด้านซ้ายเพื่อเผชิญหน้ากับปีศาจในใจและสร้างวินัยเหล็ก!")
     st.stop()
 
@@ -599,7 +599,7 @@ with colRight:
                             final_dl = str(m_deadline) if m_dl_type != "ไม่กำหนด" else ""
                             db["missions"][safe_email].append({
                                 "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, "รายละเอียด": m_detail, 
-                                "consequence": m_conseq.strip(), # เซฟข้อมูล (ถ้าว่างระบบจะดึงจาก Hashing)
+                                "consequence": m_conseq.strip(),
                                 "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
                                 "custom_order": 99, "user_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "subtasks": subtasks, "เสร็จแล้ว": False, 
                                 "รอตรวจ": False, "deadline": final_dl, "deadline_type": m_dl_type
@@ -660,19 +660,18 @@ with colRight:
 
                 c1.write(f"**{m.get('ประเภท','')}** | {q_badge}{task_mode_badge}{is_boss}{is_bounty} {m['ภารกิจ']}{deadline_badge}{frozen_badge}")
                 
-                # 🔥 STABLE HYPE RENDERING LOGIC (The Ultimate Optimization)
-                task_id = str(m.get("id", "unk"))
+                # 🔥 STABLE HYPE RENDERING LOGIC
+                m_id = str(m.get("id", f"unk_m_{m.get('ภารกิจ', '')}"))
                 display_conseq = m.get("consequence", "")
                 if not display_conseq: 
-                    display_conseq = WARRIOR_CONSEQUENCES[get_stable_index(task_id + "conseq", len(WARRIOR_CONSEQUENCES))]
+                    display_conseq = WARRIOR_CONSEQUENCES[get_stable_index(m_id + "conseq", len(WARRIOR_CONSEQUENCES))]
                 
                 display_hype = m.get("motivation", "")
                 if not display_hype: 
-                    display_hype = WARRIOR_MOTIVATIONS[get_stable_index(task_id + "hype", len(WARRIOR_MOTIVATIONS))]
+                    display_hype = WARRIOR_MOTIVATIONS[get_stable_index(m_id + "hype", len(WARRIOR_MOTIVATIONS))]
                 
-                # เรนเดอร์ความเจ็บปวดและการปลุกใจ
-                c1.markdown(f"<div style='font-size: 0.9em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-bottom: 5px; margin-top: 5px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {display_conseq}</div>", unsafe_allow_html=True)
-                c1.markdown(f"<div style='font-size: 0.9em; background: rgba(255, 165, 0, 0.1); padding: 5px; border-left: 3px solid #ffa500; margin-bottom: 10px;'>🔥 <b>ปลุกใจ:</b> {display_hype}</div>", unsafe_allow_html=True)
+                c1.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-bottom: 5px; margin-top: 5px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {display_conseq}</div>", unsafe_allow_html=True)
+                c1.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 165, 0, 0.1); padding: 5px; border-left: 3px solid #ffa500; margin-bottom: 10px;'>🔥 <b>ปลุกใจ:</b> {display_hype}</div>", unsafe_allow_html=True)
                 
                 if m.get("รายละเอียด"):
                     with st.expander("📝 ดูรายละเอียดงาน"):
@@ -815,8 +814,8 @@ with colRight:
 
                     c1.write(f"**{s.get('ประเภท','')}** | {q_badge}{task_mode_badge}{is_boss} {s['ภารกิจ']}{deadline_badge}{frozen_badge}")
                     
-                    # 🔥 STABLE HYPE RENDERING LOGIC สำหรับเรียน
-                    s_id = str(s.get("id", "unk"))
+                    # 🔥 STABLE HYPE RENDERING LOGIC
+                    s_id = str(s.get("id", f"unk_s_{s.get('ภารกิจ', '')}"))
                     display_conseq = s.get("consequence", "")
                     if not display_conseq: 
                         display_conseq = WARRIOR_CONSEQUENCES[get_stable_index(s_id + "conseq", len(WARRIOR_CONSEQUENCES))]
@@ -825,8 +824,8 @@ with colRight:
                     if not display_hype: 
                         display_hype = WARRIOR_MOTIVATIONS[get_stable_index(s_id + "hype", len(WARRIOR_MOTIVATIONS))]
                     
-                    c1.markdown(f"<div style='font-size: 0.9em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-bottom: 5px; margin-top: 5px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {display_conseq}</div>", unsafe_allow_html=True)
-                    c1.markdown(f"<div style='font-size: 0.9em; background: rgba(255, 165, 0, 0.1); padding: 5px; border-left: 3px solid #ffa500; margin-bottom: 10px;'>🔥 <b>ปลุกใจ:</b> {display_hype}</div>", unsafe_allow_html=True)
+                    c1.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-bottom: 5px; margin-top: 5px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {display_conseq}</div>", unsafe_allow_html=True)
+                    c1.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 165, 0, 0.1); padding: 5px; border-left: 3px solid #ffa500; margin-bottom: 10px;'>🔥 <b>ปลุกใจ:</b> {display_hype}</div>", unsafe_allow_html=True)
                     
                     if s.get("รายละเอียด"):
                         with st.expander("📝 ดูขอบเขต/รายละเอียด"):
@@ -891,10 +890,12 @@ with colRight:
             with st.form("habit_form", clear_on_submit=True):
                 h_name = st.text_input("ชื่อวินัย (เช่น นั่งสมาธิ 10 นาที, ดื่มน้ำ):", key="h_name")
                 h_detail = st.text_input("คติเตือนใจ / ทำไปทำไม?:", key="h_detail")
+                # 🔥 NEW FEATURE: THE CONSEQUENCE สำหรับวินัยเหล็ก
+                h_conseq = st.text_input("🩸 ผลของการหลุดวินัย (ถ้ามึงทิ้งวินัยนี้ จะเกิดอะไรขึ้น? / ว่างไว้เพื่อสุ่มคำด่า):", key="h_conseq")
                 if st.form_submit_button("บรรจุวินัยเหล็ก"):
                     if h_name:
                         db["iron_habits"][safe_email].append({
-                            "id": str(uuid.uuid4()), "name": h_name, "รายละเอียด": h_detail, "last_done_date": "", "total_done": 0, "user_order": 99
+                            "id": str(uuid.uuid4()), "name": h_name, "รายละเอียด": h_detail, "consequence": h_conseq.strip(), "last_done_date": "", "total_done": 0, "user_order": 99
                         })
                         save_db(db); safe_rerun()
         
@@ -930,16 +931,29 @@ with colRight:
                     c1.write(f"⛓️ {q_badge}**{h['name']}**  *(ทำไปแล้ว {total_d} ครั้ง)*")
                     if h.get("รายละเอียด"):
                         c1.caption(f"💡 เป้าหมาย: {h['รายละเอียด']}")
+                    
+                    # 🔥 STABLE HYPE RENDERING LOGIC สำหรับวินัยเหล็ก
+                    h_id = str(h.get("id", f"unk_h_{h.get('name', '')}"))
+                    display_conseq = h.get("consequence", "")
+                    if not display_conseq: 
+                        display_conseq = WARRIOR_CONSEQUENCES[get_stable_index(h_id + "conseq", len(WARRIOR_CONSEQUENCES))]
+                    
+                    display_hype = h.get("motivation", "")
+                    if not display_hype: 
+                        display_hype = WARRIOR_MOTIVATIONS[get_stable_index(h_id + "hype", len(WARRIOR_MOTIVATIONS))]
+                    
+                    c1.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-top: 5px;'>🩸 <b>ถ้าหลุดวินัย:</b> {display_conseq}</div>", unsafe_allow_html=True)
+                    c1.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 165, 0, 0.1); padding: 5px; border-left: 3px solid #ffa500; margin-bottom: 5px; margin-top: 5px;'>🔥 <b>ปลุกใจ:</b> {display_hype}</div>", unsafe_allow_html=True)
                         
                     if h.get("last_done_date") == today_str: 
                         c2.success("✅ รักษาวินัยได้แล้ววันนี้!")
                     else:
-                        if c2.button("🔥 กูทำสำเร็จ!", key=f"h_done_{h['id']}", use_container_width=True):
+                        if c2.button("🔥 กูทำสำเร็จ!", key=f"h_done_{h.get('id', h_id)}", use_container_width=True):
                             h["last_done_date"] = today_str
                             h["total_done"] = h.get("total_done", 0) + 1
                             bonus, fail_sub = (10, 5) if current_streak >= 30 else (7, 3) if current_streak >= 7 else (5, 2)
                             user["exp"] += bonus; user["failure_prob"] = max(0, user["failure_prob"] - fail_sub); save_db(db); st.toast(f"🛡️ โอกาสหลุดวงโคจรลดลง -{fail_sub}%!", icon="🛡️"); safe_rerun()
-                    if c3.button("🗑️", key=f"del_h_{h['id']}"): db["iron_habits"][safe_email].remove(h); save_db(db); safe_rerun()
+                    if c3.button("🗑️", key=f"del_h_{h.get('id', h_id)}"): db["iron_habits"][safe_email].remove(h); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
     # TAB 4: โน้ตบัญชาการ (Command Notes System) 📓
