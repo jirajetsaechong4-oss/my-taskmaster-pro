@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.49 - THE ULTIMATE STAKES)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.50 - MAXIMUM OVERDRIVE)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️")
 
@@ -28,6 +28,11 @@ def safe_rerun():
     except AttributeError:
         st.experimental_rerun()
 
+# ----------------- ระบบสุ่มที่เสถียร (Stable Random) -----------------
+def get_stable_index(id_str, list_len):
+    """ใช้ Hash ID ของงาน เพื่อให้สุ่มได้ประโยคเดิมเสมอ ไม่กระพริบเปลี่ยนไปมาเวลาคลิกปุ่ม"""
+    return int(hashlib.md5(id_str.encode('utf-8')).hexdigest(), 16) % list_len
+
 ROLE_MAP = {
     "Vanguard": "⚡ [ทัพหน้า - First Strike]", 
     "Main": "⚔️ [ทัพหลวง]", 
@@ -44,7 +49,6 @@ PUNISHMENTS = [
     "เดินไปตะโกนใส่กำแพงว่า 'กูจะไม่ยอมกลับไปกระจอกอีก!' 10 รอบ!"
 ]
 
-# คำเตือนสติประจำวัน (THE WARRIOR OATHS)
 WARRIOR_OATHS = [
     "โลกนี้ไม่มีที่ยืนให้คนอ่อนแอ! ถ้ามึงเลือกที่จะขี้เกียจ ก็เตรียมตัวดูคนที่พยายามน้อยกว่ามึงแซงหน้าไปได้เลย!",
     "ข้ออ้างมีไว้สำหรับไอ้กระจอก! วันนี้มึงจะสร้างผลงาน หรือจะสร้างข้ออ้าง เลือกเอา!",
@@ -55,7 +59,7 @@ WARRIOR_OATHS = [
     "ไม่มีใครมาช่วยมึงได้นอกจากตัวมึงเอง! อนาคตของมึงอยู่ในมือมึง เลิกหวังพึ่งโชคชะตาแล้วลงมือทำ!"
 ]
 
-# 20 ประโยคเตือนสติขั้นสุดยอด (ผลของการไม่ทำ)
+# 🩸 20 ประโยค: ผลของการกระจอก (Consequences)
 WARRIOR_CONSEQUENCES = [
     "กูจะต้องทนเห็นคนที่พยายามน้อยกว่ากู ได้ดีกว่ากู!",
     "พรุ่งนี้กูก็จะตื่นมาเป็นไอ้ขี้แพ้คนเดิม ที่เก่งแต่ปาก!",
@@ -79,20 +83,40 @@ WARRIOR_CONSEQUENCES = [
     "กูยอมรับสภาพว่าตัวเองเป็นได้แค่นี้... แค่ไอ้ขี้แพ้ที่ไร้ค่า!"
 ]
 
+# 🔥 20 ประโยค: ปลุกใจขั้นสุดยอด (Motivations)
+WARRIOR_MOTIVATIONS = [
+    "มึงจะยอมแพ้แค่นี้หรอวะ? กลับไปกระจอกเหมือนเดิมก็เอาดิ ถ้ารับตัวเองได้!",
+    "ความเหนื่อยวันนี้ คือกล้ามเนื้อของความสำเร็จพรุ่งนี้ ลุยดิวะ!",
+    "ปีศาจขี้เกียจมันกำลังหัวเราะมึงอยู่... มึงจะยอมให้มันชนะหรอ? ฟาดหน้ามัน!",
+    "ไม่มีข้ออ้างสำหรับคนจริง! ทางเดียวคือเดินหน้าและบดขยี้เป้าหมายให้แหลก!",
+    "ก้มหน้าทำไป! เหงื่อและน้ำตามันคือร่องรอยของนักรบ ไม่ใช่น้ำตาของไอ้ขี้แพ้!",
+    "โลกไม่จำคนเกือบสำเร็จ... เอาให้สุด อย่าหยุดแค่คำว่า 'พอแล้ว'!",
+    "ถ้ามันง่าย ทุกคนก็รวยและสำเร็จไปหมดแล้ว! ความยากนี่แหละคือด่านคัดคนจริง!",
+    "พักได้ แต่อย่ายอมแพ้! เลียแผลเสร็จแล้วลุกขึ้นมาจับอาวุธซะ!",
+    "ความเจ็บปวดจากการฝืนตัวเอง มีค่ามากกว่าความสบายที่พาไปสู่ความล้มเหลว!",
+    "อย่ายอมให้คำดูถูกของพวกสวะกลายเป็นความจริง มึงคือของจริง พิสูจน์ดิวะ!",
+    "มึงเดินมาไกลเกินกว่าจะหันหลังกลับไปซุกผ้าห่มแล้ว ลุกขึ้น!",
+    "คนกระจอกจะหาเหตุผลที่จะหยุด แต่คนจริงจะหาเหตุผลที่จะลุยต่อ!",
+    "อย่าทรยศความฝันตัวเองด้วยความขี้เกียจชั่วคราว!",
+    "มึงเกิดมาเพื่อเป็นราชสีห์ อย่าลดตัวไปทำตัวเป็นหมาขี้แพ้ที่คอยหลบมุม!",
+    "ศัตรูที่น่ากลัวที่สุดคือตัวมึงเองในกระจก เอาชนะมันให้ได้!",
+    "ทุกก้าวที่มึงฝืนเดินต่อ คือการตบหน้าโชคชะตาที่บอกว่ามึงทำไม่ได้!",
+    "มึงจะปล่อยให้เวลาชีวิตไหลทิ้งไปเปล่าๆ หรือจะใช้มันสร้างอาณาจักรของมึงเอง!",
+    "เหนื่อยหรอ? แต่อย่าลืมนะว่าความจนและความล้มเหลวมันเหนื่อยกว่านี้ร้อยเท่า!",
+    "เวลาไม่เคยรอใคร ทุกวินาทีที่มึงทิ้งไป คืออนาคตที่ค่อยๆ พังทลาย!",
+    "ความสำเร็จไม่ได้ตกลงมาจากฟ้า แต่มันถูกสร้างจากการกัดฟันสู้ในวันที่มึงไม่อยากทำ!"
+]
+
 ABYSS_VOICES = [
     "มึงทำ '{task}' ไม่ได้หรอก... ยอมแพ้แล้วกลับไปนอนโง่ๆ ซะเถอะ...",
     "ดอง '{task}' ไว้ก่อนสิ ไม่มีใครรู้หรอก พักก่อน... มึงมันก็แค่ไอ้ขี้แพ้คนเดิมนั่นแหละ!",
-    "ถ้า '{task}' มันยากนัก ก็เทมันทิ้งไปสิ มึงจะได้กลับไปใช้ชีวิตกากๆ แบบที่มึงคู่ควรไง...",
-    "วันนี้มึงหนี '{task}' พรุ่งนี้มึงก็จะแพ้ทุกอย่างในชีวิต! ล้มเลิกซะเถอะ!",
-    "เวลาของมึงกำลังจะหมด... มึงทำ '{task}' ไม่ทันหรอก หลับตาแล้วยอมรับความพ่ายแพ้ซะ!"
+    "ถ้า '{task}' มันยากนัก ก็เทมันทิ้งไปสิ มึงจะได้กลับไปใช้ชีวิตกากๆ แบบที่มึงคู่ควรไง..."
 ]
 
 COMMANDER_VOICES = [
     "อย่าไปฟังเสียงสวะนั่น! ลุกขึ้นมา! ร่างกายนี้มึงคุม ไปฟาด '{task}' ให้แหลกคามือ!",
-    "เป้าหมายอยู่ตรงหน้า! เหยียบหัวความขี้เกียจแล้วลุย '{task}' เดี๋ยวนี้!",
-    "ความเจ็บปวดจากการมีวินัย ดีกว่าความเจ็บปวดจากความเสียใจ! จับอาวุธไปลุย '{task}' ซะ!",
-    "สู้ดิวะไอ้เสือ! แค่ '{task}' มันจะไปยากอะไรสำหรับมึง! ลุกไปลุย!",
-    "ความสำเร็จไม่เคยปรานีคนอ่อนแอ! ปิดหูแล้วเดินหน้าชน '{task}' ตอนนี้เลย!"
+    "ความสำเร็จไม่เคยปรานีคนอ่อนแอ! ปิดหูแล้วเดินหน้าชน '{task}' ตอนนี้เลย!",
+    "ความเจ็บปวดจากการมีวินัย ดีกว่าความเจ็บปวดจากความเสียใจ! จับอาวุธไปลุย '{task}' ซะ!"
 ]
 
 AMBUSH_TASKS = [
@@ -314,7 +338,7 @@ with st.sidebar:
             safe_rerun()
 
 if st.session_state.current_user is None:
-    st.title("⚙️ DISCIPLINE ARC: THE ULTIMATE STAKES")
+    st.title("⚙️ DISCIPLINE ARC: V.50 MAXIMUM OVERDRIVE")
     st.info("👈 ล็อกอินด้านซ้ายเพื่อเผชิญหน้ากับปีศาจในใจและสร้างวินัยเหล็ก!")
     st.stop()
 
@@ -341,7 +365,7 @@ if user.get("daily_oath_date") != today_str:
             save_db(db)
             safe_rerun()
             
-    st.stop() # หยุดการรันโค้ดทั้งหมด ห้ามทำอย่างอื่นจนกว่าจะสาบานตน!
+    st.stop() 
 
 # ==========================================
 # 🔥 คอนฟิกโครงสร้าง Database
@@ -414,7 +438,7 @@ if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!**
 st.divider()
 
 # ==========================================
-# 🗺️ THE ROADMAP (แผนผังชีวิตบังคับกฎ: งาน -> เรียน -> วินัย)
+# 🗺️ THE ROADMAP (แผนผังชีวิตบังคับกฎ)
 # ==========================================
 st.markdown("## 🗺️ THE ULTIMATE ROADMAP (แผนผังชีวิตประจำวัน)")
 st.caption("กฎเหล็กของ Roadmap: งาน (Missions) ➔ เรียน (Study) ➔ วินัยเหล็ก (Habits) ห้ามทำข้ามสเต็ปเด็ดขาด!")
@@ -430,13 +454,11 @@ for h in db["iron_habits"][safe_email]:
 
 all_active_tasks = raw_m + raw_s + raw_h
 
-# 🔥 การบังคับลำดับ Hierarchy: 1=Mission, 2=Study, 3=Habit
 def get_hierarchy_score(t):
     if t.get("is_habit"): return 3
     if t.get("is_study"): return 2
     return 1
 
-# เรียงลำดับตาม: ประเภท(Hierarchy) -> แล้วค่อยตามด้วยเลขคิว(Q)
 all_active_tasks.sort(key=lambda x: (get_hierarchy_score(x), x.get("user_order", 99)))
 
 if not all_active_tasks:
@@ -560,7 +582,6 @@ with colRight:
             with st.form("mission_form", clear_on_submit=True):
                 m_name = st.text_input("ชื่อภารกิจ:", key="m_name")
                 m_detail = st.text_area("รายละเอียด / Note เพิ่มเติม (ถ้ามี):", key="m_detail")
-                # 🔥 NEW FEATURE: THE CONSEQUENCE
                 m_conseq = st.text_input("🩸 ผลของการกระจอก (ถ้ากูไม่ทำงานนี้ จะเกิดอะไรขึ้น? / ว่างไว้เพื่อสุ่มคำด่า):", key="m_conseq")
                 m_is_boss = st.checkbox("💀 THE BOSS FIGHT (งานยักษ์)", key="m_is_boss")
                 m_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], key="m_type")
@@ -576,10 +597,9 @@ with colRight:
                             st.error("🤡 โควตางานเดี่ยวเต็มแล้ว ต้องซอยข้อย่อย!")
                         else:
                             final_dl = str(m_deadline) if m_dl_type != "ไม่กำหนด" else ""
-                            final_conseq = m_conseq if m_conseq.strip() != "" else random.choice(WARRIOR_CONSEQUENCES)
                             db["missions"][safe_email].append({
                                 "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": m_name, "รายละเอียด": m_detail, 
-                                "consequence": final_conseq, # บันทึกผลของการกระจอก
+                                "consequence": m_conseq.strip(), # เซฟข้อมูล (ถ้าว่างระบบจะดึงจาก Hashing)
                                 "ประเภท": m_type, "bounty": m_bounty, "is_boss": m_is_boss,
                                 "custom_order": 99, "user_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "subtasks": subtasks, "เสร็จแล้ว": False, 
                                 "รอตรวจ": False, "deadline": final_dl, "deadline_type": m_dl_type
@@ -618,7 +638,6 @@ with colRight:
                 
                 task_mode_badge = "🔪 **[โครงงาน]**" if m.get("subtasks") else "⚡ **[ม้วนเดียวจบ]**"
                 is_bounty = " ⚔️" if m.get("bounty") else ""; is_boss = " 💀 **[BOSS]**" if m.get("is_boss") else ""
-                
                 q_num = m.get("user_order", 99)
                 q_badge = f"🎯 **[Q{q_num}]** " if q_num != 99 else ""
                 
@@ -637,15 +656,23 @@ with colRight:
                 was_frozen_yesterday = m.get("skip_today_date") != "" and not is_frozen
                 if was_frozen_yesterday: m["skip_today_date"] = ""; save_db(db)
                     
-                if is_frozen: frozen_badge = " ❄️🚨 [เกราะแตก!]" if is_overdue else " ❄️ [แช่แข็ง]"
-                else: frozen_badge = ""
+                frozen_badge = " ❄️🚨 [เกราะแตก!]" if is_frozen and is_overdue else " ❄️ [แช่แข็ง]" if is_frozen else ""
 
                 c1.write(f"**{m.get('ประเภท','')}** | {q_badge}{task_mode_badge}{is_boss}{is_bounty} {m['ภารกิจ']}{deadline_badge}{frozen_badge}")
                 
-                # 🔥 แสดงผลของความกาก (ถ้ามี)
+                # 🔥 STABLE HYPE RENDERING LOGIC (The Ultimate Optimization)
+                task_id = str(m.get("id", "unk"))
                 display_conseq = m.get("consequence", "")
-                if not display_conseq: display_conseq = random.choice(WARRIOR_CONSEQUENCES)
-                c1.write(f"🩸 :red[**ถ้ากูไม่ทำ:** {display_conseq}]")
+                if not display_conseq: 
+                    display_conseq = WARRIOR_CONSEQUENCES[get_stable_index(task_id + "conseq", len(WARRIOR_CONSEQUENCES))]
+                
+                display_hype = m.get("motivation", "")
+                if not display_hype: 
+                    display_hype = WARRIOR_MOTIVATIONS[get_stable_index(task_id + "hype", len(WARRIOR_MOTIVATIONS))]
+                
+                # เรนเดอร์ความเจ็บปวดและการปลุกใจ
+                c1.markdown(f"<div style='font-size: 0.9em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-bottom: 5px; margin-top: 5px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {display_conseq}</div>", unsafe_allow_html=True)
+                c1.markdown(f"<div style='font-size: 0.9em; background: rgba(255, 165, 0, 0.1); padding: 5px; border-left: 3px solid #ffa500; margin-bottom: 10px;'>🔥 <b>ปลุกใจ:</b> {display_hype}</div>", unsafe_allow_html=True)
                 
                 if m.get("รายละเอียด"):
                     with st.expander("📝 ดูรายละเอียดงาน"):
@@ -715,7 +742,6 @@ with colRight:
             with st.form("study_form", clear_on_submit=True):
                 s_name = st.text_input("วิชา / หัวข้อที่ต้องติว:", key="s_name")
                 s_detail = st.text_area("รายละเอียด / ขอบเขตเนื้อหา (ถ้ามี):", key="s_detail")
-                # 🔥 NEW FEATURE: THE CONSEQUENCE
                 s_conseq = st.text_input("🩸 ผลของการกระจอก (ถ้ากูไม่เรียนบทนี้ จะเกิดอะไรขึ้น? / ว่างไว้เพื่อสุ่มคำด่า):", key="s_conseq")
                 s_is_boss = st.checkbox("💀 THE BOSS FIGHT (บทโหด)", key="s_is_boss")
                 s_type = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 ติวเข้ม", "🟡 ปานกลาง", "🟢 ชิลๆ"], key="s_type")
@@ -729,10 +755,9 @@ with colRight:
                         if not subtasks and len(active_single_study) >= 3: st.error("🤡 โควตาเต็ม จงแอดเป็นบทย่อย!")
                         else:
                             final_dl = str(s_deadline) if "ไม่กำหนด" not in s_dl_type else ""
-                            final_conseq = s_conseq if s_conseq.strip() != "" else random.choice(WARRIOR_CONSEQUENCES)
                             db["study_missions"][safe_email].append({
                                 "id": str(uuid.uuid4()), "วันที่": today_str, "ภารกิจ": s_name, "รายละเอียด": s_detail, 
-                                "consequence": final_conseq, # บันทึกผลของการกระจอก
+                                "consequence": s_conseq.strip(),
                                 "ประเภท": s_type, "bounty": False, "is_boss": s_is_boss,
                                 "custom_order": 99, "user_order": 99, "battle_role": "Main", "is_queued": False, "skip_today_date": "", "subtasks": subtasks, "เสร็จแล้ว": False, 
                                 "รอตรวจ": False, "deadline": final_dl, "deadline_type": s_dl_type, "is_study": True
@@ -768,7 +793,6 @@ with colRight:
                     
                     task_mode_badge = "📖 **[ติวโครงใหญ่]**" if s.get("subtasks") else "⚡ **[ทบทวนจบ]**"
                     is_boss = " 💀 **[BOSS]**" if s.get("is_boss") else ""
-                    
                     q_num = s.get("user_order", 99)
                     q_badge = f"🎯 **[Q{q_num}]** " if q_num != 99 else ""
 
@@ -791,10 +815,18 @@ with colRight:
 
                     c1.write(f"**{s.get('ประเภท','')}** | {q_badge}{task_mode_badge}{is_boss} {s['ภารกิจ']}{deadline_badge}{frozen_badge}")
                     
-                    # 🔥 แสดงผลของความกาก (ถ้ามี)
+                    # 🔥 STABLE HYPE RENDERING LOGIC สำหรับเรียน
+                    s_id = str(s.get("id", "unk"))
                     display_conseq = s.get("consequence", "")
-                    if not display_conseq: display_conseq = random.choice(WARRIOR_CONSEQUENCES)
-                    c1.write(f"🩸 :red[**ถ้ากูไม่ทำ:** {display_conseq}]")
+                    if not display_conseq: 
+                        display_conseq = WARRIOR_CONSEQUENCES[get_stable_index(s_id + "conseq", len(WARRIOR_CONSEQUENCES))]
+                    
+                    display_hype = s.get("motivation", "")
+                    if not display_hype: 
+                        display_hype = WARRIOR_MOTIVATIONS[get_stable_index(s_id + "hype", len(WARRIOR_MOTIVATIONS))]
+                    
+                    c1.markdown(f"<div style='font-size: 0.9em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-bottom: 5px; margin-top: 5px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {display_conseq}</div>", unsafe_allow_html=True)
+                    c1.markdown(f"<div style='font-size: 0.9em; background: rgba(255, 165, 0, 0.1); padding: 5px; border-left: 3px solid #ffa500; margin-bottom: 10px;'>🔥 <b>ปลุกใจ:</b> {display_hype}</div>", unsafe_allow_html=True)
                     
                     if s.get("รายละเอียด"):
                         with st.expander("📝 ดูขอบเขต/รายละเอียด"):
@@ -1080,7 +1112,7 @@ with c_bot1:
     st.metric("พลังร่างวินัยสูงสุด", f"{user['ghost_exp']} EXP")
     st.metric("พลังในปัจจุบัน", f"{my_exp} EXP", delta=f"{my_exp - user['ghost_exp']} (เปรียบเทียบ)")
 with c_bot2:
-    st.markdown("### 🩸 หหนี้เลือด (ชดใช้ความไร้วินัย)")
+    st.markdown("### 🩸 หนี้เลือด (ชดใช้ความไร้วินัย)")
     st.metric("ต้องวิดพื้นชดใช้", f"{user.get('blood_debt', 0)} ที")
     if user.get("blood_debt", 0) > 0:
         if st.button("วิดพื้นใช้หนี้หมดแล้ว! (ปลดล็อก)", key="btn_pay_debt"): user["blood_debt"] = 0; user["in_cage"] = False; save_db(db); safe_rerun()
@@ -1151,9 +1183,6 @@ if not monk_mode:
     
     tab1, tab2, tab3, tab4 = st.tabs(["🗺️ บันทึกเดินทาง (ภารกิจ)", "🏆 โหลคุกกี้ (สำเร็จ)", "🤡 ความกาก & ข้ออ้าง", "📊 BATTLE ANALYTICS"])
 
-    # ----------------------------------------------------
-    # TAB 1: ประวัติงาน/เรียนที่ทำเสร็จแล้ว (ลบได้)
-    # ----------------------------------------------------
     with tab1:
         st.markdown("### 🗺️ ประวัติภารกิจที่พิชิตแล้ว")
         completed_m = sorted([m for m in db["missions"].get(safe_email, []) if isinstance(m, dict) and m.get("เสร็จแล้ว")], key=lambda x: x.get("วันที่", ""), reverse=True)
@@ -1171,10 +1200,7 @@ if not monk_mode:
                 else: db["missions"][safe_email].remove(item)
                 save_db(db); safe_rerun()
 
-    # ----------------------------------------------------
-    # TAB 2: ประวัติความสำเร็จ (โหลคุกกี้ - ลบได้)
-    # ----------------------------------------------------
-    with tab1: pass # just for logic grouping 
+    with tab1: pass 
     with tab2:
         st.markdown("### 🏆 โหลคุกกี้ (ความภูมิใจ)")
         if not db["cookie_jar"].get(safe_email): st.info("ยังไม่มีความภูมิใจสะสมไว้")
@@ -1185,15 +1211,12 @@ if not monk_mode:
                 if c2.button("🗑️", key=f"del_cj_{idx}_{c.get('id', idx)}"):
                     db["cookie_jar"][safe_email].remove(c)
                     save_db(db); safe_rerun()
-            else: # Fallback data เก่า
+            else: 
                 c1.success(f"🏆 {c}")
                 if c2.button("🗑️", key=f"del_cj_old_{idx}"):
                     db["cookie_jar"][safe_email].remove(c)
                     save_db(db); safe_rerun()
 
-    # ----------------------------------------------------
-    # TAB 3: ประวัติความกากและข้ออ้าง (ลบได้)
-    # ----------------------------------------------------
     with tab3:
         st.markdown("### 🩸 เชื้อเพลิงความแค้น (ความกากในอดีต)")
         if not db["weakness_fuel"].get(safe_email): st.info("ยังไม่มีประวัติความกากที่จดไว้ (ดีมาก!)")
@@ -1216,9 +1239,6 @@ if not monk_mode:
                     db["excuses"][safe_email].remove(e)
                     save_db(db); safe_rerun()
 
-    # ----------------------------------------------------
-    # TAB 4: BATTLE ANALYTICS
-    # ----------------------------------------------------
     with tab4:
         all_m = [m for m in db["missions"].get(safe_email, []) if isinstance(m, dict)] + [s for s in db["study_missions"].get(safe_email, []) if isinstance(s, dict)]
         total_m = len(all_m)
