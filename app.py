@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.47 - THE MASTER PLAN)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC V.48 - THE AWAKENING)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️")
 
@@ -42,6 +42,17 @@ PUNISHMENTS = [
     "ห้ามจับมือถือ 1 ชั่วโมงนับจากนี้! นั่งสมาธิทบทวนความกากของตัวเอง!",
     "สควอช (ลุกนั่ง) 60 ที เอาให้ขาเบิร์น!",
     "เดินไปตะโกนใส่กำแพงว่า 'กูจะไม่ยอมกลับไปกระจอกอีก!' 10 รอบ!"
+]
+
+# คำเตือนสติประจำวัน (THE WARRIOR OATHS)
+WARRIOR_OATHS = [
+    "โลกนี้ไม่มีที่ยืนให้คนอ่อนแอ! ถ้ามึงเลือกที่จะขี้เกียจ ก็เตรียมตัวดูคนที่พยายามน้อยกว่ามึงแซงหน้าไปได้เลย!",
+    "ข้ออ้างมีไว้สำหรับไอ้กระจอก! วันนี้มึงจะสร้างผลงาน หรือจะสร้างข้ออ้าง เลือกเอา!",
+    "ความสบายในวันนี้ คือความชิบหายในวันหน้า! ลุกขึ้นมาบดขยี้ความขี้เกียจของมึงซะ!",
+    "เวลาไม่เคยรอใคร ทุกวินาทีที่มึงไถมือถือโง่ๆ คือเวลาที่มึงกำลังฆ่าอนาคตตัวเอง!",
+    "มึงบอกว่าอยากสำเร็จ แต่การกระทำมึงเหมือนคนรอวันตาย! ตื่น! แล้วไปทำในสิ่งที่ต้องทำเดี๋ยวนี้!",
+    "ความเจ็บปวดจากการมีวินัย มันเทียบไม่ได้เลยกับความเจ็บปวดจากความเสียดายในตอนที่มึงแก่ตัวลง!",
+    "ไม่มีใครมาช่วยมึงได้นอกจากตัวมึงเอง! อนาคตของมึงอยู่ในมือมึง เลิกหวังพึ่งโชคชะตาแล้วลงมือทำ!"
 ]
 
 ABYSS_VOICES = [
@@ -202,7 +213,8 @@ with st.sidebar:
                             "ambush_task": "", "failure_prob": 10, "last_login": today_str, 
                             "cleared_yesterday": True, "order_locked": False,
                             "target_name": "เป้าหมายสูงสุดของชีวิต", 
-                            "target_date": str(today_date + timedelta(days=90))
+                            "target_date": str(today_date + timedelta(days=90)),
+                            "daily_oath_date": ""
                         }
                         save_db(db)
                         st.success("🔥 ลงทะเบียนสำเร็จ! ล็อกอินเลย!")
@@ -278,11 +290,34 @@ with st.sidebar:
             safe_rerun()
 
 if st.session_state.current_user is None:
-    st.title("⚙️ DISCIPLINE ARC: THE MASTER PLAN")
+    st.title("⚙️ DISCIPLINE ARC: THE AWAKENING")
     st.info("👈 ล็อกอินด้านซ้ายเพื่อเผชิญหน้ากับปีศาจในใจและสร้างวินัยเหล็ก!")
     st.stop()
 
 safe_email = st.session_state.current_user
+user = db["users"][safe_email]
+
+# ==========================================
+# 🚨 THE DAILY OATH (กำแพงดัดสันดานความขี้เกียจ)
+# ==========================================
+if user.get("daily_oath_date") != today_str:
+    st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 3em;'>🩸 ดึงสติรับวันใหม่!</h1>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'>ก่อนที่มึงจะเริ่มวัน กูมีเรื่องจะบอก...</h3><br>", unsafe_allow_html=True)
+    
+    oath_msg = random.choice(WARRIOR_OATHS)
+    
+    st.error(f"### ⚔️ เสียงจากแม่ทัพเหล็ก:\n\n> **\"{oath_msg}\"**")
+    st.warning("ความขี้เกียจกำลังรอแดกหัวมึงอยู่ มึงจะยอมแพ้ตั้งแต่ยังไม่เริ่ม แล้วกลับไปซุกผ้าห่ม หรือจะลุกขึ้นมาสู้เพื่อชีวิตตัวเอง?")
+    
+    st.divider()
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        if st.button("🔥 กูขอสาบานว่าจะไม่ยอมเป็นไอ้ขี้แพ้! (เข้าสู่สมรภูมิ)", use_container_width=True, type="primary"):
+            user["daily_oath_date"] = today_str
+            save_db(db)
+            safe_rerun()
+            
+    st.stop() # หยุดการรันโค้ดทั้งหมด ห้ามทำอย่างอื่นจนกว่าจะสาบานตน!
 
 # ==========================================
 # 🔥 คอนฟิกโครงสร้าง Database
@@ -301,7 +336,6 @@ for k in dict_keys:
         if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0, "current": 0}
         else: db[k][safe_email] = {}
 
-user = db["users"][safe_email]
 finance = db["finance"][safe_email]
 current_streak = user.get("streak", 0)
 
@@ -653,9 +687,10 @@ with colRight:
                 s_dl_type = st.radio("⏰ ระบบเวลา:", ["ไม่กำหนด", "🗓️ Deadline", "🎯 วันเป้าหมาย"], horizontal=True, key="s_dl_type")
                 s_deadline = st.date_input("เลือกวันที่:", key="s_deadline")
                 
+                # BUG FIXED: ss.strip() to s.strip()
                 if st.form_submit_button("เพิ่มเข้าหลักสูตร"):
                     if s_name:
-                        subtasks = [{"name": ss.strip(), "done": False, "done_date": ""} for s in s_subtasks_text.split('\n') if ss.strip()]
+                        subtasks = [{"name": s.strip(), "done": False, "done_date": ""} for s in s_subtasks_text.split('\n') if s.strip()]
                         if not subtasks and len(active_single_study) >= 3: st.error("🤡 โควตาเต็ม จงแอดเป็นบทย่อย!")
                         else:
                             final_dl = str(s_deadline) if "ไม่กำหนด" not in s_dl_type else ""
@@ -993,7 +1028,7 @@ with colRight:
             if st.button("บันทึกยอดเงิน", key="fin_save_add"): finance['current'] += add_amt; save_db(db); safe_rerun()
 
 # ==========================================
-# 6. หนี้เลือด & THE JUDGMENT FEED (พิพากษาวินัยประจำวัน)
+# 6. หหนี้เลือด & THE JUDGMENT FEED (พิพากษาวินัยประจำวัน)
 # ==========================================
 st.divider()
 c_bot1, c_bot2 = st.columns(2)
