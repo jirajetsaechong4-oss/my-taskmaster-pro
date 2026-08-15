@@ -288,7 +288,6 @@ with st.sidebar:
                             "target_name": "เป้าหมายสูงสุดของชีวิต", "target_date": str(today_date + timedelta(days=90)),
                             "daily_oath_date": "", "anime_mentor": "None", "mentor_date": ""
                         }
-                        # ใส่ Default ชัยชนะรายวัน พร้อมโครงสร้าง logs ป้องกัน Error
                         db["daily_wins"][safe_email] = {
                             "items": [
                                 {"id": str(uuid.uuid4()), "name": "🚫 No Fap / No Gooning (คุมสติตัวเองให้ได้)"},
@@ -315,7 +314,6 @@ with st.sidebar:
                     if "target_name" not in user_data: user_data["target_name"] = "เป้าหมายสูงสุด"; user_data["target_date"] = str(today_date + timedelta(days=90))
                     if "anime_mentor" not in user_data: user_data["anime_mentor"] = "None"
                     
-                    # ตรวจสอบและสร้างโครงสร้าง daily_wins ป้องกัน Error
                     if safe_email not in db.get("daily_wins", {}) or not isinstance(db["daily_wins"][safe_email], dict):
                         db["daily_wins"][safe_email] = {"items": [], "logs": {}}
                     if "items" not in db["daily_wins"][safe_email]:
@@ -335,12 +333,12 @@ with st.sidebar:
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
                             penalty = 100 + (len(unpaid_bounties) * 100)
                             if user_data.get("anime_mentor") == "Jesus":
-                                penalty = int(penalty * 0.5); user_data["exp"] = max(0, user.get("exp", 0) - 10)
+                                penalty = int(penalty * 0.5); user_data["exp"] = max(0, user_data.get("exp", 0) - 10)
                                 st.toast("✝️ [พระคุณ] พระเยซูแบ่งเบาภาระหนี้เลือด 50%", icon="🕊️")
                             else:
                                 user_data["exp"] = 0; user_data["level"] = max(1, user_data.get("level", 1) - 1); user_data["streak"] = 0
                             user_data["blood_debt"] = user_data.get("blood_debt", 0) + penalty
-                            user_data["failure_prob"] = min(100, user.get("failure_prob", 10) + 20)
+                            user_data["failure_prob"] = min(100, user_data.get("failure_prob", 10) + 20)
                             
                         user_data["last_login"] = today_str; user_data["cleared_yesterday"] = False
                         save_db(db)
@@ -860,7 +858,7 @@ with colRight:
                 if col3.button("🗑️", key=f"del_sk_{sk['id']}"): db["skill_forge"][safe_email].remove(sk); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # 📝 TAB 4: สมุดบัญชาการ (COMMAND LOG)
+    # TAB 4: 📝 สมุดบัญชาการ (COMMAND LOG)
     # ----------------------------------------------------
     with tab_planner:
         st.markdown("### 📝 สมุดบัญชาการ (Command Log)")
@@ -1065,14 +1063,13 @@ with colRight:
                     if c3.button("🗑️", key=f"del_h_{h.get('id', h.get('name', ''))}"): db["iron_habits"][safe_email].remove(h); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 7: 🏅 ชัยชนะรายวัน (Daily Wins) [FIXED & ENHANCED]
+    # TAB 7: 🏅 ชัยชนะรายวัน (Daily Wins)
     # ----------------------------------------------------
     with tab_daily_wins:
         st.markdown("### 🏅 ชัยชนะรายวัน (Daily Wins)")
         st.write(f"**ประจำ{thai_date_format(today_str)}**")
         st.write("เช็คลิสต์ความสำเร็จเล็กๆ ที่มึงต้องเคลียร์ทุกวัน! ชนะก็กดชนะ แพ้ก็ยอมรับว่าแพ้ (กดแพ้โดนหนี้เลือด 10 ที!) ระบบจะเก็บบันทึกแยกวันให้โดยอัตโนมัติ")
         
-        # ป้องกัน Key Error และสร้างโครงสร้างเริ่มต้นให้สมบูรณ์
         if safe_email not in db["daily_wins"] or not isinstance(db["daily_wins"][safe_email], dict):
             db["daily_wins"][safe_email] = {"items": [], "logs": {}}
         if "items" not in db["daily_wins"][safe_email]:
@@ -1131,7 +1128,6 @@ with colRight:
                         save_db(db)
                         safe_rerun()
             
-            # 📜 ประวัติการเอาชนะตัวเองย้อนหลัง (เปิดดูได้ตลอดเวลา)
             st.divider()
             st.markdown("#### 📜 ประวัติการเอาชนะตัวเอง (ย้อนหลัง)")
             all_logs = db["daily_wins"][safe_email].get("logs", {})
@@ -1277,7 +1273,8 @@ else:
                 if not any(stask.get("done", False) and stask.get("done_date", "") == today_str for stask in m["subtasks"]): active_for_judgment.append(m)
             else: active_for_judgment.append(m)
 
-    incomplete_habits = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date"] != today_str]
+    # 🛠️ [FIXED HERE] แก้ไขวงเล็บเปิดปิดให้ถูกต้องสมบูรณ์
+    incomplete_habits = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
     incomplete_bosses = [m for m in active_for_judgment if m.get("is_boss")]
     all_habits_completed = len(db["iron_habits"][safe_email]) > 0 and len(incomplete_habits) == 0
 
