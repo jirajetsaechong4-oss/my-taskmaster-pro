@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - FLAWLESS EDITION V2)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - FLAWLESS EDITION V3)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -335,12 +335,12 @@ with st.sidebar:
                         if unpaid_bounties or not user_data.get("cleared_yesterday", False):
                             penalty = 100 + (len(unpaid_bounties) * 100)
                             if user_data.get("anime_mentor") == "Jesus":
-                                penalty = int(penalty * 0.5); user_data["exp"] = max(0, user_data.get("exp", 0) - 10)
+                                penalty = int(penalty * 0.5); user_data["exp"] = max(0, user.get("exp", 0) - 10)
                                 st.toast("✝️ [พระคุณ] พระเยซูแบ่งเบาภาระหนี้เลือด 50%", icon="🕊️")
                             else:
                                 user_data["exp"] = 0; user_data["level"] = max(1, user_data.get("level", 1) - 1); user_data["streak"] = 0
                             user_data["blood_debt"] = user_data.get("blood_debt", 0) + penalty
-                            user_data["failure_prob"] = min(100, user_data.get("failure_prob", 10) + 20)
+                            user_data["failure_prob"] = min(100, user.get("failure_prob", 10) + 20)
                             
                         user_data["last_login"] = today_str; user_data["cleared_yesterday"] = False
                         save_db(db)
@@ -1277,7 +1277,7 @@ else:
                 if not any(stask.get("done", False) and stask.get("done_date", "") == today_str for stask in m["subtasks"]): active_for_judgment.append(m)
             else: active_for_judgment.append(m)
 
-    incomplete_habits = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
+    incomplete_habits = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date"] != today_str]
     incomplete_bosses = [m for m in active_for_judgment if m.get("is_boss")]
     all_habits_completed = len(db["iron_habits"][safe_email]) > 0 and len(incomplete_habits) == 0
 
@@ -1371,9 +1371,13 @@ with tab4:
     total_m = len(all_m)
     done_m = len([m for m in all_m if m.get("เสร็จแล้ว")])
     win_rate = (done_m / total_m * 100) if total_m > 0 else 0
-    win_count, fail_count = len([c for c in db["cookie_jar"].get(safe_email, []) if isinstance(c, dict)}), len(db["weakness_fuel"].get(safe_email, []))
+    win_count = len([c for c in db["cookie_jar"].get(safe_email, []) if isinstance(c, dict)])
+    fail_count = len(db["weakness_fuel"].get(safe_email, []))
     
     c_stat1, c_stat2, c_stat3, c_stat4 = st.columns(4)
-    c_stat1.metric("อัตราการรักษาวินัย", f"{win_rate:.1f}%"); c_stat2.metric("บอสที่จัดการได้", f"{len([m for m in all_m if m.get('เสร็จแล้ว') and m.get('is_boss')])} ตัว")
-    c_stat3.metric("เป้าหมายสำเร็จ", f"{done_m} / {total_m}"); c_stat4.metric("รอยแผลความกาก", f"{fail_count} รอย")
-    if win_count + fail_count > 0: st.bar_chart(pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Discipline (ชนะใจ)", "Weakness (เคยกาก)"]))
+    c_stat1.metric("อัตราการรักษาวินัย", f"{win_rate:.1f}%")
+    c_stat2.metric("บอสที่จัดการได้", f"{len([m for m in all_m if m.get('เสร็จแล้ว') and m.get('is_boss')])} ตัว")
+    c_stat3.metric("เป้าหมายสำเร็จ", f"{done_m} / {total_m}")
+    c_stat4.metric("รอยแผลความกาก", f"{fail_count} รอย")
+    if win_count + fail_count > 0: 
+        st.bar_chart(pd.DataFrame({"จำนวนครั้ง": [win_count, fail_count]}, index=["Discipline (ชนะใจ)", "Weakness (เคยกาก)"]))
