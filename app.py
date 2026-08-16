@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V6.1 - BUG FIXED)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V6.2 - DUPLICATE ID FIXED)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -216,7 +216,7 @@ db = load_db()
 if "punishment_active" in st.session_state:
     st.error("🚨 วงล้อแห่งกรรมทำงาน! มึงหลุดจากวินัย ต้องชดใช้! 🚨")
     st.title(f"🔥 คำสั่งชดใช้กรรม: {st.session_state.punishment_task}")
-    if st.button("🩸 กูทำเสร็จแล้ว! (กลับสู่ Discipline Arc)"):
+    if st.button("🩸 กูทำเสร็จแล้ว! (กลับสู่ Discipline Arc)", key="btn_finish_punish"):
         del st.session_state.punishment_active; safe_rerun()
     st.stop() 
 
@@ -224,8 +224,8 @@ if st.session_state.get("slap_awake_active", False):
     st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 4em;'>💥 ตื่นได้แล้วไอ้เวร!</h1>", unsafe_allow_html=True)
     st.error("🚨 **คำสั่งกระชากสติ:** ลุกไปล้างหน้าด้วยน้ำเย็นจัด แล้ววิดพื้น 20 ทีเดี๋ยวนี้! ถ้าทำไม่ได้ก็เป็นไอ้ขี้แพ้ต่อไป!")
     st.warning("พิมพ์คำปฏิญาณนี้เพื่อปลดล็อกหน้าจอ: **'กูจะไม่ยอมกลับไปเป็นขยะ'**")
-    confirm_text = st.text_input("พิมพ์ที่นี่:")
-    if st.button("🔥 กูพร้อมกลับไปลุยแล้ว!"):
+    confirm_text = st.text_input("พิมพ์ที่นี่:", key="txt_confirm_oath")
+    if st.button("🔥 กูพร้อมกลับไปลุยแล้ว!", key="btn_confirm_slap"):
         if confirm_text.strip() == "กูจะไม่ยอมกลับไปเป็นขยะ":
             del st.session_state["slap_awake_active"]; st.toast("🔥 ดีมาก! กลับไปลุยงานของมึงซะ!", icon="⚔️"); safe_rerun()
         else: st.error("พิมพ์ให้ถูกทุกตัวอักษร! มึงยังไม่ตั้งใจพอ!")
@@ -244,9 +244,9 @@ with st.sidebar:
         auth_mode = st.radio("เลือกโหมด:", ["⚡ ล็อกอิน", "➕ สร้างไอดีใหม่"], key="auth_mode_radio")
         st.divider()
         if auth_mode == "➕ สร้างไอดีใหม่":
-            name_input = st.text_input("ชื่อนักรบ:")
-            email_input = st.text_input("อีเมล (ID):")
-            if st.button("เข้าสู่ Discipline Arc!"):
+            name_input = st.text_input("ชื่อนักรบ:", key="txt_reg_name")
+            email_input = st.text_input("อีเมล (ID):", key="txt_reg_email")
+            if st.button("เข้าสู่ Discipline Arc!", key="btn_register_submit"):
                 if email_input and name_input:
                     safe_email = get_safe_email(email_input)
                     if safe_email in db.get("users", {}): st.error("อีเมล/ID นี้มีในระบบแล้ว!")
@@ -273,9 +273,9 @@ with st.sidebar:
             if not db.get("users"): st.warning("ยังไม่มีนักรบในระบบ ไปสร้างไอดีก่อน!")
             else:
                 user_options = {f"{data.get('username', 'Unknown Warrior')}": email for email, data in db["users"].items() if isinstance(data, dict)}
-                selected_display = st.selectbox("เลือกบัญชีของคุณ:", list(user_options.keys()))
+                selected_display = st.selectbox("เลือกบัญชีของคุณ:", list(user_options.keys()), key="sb_login_user")
                 
-                if st.button("🔥 เริ่มต้นวันใหม่ (Login)"):
+                if st.button("🔥 เริ่มต้นวันใหม่ (Login)", key="btn_login_submit"):
                     safe_email = user_options[selected_display]
                     user_data = db["users"][safe_email]
                     
@@ -316,15 +316,15 @@ with st.sidebar:
         st.success(f"{m_info['icon']} **{m_info['name']}**\n\n*{m_info['desc']}*")
 
         st.divider()
-        if st.button("🔥 ขอกำลังใจด่ากูหน่อย! (SLAP ME!)", type="primary", use_container_width=True):
+        if st.button("🔥 ขอกำลังใจด่ากูหน่อย! (SLAP ME!)", type="primary", use_container_width=True, key="btn_sidebar_slap"):
             st.session_state.active_slap_message = random.choice(m_info["quotes"]); safe_rerun()
             
         if st.session_state.get("active_slap_message"):
             st.warning(f"**{m_info['icon']} {m_info['name']}:**\n\n\"{st.session_state.active_slap_message}\"")
-            if st.button("✅ รับทราบ! ลุย!", use_container_width=True): st.session_state.active_slap_message = ""; safe_rerun()
+            if st.button("✅ รับทราบ! ลุย!", use_container_width=True, key="btn_ack_slap"): st.session_state.active_slap_message = ""; safe_rerun()
         st.divider()
 
-        locked_in = st.toggle("🔒 LOCKED IN (โฟกัสขั้นสุด)")
+        locked_in = st.toggle("🔒 LOCKED IN (โฟกัสขั้นสุด)", key="tg_locked_in")
         st.session_state.locked_in_active = locked_in
         
         if not locked_in:
@@ -347,7 +347,7 @@ with st.sidebar:
             st.progress(max(0.0, min(1.0, u_data["exp"] / 100)), text=f"Lv.{u_data['level']} | EXP: {u_data['exp']}/100")
             st.divider()
         
-        if st.button("🚪 ออกจากระบบ"): st.session_state.current_user = None; safe_rerun()
+        if st.button("🚪 ออกจากระบบ", key="btn_logout"): st.session_state.current_user = None; safe_rerun()
 
 if st.session_state.current_user is None:
     st.title("⚙️ DISCIPLINE ARC")
@@ -369,7 +369,7 @@ if user.get("daily_oath_date") != today_str:
     st.warning("มึงจะยอมแพ้ตั้งแต่ยังไม่เริ่ม แล้วกลับไปซุกผ้าห่ม หรือจะลุกขึ้นมาสู้เพื่อชีวิตตัวเอง?")
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        if st.button("🔥 กูขอสาบานว่าจะไม่ยอมเป็นไอ้ขี้แพ้!", use_container_width=True, type="primary"):
+        if st.button("🔥 กูขอสาบานว่าจะไม่ยอมเป็นไอ้ขี้แพ้!", use_container_width=True, type="primary", key="btn_take_daily_oath"):
             user["daily_oath_date"] = today_str; save_db(db); safe_rerun()
     st.stop() 
 
@@ -445,7 +445,7 @@ if is_locked_in:
         col1, col2, col3 = st.columns([1,2,1])
         with col2:
             if top_task.get("is_habit"):
-                if st.button("🔥 ก้าวข้ามมันไป! (ทำสำเร็จ)", use_container_width=True, type="primary"):
+                if st.button("🔥 ก้าวข้ามมันไป! (ทำสำเร็จ)", use_container_width=True, type="primary", key="btn_locked_habit_done"):
                     for h in db["iron_habits"][safe_email]:
                         if h.get("id") == top_task.get("id"):
                             if h.get("last_done_date") == yesterday_str: h["streak"] = h.get("streak", 0) + 1
@@ -465,12 +465,12 @@ if is_locked_in:
                                 task["subtasks"][i]["done"] = checked; task["subtasks"][i]["done_date"] = today_str if checked else ""; save_db(db); safe_rerun()
                             if not checked: all_done = False
                         if all_done:
-                            if st.button("✅ พิชิตงานใหญ่!", use_container_width=True, type="primary"):
+                            if st.button("✅ พิชิตงานใหญ่!", use_container_width=True, type="primary", key="btn_locked_task_done"):
                                 task["เสร็จแล้ว"] = True; task["done_date"] = today_str
                                 exp_gain, fail_reduce = calculate_task_rewards(task, current_streak, active_mentor)
                                 user["exp"] += exp_gain; user["failure_prob"] = max(0, user.get("failure_prob",10) - fail_reduce); save_db(db); st.balloons(); safe_rerun()
             else:
-                if st.button("✅ จัดการเรียบร้อย!", use_container_width=True, type="primary"):
+                if st.button("✅ จัดการเรียบร้อย!", use_container_width=True, type="primary", key="btn_locked_single_done"):
                     target_list = db["study_missions"][safe_email] if top_task.get("is_study") else db["missions"][safe_email]
                     for task in target_list:
                         if task.get("id") == top_task.get("id"):
@@ -486,20 +486,20 @@ try: t_date = datetime.strptime(str(user.get("target_date", str(today_date))).st
 except: t_date = today_date + timedelta(days=90)
 days_left = (t_date - today_date).days
 
-if st.button("💥 กูเริ่มเหนื่อยและอยากสบาย (Slap Me Awake!)", use_container_width=True, type="secondary"):
+if st.button("💥 กูเริ่มเหนื่อยและอยากสบาย (Slap Me Awake!)", use_container_width=True, type="secondary", key="btn_trigger_slap_awake"):
     st.session_state.slap_awake_active = True; safe_rerun()
 
 colTop1, colTop2, colTop3 = st.columns([1, 1, 3])
 with colTop1:
-    if st.button("🎰 วงล้อชดใช้กรรม", type="primary", use_container_width=True):
+    if st.button("🎰 วงล้อชดใช้กรรม", type="primary", use_container_width=True, key="btn_trigger_punish_wheel"):
         st.session_state.punishment_active = True; st.session_state.punishment_task = random.choice(PUNISHMENTS); safe_rerun()
 with colTop2:
-    if st.button("⚡ ปลุกวินัย", use_container_width=True): st.toast("🔥 อย่าถอย! ลุยดิวะ!", icon="⚙️")
+    if st.button("⚡ ปลุกวินัย", use_container_width=True, key="btn_boost_discipline"): st.toast("🔥 อย่าถอย! ลุยดิวะ!", icon="⚙️")
 with colTop3:
     with st.popover("⚙️ ตั้งเป้าหมายสูงสุด"):
-        new_t_name = st.text_input("เป้าหมายสูงสุด:", user.get("target_name", ""))
-        new_t_date = st.date_input("วันกำหนด (Deadline):", t_date)
-        if st.button("บันทึกเป้าหมาย"): user["target_name"] = new_t_name; user["target_date"] = str(new_t_date); save_db(db); safe_rerun()
+        new_t_name = st.text_input("เป้าหมายสูงสุด:", user.get("target_name", ""), key="txt_top_target_name")
+        new_t_date = st.date_input("วันกำหนด (Deadline):", t_date, key="dt_top_target_date")
+        if st.button("บันทึกเป้าหมาย", key="btn_save_top_target"): user["target_name"] = new_t_name; user["target_date"] = str(new_t_date); save_db(db); safe_rerun()
     st.caption(f"เหลือเวลาอีก **{days_left}** วัน ที่มึงต้องพิสูจน์ตัวเอง!")
 
 if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!** วิดพื้นจ่ายหนี้เลือดเพื่อออกมาทำตามแผนซะ!")
@@ -553,12 +553,12 @@ with colLeft:
     fail_prob = user.get('failure_prob', 10)
     st.markdown(f"**📉 โอกาสหลุดวงโคจรวินัย: {fail_prob}%**")
     st.progress(fail_prob / 100)
-    if st.button("💀 กดยอมแพ้ให้สิ่งเร้า", use_container_width=True):
+    if st.button("💀 กดยอมแพ้ให้สิ่งเร้า", use_container_width=True, key="btn_surrender_distraction"):
         db["dopamine_fails"][safe_email].append(today_str); user["exp"] = 0; user["blood_debt"] = user.get("blood_debt", 0) + 50; user["in_cage"] = True; user["failure_prob"] = min(100, user["failure_prob"] + 20); save_db(db); safe_rerun()
 
     st.markdown("#### 🩸 เชื้อเพลิงความแค้น")
     with st.form("weakness_fuel_form", clear_on_submit=True):
-        w_text = st.text_input("ความอ่อนแอที่มึงเคยทำพลาด:")
+        w_text = st.text_input("ความอ่อนแอที่มึงเคยทำพลาด:", key="txt_weakness_input")
         if st.form_submit_button("🔥 เผาความกากเป็นพลัง!"):
             if w_text: db["weakness_fuel"][safe_email].append({"id": str(uuid.uuid4()), "text": w_text}); save_db(db); safe_rerun()
                 
@@ -569,7 +569,7 @@ with colLeft:
 
     st.markdown("#### 🗣️ THE HATER'S WALL")
     with st.form("hater_form", clear_on_submit=True):
-        h_text = st.text_input("คำดูถูกที่ฝังใจ:")
+        h_text = st.text_input("คำดูถูกที่ฝังใจ:", key="txt_hater_input")
         if st.form_submit_button("ฝังความแค้น"):
             if h_text: db["haters"][safe_email].append(h_text); save_db(db); safe_rerun()
     if db.get("haters", {}).get(safe_email): st.warning(f"🤬 \"{random.choice(db['haters'][safe_email])}\"")
@@ -771,8 +771,8 @@ with colRight:
         
         with st.expander("➕ เพิ่มทักษะที่อยากเรียนรู้"):
             with st.form("forge_add_form", clear_on_submit=True):
-                sk_name = st.text_input("ชื่อทักษะ (เช่น เขียนโปรแกรม, ภาษาญี่ปุ่น):")
-                sk_why = st.text_input("ทำไมถึงอยากเก่งเรื่องนี้? (แรงผลักดัน):")
+                sk_name = st.text_input("ชื่อทักษะ (เช่น เขียนโปรแกรม, ภาษาญี่ปุ่น):", key="txt_sk_name")
+                sk_why = st.text_input("ทำไมถึงอยากเก่งเรื่องนี้? (แรงผลักดัน):", key="txt_sk_why")
                 if st.form_submit_button("บันทึกทักษะลงคลัง"):
                     if sk_name:
                         db["skill_forge"][safe_email].append({"id": str(uuid.uuid4()), "name": sk_name, "why": sk_why, "status": "dormant", "exp_gained": 0, "date_added": today_str})
@@ -814,22 +814,22 @@ with colRight:
         st.markdown("### 📝 สมุดบัญชาการ (Command Log)")
         st.write("ที่จดรวมทุกอย่าง: โน้ต งาน เรียน และ **ตารางสอบ**")
         
-        pl_type = st.radio("ประเภทการบันทึก:", ["📝 โน้ตทั่วไป", "🔪 เตรียมงาน", "📖 เตรียมเรียน", "⚠️ ตารางสอบ"], horizontal=True)
-        pl_title = st.text_input("หัวข้อเรื่อง:")
-        pl_detail = st.text_area("รายละเอียด / ขอบเขตเนื้อหา:")
+        pl_type = st.radio("ประเภทการบันทึก:", ["📝 โน้ตทั่วไป", "🔪 เตรียมงาน", "📖 เตรียมเรียน", "⚠️ ตารางสอบ"], horizontal=True, key="rad_pl_type")
+        pl_title = st.text_input("หัวข้อเรื่อง:", key="txt_pl_title")
+        pl_detail = st.text_area("รายละเอียด / ขอบเขตเนื้อหา:", key="txt_pl_detail")
         
         pl_priority = "🟡 ปานกลาง"
         pl_subtasks_str = ""
         pl_date = None
         
         if "งาน" in pl_type or "เรียน" in pl_type:
-            pl_priority = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"])
-            pl_subtasks_str = st.text_area("🔪 ซอยข้อย่อย (Enter ขึ้นบรรทัดใหม่ / เว้นว่างถ้าเป็นงานชิ้นเดียวจบ):")
-            pl_date = st.date_input("กำหนดส่ง / วันที่ต้องเสร็จ:")
+            pl_priority = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], key="sb_pl_prio")
+            pl_subtasks_str = st.text_area("🔪 ซอยข้อย่อย (Enter ขึ้นบรรทัดใหม่ / เว้นว่างถ้าเป็นงานชิ้นเดียวจบ):", key="txt_pl_subtasks")
+            pl_date = st.date_input("กำหนดส่ง / วันที่ต้องเสร็จ:", key="dt_pl_deadline")
         elif "สอบ" in pl_type:
-            pl_date = st.date_input("วันที่สอบ:")
+            pl_date = st.date_input("วันที่สอบ:", key="dt_pl_exam_date")
 
-        if st.button("💾 บันทึกลงสมุดบัญชาการ", type="primary"):
+        if st.button("💾 บันทึกลงสมุดบัญชาการ", type="primary", key="btn_save_command_log"):
             if pl_title:
                 item_type = "note"
                 if "งาน" in pl_type: item_type = "task"
@@ -915,8 +915,8 @@ with colRight:
                 for note in reversed(notes):
                     with st.expander(f"📝 {note['title']} (บันทึกเมื่อ: {thai_date_format(note.get('date_added', '-'))})"):
                         with st.form(f"edit_form_{note['id']}"):
-                            new_title = st.text_input("แก้หัวข้อ:", value=note['title'])
-                            new_content = st.text_area("แก้เนื้อหา:", value=note.get('detail', ''), height=150)
+                            new_title = st.text_input("แก้หัวข้อ:", value=note['title'], key=f"txt_edit_title_{note['id']}")
+                            new_content = st.text_area("แก้เนื้อหา:", value=note.get('detail', ''), height=150, key=f"txt_edit_detail_{note['id']}")
                             c1, c2 = st.columns([1, 1])
                             if c1.form_submit_button("💾 บันทึกการแก้ไข"):
                                 note['title'] = new_title; note['detail'] = new_content; save_db(db); st.success("อัปเดตเรียบร้อย!"); safe_rerun()
@@ -932,8 +932,8 @@ with colRight:
         mirror_notes = db["accountability_mirror"].get(safe_email, [])
         with st.form("mirror_add_form", clear_on_submit=True):
             st.markdown("**เขียน Post-it แปะกระจก**")
-            note_text = st.text_area("ความจริงหรือเป้าหมาย (เช่น 'กูแม่งขี้เกียจตอนเช้า' หรือ 'ต้องลุกไปวิ่ง'):", height=100)
-            note_type = st.radio("ประเภท:", ["🔥 ความจริงอันน่าเกลียด (Brutal Truth)", "🎯 เป้าหมายที่ต้องบดขยี้ (Goal)"], horizontal=True)
+            note_text = st.text_area("ความจริงหรือเป้าหมาย (เช่น 'กูแม่งขี้เกียจตอนเช้า' หรือ 'ต้องลุกไปวิ่ง'):", height=100, key="txt_mirror_text")
+            note_type = st.radio("ประเภท:", ["🔥 ความจริงอันน่าเกลียด (Brutal Truth)", "🎯 เป้าหมายที่ต้องบดขยี้ (Goal)"], horizontal=True, key="rad_mirror_type")
             if st.form_submit_button("แปะกระจกเดี๋ยวนี้!"):
                 if note_text:
                     db["accountability_mirror"][safe_email].append({"id": str(uuid.uuid4()), "text": note_text, "is_goal": "Goal" in note_type, "date_added": today_str})
@@ -959,9 +959,9 @@ with colRight:
         
         with st.expander("➕ เพิ่มวินัยเหล็กใหม่"):
             with st.form("habit_form", clear_on_submit=True):
-                h_name = st.text_input("ชื่อวินัย (เช่น นั่งสมาธิ 10 นาที, ดื่มน้ำ):")
-                h_detail = st.text_input("คติเตือนใจ / ทำไปทำไม?:")
-                h_conseq = st.text_input("🩸 ผลของการหลุดวินัย (ถ้ามึงทิ้งวินัยนี้ จะเกิดอะไรขึ้น?):")
+                h_name = st.text_input("ชื่อวินัย (เช่น นั่งสมาธิ 10 นาที, ดื่มน้ำ):", key="txt_h_name")
+                h_detail = st.text_input("คติเตือนใจ / ทำไปทำไม?:", key="txt_h_detail")
+                h_conseq = st.text_input("🩸 ผลของการหลุดวินัย (ถ้ามึงทิ้งวินัยนี้ จะเกิดอะไรขึ้น?):", key="txt_h_conseq")
                 if st.form_submit_button("บรรจุวินัยเหล็ก"):
                     if h_name:
                         db["iron_habits"][safe_email].append({"id": str(uuid.uuid4()), "name": h_name, "รายละเอียด": h_detail, "consequence": h_conseq.strip(), "last_done_date": "", "total_done": 0, "user_order": 99, "streak": 0})
@@ -1030,7 +1030,7 @@ with colRight:
         
         with st.expander("➕ เพิ่มเป้าหมายแห่งชัยชนะ"):
             with st.form("add_daily_win_form", clear_on_submit=True):
-                new_win = st.text_input("เรื่องที่ต้องชนะตัวเองทุกวัน (เช่น ไม่ลืมกินข้าวเช้า, ยิ้มให้ตัวเอง):")
+                new_win = st.text_input("เรื่องที่ต้องชนะตัวเองทุกวัน (เช่น ไม่ลืมกินข้าวเช้า, ยิ้มให้ตัวเอง):", key="txt_new_daily_win")
                 if st.form_submit_button("บันทึกเป้าหมาย"):
                     if new_win:
                         win_items.append({"id": str(uuid.uuid4()), "name": new_win})
@@ -1098,7 +1098,7 @@ with colRight:
         st.markdown("## 🔥 แคมป์ไฟพักใจ (The Sanctuary)")
         st.write("ที่นี่ไม่มีตารางงาน ไม่มีบทลงโทษ มีแค่กองไฟและความเงียบ... ถ้าวันนี้มันหนักหนา หรือรู้สึกโดดเดี่ยวเกินไป พิมพ์ทิ้งไว้ที่นี่ได้เลย")
         with st.form("sanctuary_form", clear_on_submit=True):
-            sanc_text = st.text_area("โยนความรู้สึกหนักๆ ของมึงลงในกองไฟ...", placeholder="วันนี้แม่งโคตรเหนื่อยเลยว่ะ กูรู้สึกเหมือนสู้อยู่คนเดียว...", height=150)
+            sanc_text = st.text_area("โยนความรู้สึกหนักๆ ของมึงลงในกองไฟ...", placeholder="วันนี้แม่งโคตรเหนื่อยเลยว่ะ กูรู้สึกเหมือนสู้อยู่คนเดียว...", height=150, key="txt_sanc_text")
             if st.form_submit_button("🔥 ปล่อยวางมันลง"):
                 if sanc_text: db["sanctuary"][safe_email].append({"id": str(uuid.uuid4()), "วันที่": today_str, "ข้อความ": sanc_text}); save_db(db); st.success("รับฟังแล้ว... พักซะ"); safe_rerun()
         st.divider()
@@ -1116,7 +1116,7 @@ with colRight:
         st.markdown("### 🍪 โหลเก็บความภูมิใจ (Cookie Jar)")
         st.write("ที่เก็บความสำเร็จชิ้นใหญ่ เรื่องราวที่ทำให้มึงภูมิใจในตัวเองแบบสุดๆ")
         with st.form("cookie_form", clear_on_submit=True):
-            win_text = st.text_input("ความสำเร็จที่อยากเก็บไว้เป็นความทรงจำ:")
+            win_text = st.text_input("ความสำเร็จที่อยากเก็บไว้เป็นความทรงจำ:", key="txt_cookie_win")
             if st.form_submit_button("เก็บเข้าโหล!"):
                 if win_text: db["cookie_jar"][safe_email].append({"id": str(uuid.uuid4()), "วันที่": today_str, "ชัยชนะ": win_text}); user["exp"] += int(5 * (1.5 if current_streak>=30 else 1.2 if current_streak>=7 else 1.0)); save_db(db); st.success("✅ เก็บความสำเร็จ!"); safe_rerun()
         if db["cookie_jar"][safe_email]:
@@ -1129,8 +1129,8 @@ with colRight:
     with tab_academic:
         st.markdown("### 📚 ลานประลอง (วัดผลความก้าวหน้า)")
         with st.form("exam_form", clear_on_submit=True):
-            e_subj = st.text_input("ชื่อวิชา / เรื่องที่ทดสอบ:")
-            e_score = st.number_input("คะแนนที่ได้ล่าสุด:", min_value=0.0, step=0.1)
+            e_subj = st.text_input("ชื่อวิชา / เรื่องที่ทดสอบ:", key="txt_exam_subj")
+            e_score = st.number_input("คะแนนที่ได้ล่าสุด:", min_value=0.0, step=0.1, key="num_exam_score")
             if st.form_submit_button("บันทึกคะแนนสอบ"):
                 if e_subj:
                     if e_subj not in db["exams"][safe_email]: db["exams"][safe_email][e_subj] = []
@@ -1152,8 +1152,8 @@ with colRight:
         st.divider()
         st.markdown("#### 🥊 ชกกับตัวเองเมื่อวาน (BEAT YESTERDAY)")
         with st.form("beat_yesterday_form"):
-            by_metric = st.text_input("สิ่งที่ใช้วัดผล (เช่น จำนวนข้อที่ทำได้):", value=db["beat_yesterday"][safe_email].get("metric_name", ""))
-            by_val = st.number_input("สถิติที่ทำได้วันนี้:", min_value=0)
+            by_metric = st.text_input("สิ่งที่ใช้วัดผล (เช่น จำนวนข้อที่ทำได้):", value=db["beat_yesterday"][safe_email].get("metric_name", ""), key="txt_by_metric")
+            by_val = st.number_input("สถิติที่ทำได้วันนี้:", min_value=0, key="num_by_val")
             if st.form_submit_button("ทุบสถิติตัวเอง"):
                 if by_metric:
                     db["beat_yesterday"][safe_email]["metric_name"] = by_metric
@@ -1164,7 +1164,7 @@ with colRight:
                     db["beat_yesterday"][safe_email]["history"][today_str] = by_val; save_db(db); safe_rerun()
 
         st.divider()
-        if st.button("🔥 ทะลุขีดจำกัด (ก้าวข้ามความเหนื่อยล้าไปได้)!", use_container_width=True):
+        if st.button("🔥 ทะลุขีดจำกัด (ก้าวข้ามความเหนื่อยล้าไปได้)!", use_container_width=True, key="btn_limit_break"):
             if today_str not in db["limit_breaks"][safe_email]:
                 db["limit_breaks"][safe_email].append(today_str); user["exp"] += int(50 * (1.5 if current_streak>=30 else 1.0)); user["failure_prob"] = max(0, user.get("failure_prob",10) - 15); save_db(db); safe_rerun()
 
@@ -1192,18 +1192,18 @@ with c_fin1:
 with c_fin2:
     with st.popover("⚙️ ตั้งเป้าหมาย/เพิ่มธุรกรรม"):
         st.markdown("**1. ตั้งเป้าหมายเก็บเงิน:**")
-        new_g_name = st.text_input("ชื่อเป้าหมายเงิน:", value=finance.get('goal_name', ''))
-        new_g_amt = st.number_input("ยอดเป้าหมาย:", value=float(finance.get('goal_amount', 0.0)), step=100.0)
-        if st.button("บันทึกเป้าหมาย"): 
+        new_g_name = st.text_input("ชื่อเป้าหมายเงิน:", value=finance.get('goal_name', ''), key="txt_fin_goal_name")
+        new_g_amt = st.number_input("ยอดเป้าหมาย:", value=float(finance.get('goal_amount', 0.0)), step=100.0, key="num_fin_goal_amt")
+        if st.button("บันทึกเป้าหมาย", key="btn_save_fin_goal"): 
             finance['goal_name'] = new_g_name; finance['goal_amount'] = float(new_g_amt); save_db(db); safe_rerun()
         
         st.divider()
         st.markdown("**2. บันทึกรายรับ/รายจ่าย (Ledger):**")
-        tx_name = st.text_input("รายการ (เช่น ค่าข้าว, แม่ให้เงิน):")
-        tx_type = st.radio("ประเภท:", ["🟢 รายรับ / เงินออม", "🔴 รายจ่าย"], horizontal=True)
-        tx_amt = st.number_input("จำนวนเงิน:", min_value=0.0, step=10.0)
+        tx_name = st.text_input("รายการ (เช่น ค่าข้าว, แม่ให้เงิน):", key="txt_tx_name")
+        tx_type = st.radio("ประเภท:", ["🟢 รายรับ / เงินออม", "🔴 รายจ่าย"], horizontal=True, key="rad_tx_type")
+        tx_amt = st.number_input("จำนวนเงิน:", min_value=0.0, step=10.0, key="num_tx_amt")
         
-        if st.button("📝 บันทึกลงสมุดบัญชี", type="primary"):
+        if st.button("📝 บันทึกลงสมุดบัญชี", type="primary", key="btn_save_ledger"):
             if tx_name and tx_amt > 0:
                 t_type = "income" if "รายรับ" in tx_type else "expense"
                 finance["ledger"].append({
@@ -1300,7 +1300,7 @@ else:
         st.markdown("</div>", unsafe_allow_html=True)
         
         st.warning("⚠️ คำเตือน: ถ้ากดยอมรับแล้ว จะถือว่าจบวันทันที แก้ไขผลลัพธ์ไม่ได้อีก!")
-        if st.button("⚖️ ยอมรับคำพิพากษาและจบวัน! (End Day)", use_container_width=True, type="primary"):
+        if st.button("⚖️ ยอมรับคำพิพากษาและจบวัน! (End Day)", use_container_width=True, type="primary", key="btn_accept_judgment"):
             # แจกรางวัลและลงโทษ
             if grade == "S": user["exp"] += 50; user["streak"] += 1; user["failure_prob"] = max(0, user.get("failure_prob",10) - 10)
             elif grade == "A": user["exp"] += 30; user["streak"] += 1; user["failure_prob"] = max(0, user.get("failure_prob",10) - 5)
