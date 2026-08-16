@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V6)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V6.1 - BUG FIXED)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -383,7 +383,7 @@ for k in list_keys:
 
 for k in ["finance", "exams", "beat_yesterday", "daily_wins", "judgment_history"]:
     if safe_email not in db[k] or db[k][safe_email] is None: 
-        if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0, "current": 0, "ledger": []}
+        if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0.0, "current": 0.0, "ledger": []}
         elif k == "daily_wins": db[k][safe_email] = {"items": [], "logs": {}}
         else: db[k][safe_email] = {}
 
@@ -424,7 +424,7 @@ raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.g
 for h in raw_h: h["ภารกิจ"] = h["name"]; h["is_habit"] = True
 
 all_active_tasks = raw_m + raw_s + raw_h
-all_active_tasks.sort(key=lambda x: (3 if x.get("is_habit") else 2 if x.get("is_study") else 1, x.get("user_order", 99)))
+all_active_tasks.sort(key=lambda x: (3 if x.get("is_habit") else 2 if x.get("is_study") else 1, int(x.get("user_order", 99))))
 
 # ==========================================
 # 🔒 LOCKED IN MODE
@@ -588,7 +588,7 @@ with colRight:
         st.markdown("### 🔪 งานที่ต้องบดขยี้วันนี้")
         raw_active_missions = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว")]
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
-        todo_missions.sort(key=lambda x: (x.get("user_order", 99), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
+        todo_missions.sort(key=lambda x: (int(x.get("user_order", 99)), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
         
         if todo_missions:
             with st.expander("🎯 วางแผนลำดับงาน (Q-Order)"):
@@ -596,11 +596,11 @@ with colRight:
                     new_orders = {}
                     for m in todo_missions:
                         col_q, col_n = st.columns([1, 5])
-                        new_orders[m["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=m.get("user_order", 99), step=1, key=f"q_{m['id']}", label_visibility="collapsed")
+                        new_orders[m["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=int(m.get("user_order", 99)), step=1, key=f"q_{m['id']}", label_visibility="collapsed")
                         col_n.write(f"{'💀 [BOSS] ' if m.get('is_boss') else ''}{m['ภารกิจ']}")
                     if st.form_submit_button("🔒 ล็อคผังชีวิต!"):
                         for m in db["missions"][safe_email]:
-                            if isinstance(m, dict) and m.get("id") in new_orders: m["user_order"] = new_orders[m["id"]]
+                            if isinstance(m, dict) and m.get("id") in new_orders: m["user_order"] = int(new_orders[m["id"]])
                         save_db(db); st.success("✅ อัปเดตผังเรียบร้อย!"); safe_rerun()
 
             for m in todo_missions:
@@ -615,7 +615,7 @@ with colRight:
                 if m.get("skip_today_date") != "" and not is_frozen: m["skip_today_date"] = ""; save_db(db)
                 frozen_badge = " ❄️🚨 [เกราะแตก!]" if is_frozen and is_overdue else " ❄️ [แช่แข็ง]" if is_frozen else ""
 
-                c1.write(f"**{m.get('ประเภท','')}** | {'🎯 **[Q' + str(m.get('user_order', 99)) + ']** ' if m.get('user_order', 99) != 99 else ''}{'🔪 **[ซอยงาน]**' if m.get('subtasks') else '⚡ **[ชิ้นเดียวจบ]**'}{' 💀 **[BOSS]**' if m.get('is_boss') else ''}{' ⚔️' if m.get('bounty') else ''} {m['ภารกิจ']} {deadline_badge}{frozen_badge}")
+                c1.write(f"**{m.get('ประเภท','')}** | {'🎯 **[Q' + str(m.get('user_order', 99)) + ']** ' if int(m.get('user_order', 99)) != 99 else ''}{'🔪 **[ซอยงาน]**' if m.get('subtasks') else '⚡ **[ชิ้นเดียวจบ]**'}{' 💀 **[BOSS]**' if m.get('is_boss') else ''}{' ⚔️' if m.get('bounty') else ''} {m['ภารกิจ']} {deadline_badge}{frozen_badge}")
                 
                 m_id = str(m.get("id", f"unk_m_{m.get('ภารกิจ', '')}"))
                 c1.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-bottom: 5px; margin-top: 5px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {m.get('consequence', '') or WARRIOR_CONSEQUENCES[get_stable_index(m_id + 'conseq', len(WARRIOR_CONSEQUENCES))]}</div>", unsafe_allow_html=True)
@@ -678,7 +678,7 @@ with colRight:
         st.markdown("### 📖 วิชาที่ต้องบรรลุในวันนี้")
         raw_active_study = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว")]
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
-        todo_study.sort(key=lambda x: (x.get("user_order", 99), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
+        todo_study.sort(key=lambda x: (int(x.get("user_order", 99)), 0 if x.get("is_boss") else 1, get_deadline_score(x.get("deadline", "")), get_priority_score(x.get("ประเภท", ""))))
         
         if todo_study:
             with st.expander("🎯 วางแผนลำดับวิชาเรียน (Q-Order)"):
@@ -686,11 +686,11 @@ with colRight:
                     new_s_orders = {}
                     for s in todo_study:
                         col_q, col_n = st.columns([1, 5])
-                        new_s_orders[s["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=s.get("user_order", 99), step=1, key=f"q_s_{s['id']}", label_visibility="collapsed")
+                        new_s_orders[s["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=int(s.get("user_order", 99)), step=1, key=f"q_s_{s['id']}", label_visibility="collapsed")
                         col_n.write(f"{'💀 [BOSS] ' if s.get('is_boss') else ''}{s['ภารกิจ']}")
                     if st.form_submit_button("🔒 ล็อคผังเรียน!"):
                         for s in db["study_missions"][safe_email]:
-                            if isinstance(s, dict) and s.get("id") in new_s_orders: s["user_order"] = new_s_orders[s["id"]]
+                            if isinstance(s, dict) and s.get("id") in new_s_orders: s["user_order"] = int(new_s_orders[s["id"]])
                         save_db(db); st.success("✅ อัปเดตผังเรียนเรียบร้อย!"); safe_rerun()
 
             for s in todo_study:
@@ -703,7 +703,7 @@ with colRight:
                     if s.get("skip_today_date") != "" and not is_frozen: s["skip_today_date"] = ""; save_db(db)
                     frozen_badge = " ❄️🚨 [แช่แข็งแตก!]" if is_frozen and is_overdue else " ❄️ [แช่แข็ง]" if is_frozen else ""
 
-                    c1.write(f"**{s.get('ประเภท','')}** | {'🎯 **[Q' + str(s.get('user_order', 99)) + ']** ' if s.get('user_order', 99) != 99 else ''}{'📖 **[ติวโครงใหญ่]**' if s.get('subtasks') else '⚡ **[ทบทวนจบ]**'}{' 💀 **[BOSS]**' if s.get('is_boss') else ''} {s['ภารกิจ']} {deadline_badge}{frozen_badge}")
+                    c1.write(f"**{s.get('ประเภท','')}** | {'🎯 **[Q' + str(s.get('user_order', 99)) + ']** ' if int(s.get('user_order', 99)) != 99 else ''}{'📖 **[ติวโครงใหญ่]**' if s.get('subtasks') else '⚡ **[ทบทวนจบ]**'}{' 💀 **[BOSS]**' if s.get('is_boss') else ''} {s['ภารกิจ']} {deadline_badge}{frozen_badge}")
                     
                     s_id = str(s.get("id", f"unk_s_{s.get('ภารกิจ', '')}"))
                     c1.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-bottom: 5px; margin-top: 5px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {s.get('consequence', '') or WARRIOR_CONSEQUENCES[get_stable_index(s_id + 'conseq', len(WARRIOR_CONSEQUENCES))]}</div>", unsafe_allow_html=True)
@@ -975,11 +975,11 @@ with colRight:
                     new_h_orders = {}
                     for h in todo_habits:
                         col_q, col_n = st.columns([1, 5])
-                        new_h_orders[h["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=h.get("user_order", 99), step=1, key=f"q_h_{h['id']}", label_visibility="collapsed")
+                        new_h_orders[h["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=int(h.get("user_order", 99)), step=1, key=f"q_h_{h['id']}", label_visibility="collapsed")
                         col_n.write(f"⛓️ {h['name']}")
                     if st.form_submit_button("🔒 ล็อคคิววินัย! (เซฟแผน)"):
                         for h in db["iron_habits"][safe_email]:
-                            if isinstance(h, dict) and h.get("id") in new_h_orders: h["user_order"] = new_h_orders[h["id"]]
+                            if isinstance(h, dict) and h.get("id") in new_h_orders: h["user_order"] = int(new_h_orders[h["id"]])
                         save_db(db); st.success("✅ อัปเดตผังวินัยเรียบร้อย!"); safe_rerun()
                     
         if db["iron_habits"][safe_email]:
@@ -992,7 +992,7 @@ with colRight:
                     h_streak = h.get("streak", 0)
                     streak_badge = f"🔥 Streak: {h_streak} วัน!" if h_streak > 0 else "❄️ ไม่มี Streak"
                     
-                    c1.write(f"⛓️ {'🎯 **[Q' + str(h.get('user_order', 99)) + ']** ' if h.get('user_order', 99) != 99 else ''}**{h['name']}**  *({streak_badge} | รวม {h.get('total_done', 0)} ครั้ง)*")
+                    c1.write(f"⛓️ {'🎯 **[Q' + str(h.get('user_order', 99)) + ']** ' if int(h.get('user_order', 99)) != 99 else ''}**{h['name']}**  *({streak_badge} | รวม {h.get('total_done', 0)} ครั้ง)*")
                     
                     with c1.expander("📝 ดูรายละเอียดและเสียงเตือนใจ"):
                         if h.get("รายละเอียด"): st.write(f"💡 **เป้าหมาย:** {h['รายละเอียด']}")
@@ -1179,19 +1179,23 @@ c_fin1, c_fin2 = st.columns([2, 1])
 with c_fin1:
     st.write(f"**เป้าหมายหลัก:** {finance.get('goal_name', 'ยังไม่ตั้ง')}")
     # คำนวณยอดเงินปัจจุบันจากสมุดบัญชี (Ledger)
-    total_ledger = sum([t.get("amount", 0) for t in finance.get("ledger", []) if t.get("type") in ["income", "savings"]]) - sum([t.get("amount", 0) for t in finance.get("ledger", []) if t.get("type") == "expense"])
-    finance["current"] = max(0, total_ledger) # ซิงค์ยอดรวม
+    total_ledger = sum([float(t.get("amount", 0.0)) for t in finance.get("ledger", []) if t.get("type") in ["income", "savings"]]) - sum([float(t.get("amount", 0.0)) for t in finance.get("ledger", []) if t.get("type") == "expense"])
+    finance["current"] = max(0.0, float(total_ledger)) # ซิงค์ยอดรวม
     
-    cur = finance.get('current', 0); tgt = finance.get('goal_amount', 1); prog = max(0.0, min(cur / tgt, 1.0)) if tgt > 0 else 0.0
+    cur = float(finance.get('current', 0.0))
+    tgt = float(finance.get('goal_amount', 1.0))
+    if tgt <= 0: tgt = 1.0
+    prog = max(0.0, min(cur / tgt, 1.0))
+    
     st.progress(prog, text=f"ยอดคงเหลือ (เงินเก็บทั้งหมด): {cur:,.2f} / {tgt:,.2f} บาท")
     
 with c_fin2:
     with st.popover("⚙️ ตั้งเป้าหมาย/เพิ่มธุรกรรม"):
         st.markdown("**1. ตั้งเป้าหมายเก็บเงิน:**")
         new_g_name = st.text_input("ชื่อเป้าหมายเงิน:", value=finance.get('goal_name', ''))
-        new_g_amt = st.number_input("ยอดเป้าหมาย:", value=finance.get('goal_amount', 0.0), step=100.0)
+        new_g_amt = st.number_input("ยอดเป้าหมาย:", value=float(finance.get('goal_amount', 0.0)), step=100.0)
         if st.button("บันทึกเป้าหมาย"): 
-            finance['goal_name'] = new_g_name; finance['goal_amount'] = new_g_amt; save_db(db); safe_rerun()
+            finance['goal_name'] = new_g_name; finance['goal_amount'] = float(new_g_amt); save_db(db); safe_rerun()
         
         st.divider()
         st.markdown("**2. บันทึกรายรับ/รายจ่าย (Ledger):**")
@@ -1203,7 +1207,7 @@ with c_fin2:
             if tx_name and tx_amt > 0:
                 t_type = "income" if "รายรับ" in tx_type else "expense"
                 finance["ledger"].append({
-                    "id": str(uuid.uuid4()), "date": today_str, "name": tx_name, "type": t_type, "amount": tx_amt
+                    "id": str(uuid.uuid4()), "date": today_str, "name": tx_name, "type": t_type, "amount": float(tx_amt)
                 })
                 save_db(db); st.success("บันทึกยอดสำเร็จ!"); safe_rerun()
 
@@ -1340,7 +1344,7 @@ with tab_h_finance:
         for tx in reversed(finance["ledger"]):
             color = "#4bff4b" if tx.get("type") in ["income", "savings"] else "#ff4b4b"
             icon = "🟢" if tx.get("type") in ["income", "savings"] else "🔴"
-            st.markdown(f"<div style='border-left: 3px solid {color}; padding-left: 10px; margin-bottom: 5px;'>{icon} <b>{thai_date_format(tx.get('date', ''))}</b> : {tx.get('name', 'ไม่ระบุ')} <span style='color:{color}; float:right;'>{'+' if icon == '🟢' else '-'}{tx.get('amount', 0):,.2f} ฿</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-left: 3px solid {color}; padding-left: 10px; margin-bottom: 5px;'>{icon} <b>{thai_date_format(tx.get('date', ''))}</b> : {tx.get('name', 'ไม่ระบุ')} <span style='color:{color}; float:right;'>{'+' if icon == '🟢' else '-'}{float(tx.get('amount', 0)):,.2f} ฿</span></div>", unsafe_allow_html=True)
 
 with tab1:
     st.markdown("### 🗺️ ประวัติภารกิจที่พิชิตแล้ว")
