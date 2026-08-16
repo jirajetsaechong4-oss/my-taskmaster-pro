@@ -417,9 +417,9 @@ if overdue_count > 0:
 # ==========================================
 # 🗺️ PREPARE ACTIVE TASKS
 # ==========================================
-raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date") != today_str]
-raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date") != today_str]
-raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
+raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date"] != today_str]
+raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date"] != today_str]
+raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date"] != today_str]
 for h in raw_h: h["ภารกิจ"] = h["name"]; h["is_habit"] = True
 
 all_active_tasks = raw_m + raw_s + raw_h
@@ -849,7 +849,7 @@ with colRight:
         if planner_items:
             exams = [i for i in planner_items if i.get("type") == "exam"]
             tasks_study = [i for i in planner_items if i.get("type") in ["task", "study"]]
-            notes = [i for i in planner_items if i.get("type") == "note"]
+            notes = [i for i in planner_items if i.get("type"] == "note"]
             
             if exams:
                 st.divider()
@@ -966,7 +966,7 @@ with colRight:
                         db["iron_habits"][safe_email].append({"id": str(uuid.uuid4()), "name": h_name, "รายละเอียด": h_detail, "consequence": h_conseq.strip(), "last_done_date": "", "total_done": 0, "user_order": 99, "streak": 0})
                         save_db(db); safe_rerun()
         
-        todo_habits = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date"] != today_str]
+        todo_habits = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
         
         if todo_habits:
             with st.expander("🎯 วางแผนลำดับวินัย (Q-Order)"):
@@ -1168,7 +1168,7 @@ with colRight:
                 db["limit_breaks"][safe_email].append(today_str); user["exp"] += int(50 * (1.5 if current_streak>=30 else 1.0)); user["failure_prob"] = max(0, user.get("failure_prob",10) - 15); save_db(db); safe_rerun()
 
 # ==========================================
-# 💰 อัปเกรดระบบการเงิน (ULTIMATE FINANCE TRACKER) - [FIXED MIXED TYPES]
+# 💰 อัปเกรดระบบการเงิน (ULTIMATE FINANCE TRACKER)
 # ==========================================
 st.divider()
 st.markdown("### 💰 คลังทุนสร้างฝัน (Ultimate Finance Tracker)")
@@ -1180,7 +1180,9 @@ with c_fin1:
     total_ledger = sum([t.get("amount", 0.0) for t in finance.get("ledger", []) if t.get("type") in ["income", "savings"]]) - sum([t.get("amount", 0.0) for t in finance.get("ledger", []) if t.get("type") == "expense"])
     finance["current"] = max(0.0, total_ledger)
     
-    cur = float(finance.get('current', 0.0)); tgt = float(finance.get('goal_amount', 1.0)); prog = max(0.0, min(cur / tgt, 1.0)) if tgt > 0 else 0.0
+    cur = float(finance.get('current', 0.0))
+    tgt = float(finance.get('goal_amount', 0.0))
+    prog = max(0.0, min(cur / tgt, 1.0)) if tgt > 0 else 0.0
     st.progress(prog, text=f"ยอดคงเหลือ (เงินเก็บทั้งหมด): {cur:,.2f} / {tgt:,.2f} บาท")
     
 with c_fin2:
@@ -1188,9 +1190,9 @@ with c_fin2:
         st.markdown("**1. ตั้งเป้าหมายเก็บเงิน:**")
         new_g_name = st.text_input("ชื่อเป้าหมายเงิน:", value=finance.get('goal_name', ''))
         
-        # FIX: Explicitly cast goal_amount to float to avoid StreamlitMixedNumericTypesError
-        saved_goal_amount = float(finance.get('goal_amount', 0.0))
-        new_g_amt = st.number_input("ยอดเป้าหมาย:", value=saved_goal_amount, step=100.0)
+        # 🛠️ ป้องกัน Error StreamlitMixedNumericTypesError โดยแปลงเป็น float() เสมอ
+        current_goal_amt = float(finance.get('goal_amount', 0.0))
+        new_g_amt = st.number_input("ยอดเป้าหมาย:", value=current_goal_amt, step=100.0)
         
         if st.button("บันทึกเป้าหมาย"): 
             finance['goal_name'] = new_g_name; finance['goal_amount'] = float(new_g_amt); save_db(db); safe_rerun()
@@ -1336,7 +1338,7 @@ with tab_h_finance:
         for tx in reversed(finance["ledger"]):
             color = "#4bff4b" if tx.get("type") in ["income", "savings"] else "#ff4b4b"
             icon = "🟢" if tx.get("type") in ["income", "savings"] else "🔴"
-            st.markdown(f"<div style='border-left: 3px solid {color}; padding-left: 10px; margin-bottom: 5px;'>{icon} <b>{thai_date_format(tx.get('date', ''))}</b> : {tx.get('name', 'ไม่ระบุ')} <span style='color:{color}; float:right;'>{'+' if icon == '🟢' else '-'}{tx.get('amount', 0.0):,.2f} ฿</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-left: 3px solid {color}; padding-left: 10px; margin-bottom: 5px;'>{icon} <b>{thai_date_format(tx.get('date', ''))}</b> : {tx.get('name', 'ไม่ระบุ')} <span style='color:{color}; float:right;'>{'+' if icon == '🟢' else '-'}{tx.get('amount', 0):,.2f} ฿</span></div>", unsafe_allow_html=True)
 
 with tab1:
     st.markdown("### 🗺️ ประวัติภารกิจที่พิชิตแล้ว")
