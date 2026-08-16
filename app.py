@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V4)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V5)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -24,7 +24,6 @@ today_str = str(today_date)
 yesterday_date = today_date - timedelta(days=1)
 yesterday_str = str(yesterday_date)
 
-# 🔄 ระบบแปลงวันที่เป็นภาษาไทยตามคำสั่ง (วัน + วันที่ + เดือน + ปี)
 THAI_DAYS = ["วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์", "วันอาทิตย์"]
 THAI_MONTHS = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
 
@@ -862,16 +861,6 @@ if user.get("daily_oath_date") != today_str:
     st.stop() 
 
 # ==========================================
-# 🔊 ETERNAL ECHO (TOP BANNER)
-# ==========================================
-st.markdown(f"""
-<div style="background: linear-gradient(90deg, #4b0000 0%, #1a0000 100%); padding: 10px 20px; border-left: 8px solid #ff4b4b; margin-bottom: 20px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
-    <div><h4 style="color:#ff4b4b; margin:0;">🔥 มึงบอกว่าไม่อยากกากอีกแล้วใช่มั้ย?</h4><span style="color:#fff; font-size:14px;">เป้าหมายมึงคือ: <b>{user.get('target_name', 'เป้าหมายสูงสุด')}</b></span></div>
-    <div style="color:#ffaaaa; font-style:italic; max-width: 50%; text-align:right;">"{random.choice(ETERNAL_ECHOES)}"</div>
-</div>
-""", unsafe_allow_html=True)
-
-# ==========================================
 # 🔥 คอนฟิกโครงสร้าง Database
 # ==========================================
 list_keys = ["missions", "study_missions", "command_log", "accountability_mirror", "dopamine_fails", "excuses", "cookie_jar", "haters", "iron_habits", "limit_breaks", "weakness_fuel", "sanctuary", "skill_forge"]
@@ -888,7 +877,7 @@ for k in ["finance", "exams", "beat_yesterday", "daily_wins"]:
 finance = db["finance"][safe_email]
 current_streak = user.get("streak", 0)
 
-# ===== 🚨 CHECK OVERDUE COMMAND LOG (สมุดบัญชาการดองงาน) =====
+# ===== 🚨 CHECK OVERDUE COMMAND LOG =====
 overdue_count = 0
 overdue_debt_accum = 0
 overdue_tasks_names = []
@@ -1003,35 +992,41 @@ if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!**
 st.divider()
 
 # ==========================================
-# 🗺️ THE ROADMAP
+# 🔥 สรุปวินัยเหล็กประจำวัน (THE IRON SUMMARY - NO TIMETABLE)
 # ==========================================
-st.markdown("## 🗺️ THE ULTIMATE ROADMAP (แผนผังชีวิตประจำวัน)")
-if not all_active_tasks: st.success("✅ Roadmap ว่างเปล่า! วันนี้เคลียร์แผนผังชีวิตหมดแล้ว ยอดเยี่ยมมาก!")
-else:
-    mermaid_str = "graph TD\n"
-    mermaid_str += "classDef targetNode fill:#ff4b4b,stroke:#ffffff,stroke-width:4px,color:#ffffff,font-size:18px,font-weight:bold;\n"
-    mermaid_str += "classDef pendingNode fill:#262730,stroke:#888888,stroke-width:2px,color:#ffffff,font-size:16px;\n"
-    mermaid_str += "classDef habitNode fill:#1E88E5,stroke:#ffffff,stroke-width:2px,color:#ffffff,font-size:16px;\n"
-    mermaid_str += "START((🔥 เริ่มวัน)):::pendingNode --> "
-    
-    for idx, task in enumerate(all_active_tasks):
-        task_id = f"T{idx}"
-        q_num = task.get("user_order", 99); q_label = f"[Q{q_num}] " if q_num != 99 else ""
-        icon = "⛓️" if task.get("is_habit") else "📖" if task.get("is_study") else "🔪"
-        node_class = "habitNode" if task.get("is_habit") and idx != 0 else "targetNode" if idx == 0 else "pendingNode"
-            
-        task_name = str(task.get('ภารกิจ', '')).replace('"', "'").replace('\n', ' ').replace('(', '[').replace(')', ']')
-        mermaid_str += f'{task_id}["{q_label}{icon} {task_name}"]:::{node_class}\n'
-        if idx < len(all_active_tasks) - 1: mermaid_str += f'{task_id} --> '
-            
-    mermaid_str += f'{task_id} --> END((🌙 จบวัน)):::pendingNode\n'
-    st.markdown(f"```mermaid\n{mermaid_str}\n```")
+st.markdown("## 🔥 สรุปวินัยเหล็กประจำวัน (THE IRON SUMMARY)")
+st.info("เป้าหมายมีไว้พุ่งชน ไม่ต้องสนเวลา! ว่างตอนไหน ฟาดให้เรียบตามลิสต์นี้! หมดข้ออ้าง!")
 
-    next_task_name = all_active_tasks[0]['ภารกิจ']
-    st.divider()
-    c_abyss, c_cmdr = st.columns(2)
-    with c_abyss: st.error(f"💀 **ก้นเหวขี้เกียจ:**\n\n\"{random.choice(ABYSS_VOICES).format(task=next_task_name)}\"")
-    with c_cmdr: st.success(f"⚔️ **แม่ทัพเหล็ก:**\n\n\"{random.choice(COMMANDER_VOICES).format(task=next_task_name)}\"")
+col_sum1, col_sum2, col_sum3 = st.columns(3)
+with col_sum1:
+    st.markdown("### 🔪 งาน & 📖 เรียน")
+    has_tasks = False
+    for task in all_active_tasks:
+        if not task.get("is_habit"):
+            has_tasks = True
+            icon = "📖" if task.get("is_study") else "🔪"
+            st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:8px; border-left:3px solid #ff4b4b; margin-bottom:5px;'>{icon} <b>{task.get('ภารกิจ', '')}</b></div>", unsafe_allow_html=True)
+    if not has_tasks: st.success("✅ กวาดงานเรียบ!")
+
+with col_sum2:
+    st.markdown("### ⛓️ วินัยเหล็กประจำวัน")
+    has_habits = False
+    for task in all_active_tasks:
+        if task.get("is_habit"):
+            has_habits = True
+            st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:8px; border-left:3px solid #4ba3ff; margin-bottom:5px;'>⛓️ <b>{task.get('ภารกิจ', '')}</b></div>", unsafe_allow_html=True)
+    if not has_habits: st.success("✅ รักษาวินัยครบถ้วน!")
+
+with col_sum3:
+    st.markdown("### 🏅 ชัยชนะรายวัน")
+    win_items_summary = db["daily_wins"][safe_email].get("items", [])
+    if not win_items_summary: st.caption("ยังไม่มีลิสต์ชัยชนะ")
+    for d_win in win_items_summary:
+        log_status = db["daily_wins"][safe_email].get("logs", {}).get(today_str, {}).get(d_win["id"])
+        if log_status == "win": st.markdown(f"<div style='background:rgba(75,255,75,0.1); padding:8px; border-left:3px solid #4bff4b; margin-bottom:5px;'>✅ <del>{d_win['name']}</del></div>", unsafe_allow_html=True)
+        elif log_status == "lose": st.markdown(f"<div style='background:rgba(255,75,75,0.1); padding:8px; border-left:3px solid #ff4b4b; margin-bottom:5px;'>❌ <del>{d_win['name']}</del></div>", unsafe_allow_html=True)
+        else: st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:8px; border-left:3px solid #ffa500; margin-bottom:5px;'>⏳ <b>{d_win['name']}</b></div>", unsafe_allow_html=True)
+
 st.divider()
 
 # ==========================================
@@ -1442,7 +1437,7 @@ with colRight:
                     if st.button("🗑️ ดึงออก", key=f"del_mirror_{note['id']}", use_container_width=True): db["accountability_mirror"][safe_email].remove(note); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 6: ⛓️ วินัยเหล็ก (THE IRON HABITS) [INTEGRATED MENTOR QUOTES]
+    # TAB 6: ⛓️ วินัยเหล็ก (THE IRON HABITS)
     # ----------------------------------------------------
     with tab_habits:
         st.markdown("### ⛓️ วินัยเหล็ก (THE IRON HABITS) ")
@@ -1489,7 +1484,6 @@ with colRight:
                         if h.get("รายละเอียด"): st.write(f"💡 **เป้าหมาย:** {h['รายละเอียด']}")
                         h_id = str(h.get("id", f"unk_h_{h.get('name', '')}"))
                         st.markdown(f"<div style='font-size: 0.85em; background: rgba(255, 0, 0, 0.1); padding: 5px; border-left: 3px solid #ff4b4b; margin-top: 5px;'>🩸 <b>ถ้าหลุดวินัย:</b> {h.get('consequence', '') or WARRIOR_CONSEQUENCES[get_stable_index(h_id + 'conseq', len(WARRIOR_CONSEQUENCES))]}</div>", unsafe_allow_html=True)
-                        # เพิ่มประโยคเตือนใจจาก Mentor ที่สุ่มได้ตรงนี้ตามคำขอ!
                         st.markdown(f"<div style='font-size: 0.85em; background: rgba(255,165,0,0.1); padding: 5px; border-left: 3px solid #ffa500; margin-top: 5px;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {active_quotes[get_stable_index(h_id + 'habit_hype', len(active_quotes))]}</div>", unsafe_allow_html=True)
                         
                     if h.get("last_done_date") == today_str: 
@@ -1506,19 +1500,17 @@ with colRight:
                     if c3.button("🗑️", key=f"del_h_{h.get('id', h.get('name', ''))}"): db["iron_habits"][safe_email].remove(h); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 7: 🏅 ชัยชนะรายวัน (Daily Wins)
+    # TAB 7: 🏅 ชัยชนะรายวัน (Daily Wins) - UPGRADED
     # ----------------------------------------------------
     with tab_daily_wins:
         st.markdown("### 🏅 ชัยชนะรายวัน (Daily Wins)")
         st.write(f"**ประจำ{thai_date_format(today_str)}**")
-        st.write("เช็คลิสต์ความสำเร็จเล็กๆ ที่มึงต้องเคลียร์ทุกวัน! ชนะก็กดชนะ แพ้ก็ยอมรับว่าแพ้ (กดแพ้โดนหนี้เลือด 10 ที!) ระบบจะเก็บบันทึกแยกวันให้โดยอัตโนมัติ")
+        st.write("เช็คลิสต์ความสำเร็จเล็กๆ ที่มึงต้องเคลียร์ทุกวัน! ชนะก็กดชนะ แพ้ก็ยอมรับว่าแพ้ (กดแพ้โดนหนี้เลือด 10 ที!) ท้าทายตัวเองให้ได้ **PERFECT DAY** เพื่อรับบัฟพิเศษ!")
         
         if safe_email not in db["daily_wins"] or not isinstance(db["daily_wins"][safe_email], dict):
             db["daily_wins"][safe_email] = {"items": [], "logs": {}}
-        if "items" not in db["daily_wins"][safe_email]:
-            db["daily_wins"][safe_email]["items"] = []
-        if "logs" not in db["daily_wins"][safe_email]:
-            db["daily_wins"][safe_email]["logs"] = {}
+        if "items" not in db["daily_wins"][safe_email]: db["daily_wins"][safe_email]["items"] = []
+        if "logs" not in db["daily_wins"][safe_email]: db["daily_wins"][safe_email]["logs"] = {}
 
         win_items = db["daily_wins"][safe_email]["items"]
         
@@ -1528,17 +1520,24 @@ with colRight:
                 if st.form_submit_button("บันทึกเป้าหมาย"):
                     if new_win:
                         win_items.append({"id": str(uuid.uuid4()), "name": new_win})
-                        db["daily_wins"][safe_email]["items"] = win_items
-                        save_db(db)
-                        st.success("เพิ่มเป้าหมายสำเร็จ!")
-                        safe_rerun()
+                        db["daily_wins"][safe_email]["items"] = win_items; save_db(db); st.success("เพิ่มเป้าหมายสำเร็จ!"); safe_rerun()
                         
         if win_items:
-            st.markdown("#### 🔥 เช็คลิสต์วันนี้")
-            if today_str not in db["daily_wins"][safe_email]["logs"]:
-                db["daily_wins"][safe_email]["logs"][today_str] = {}
+            st.markdown("#### 🔥 สมรภูมิวันนี้")
+            if today_str not in db["daily_wins"][safe_email]["logs"]: db["daily_wins"][safe_email]["logs"][today_str] = {}
             
             today_logs = db["daily_wins"][safe_email]["logs"][today_str]
+            win_count = sum(1 for v in today_logs.values() if v == "win")
+            total_items = len(win_items)
+            
+            st.progress(win_count / total_items if total_items > 0 else 0, text=f"พลังแห่งชัยชนะวันนี้: {win_count}/{total_items}")
+            
+            if win_count == total_items and total_items > 0:
+                st.success("🌟 PERFECT DAY! มึงเอาชนะตัวเองได้สมบูรณ์แบบไร้ที่ติ!")
+                claim_key = "perfect_claimed_" + today_str
+                if not db["daily_wins"][safe_email].get(claim_key, False):
+                    db["daily_wins"][safe_email][claim_key] = True
+                    user["exp"] += 20; user["failure_prob"] = max(0, user.get("failure_prob", 10) - 5); save_db(db); st.balloons()
             
             for item in win_items:
                 with st.container(border=True):
@@ -1554,35 +1553,24 @@ with colRight:
                     else:
                         col1.markdown(f"**{item['name']}**")
                         if col2.button("✅ ชนะ", key=f"win_{item['id']}", use_container_width=True):
-                            db["daily_wins"][safe_email]["logs"][today_str][item["id"]] = "win"
-                            user["exp"] += 5
-                            save_db(db)
-                            st.balloons()
-                            safe_rerun()
+                            db["daily_wins"][safe_email]["logs"][today_str][item["id"]] = "win"; user["exp"] += 5; save_db(db); safe_rerun()
                         if col3.button("❌ แพ้", key=f"lose_{item['id']}", use_container_width=True):
-                            db["daily_wins"][safe_email]["logs"][today_str][item["id"]] = "lose"
-                            user["blood_debt"] = user.get("blood_debt", 0) + 10
-                            save_db(db)
-                            safe_rerun()
+                            db["daily_wins"][safe_email]["logs"][today_str][item["id"]] = "lose"; user["blood_debt"] = user.get("blood_debt", 0) + 10; save_db(db); safe_rerun()
                             
-                    if col4.button("🗑️", key=f"del_dwin_{item['id']}"):
-                        win_items.remove(item)
-                        db["daily_wins"][safe_email]["items"] = win_items
-                        save_db(db)
-                        safe_rerun()
+                    if col4.button("🗑️", key=f"del_dwin_{item['id']}"): win_items.remove(item); db["daily_wins"][safe_email]["items"] = win_items; save_db(db); safe_rerun()
             
             st.divider()
             st.markdown("#### 📜 ประวัติการเอาชนะตัวเอง (ย้อนหลัง)")
             all_logs = db["daily_wins"][safe_email].get("logs", {})
-            if not all_logs:
-                st.info("ยังไม่มีประวัติย้อนหลัง")
+            if not all_logs: st.info("ยังไม่มีประวัติย้อนหลัง")
             else:
                 for log_date in sorted(all_logs.keys(), reverse=True):
                     day_log = all_logs[log_date]
-                    wins_count = sum(1 for v in day_log.values() if v == "win")
-                    loses_count = sum(1 for v in day_log.values() if v == "lose")
+                    past_wins_count = sum(1 for v in day_log.values() if v == "win")
+                    past_loses_count = sum(1 for v in day_log.values() if v == "lose")
+                    perfect_badge = " 🌟 PERFECT!" if past_wins_count == total_items and total_items > 0 else ""
                     
-                    with st.expander(f"📅 {thai_date_format(log_date)} (🏆 ชนะ: {wins_count} | ❌ แพ้: {loses_count})"):
+                    with st.expander(f"📅 {thai_date_format(log_date)} (🏆 ชนะ: {past_wins_count} | ❌ แพ้: {past_loses_count}){perfect_badge}"):
                         for w_item in win_items:
                             w_status = day_log.get(w_item["id"], "pending")
                             icon = "✅ (ชนะ)" if w_status == "win" else "❌ (แพ้)" if w_status == "lose" else "➖ (ไม่ได้เช็ค)"
