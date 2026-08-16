@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V6.1)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V6)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -284,6 +284,7 @@ with st.sidebar:
                     
                     if user_data.get("last_login") != today_str:
                         user_data["ghost_exp"] = user_data.get("ghost_exp", 0) + 25 
+                        # หากไม่ได้ทำพิพากษาเมื่อวาน โดนลงโทษอัตโนมัติ
                         if user_data.get("judged_today") != yesterday_str and not user_data.get("cleared_yesterday", False):
                             penalty = 150
                             if user_data.get("anime_mentor") == "Jesus": penalty = int(penalty * 0.5); st.toast("✝️ พระคุณค้ำจุน", icon="🕊️")
@@ -292,7 +293,7 @@ with st.sidebar:
                             user_data["failure_prob"] = min(100, user_data.get("failure_prob", 10) + 20)
                             
                         user_data["last_login"] = today_str
-                        user_data["cleared_yesterday"] = False
+                        user_data["cleared_yesterday"] = False # Reset for today's judgment
                         save_db(db)
                     st.session_state.current_user = safe_email
                     safe_rerun()
@@ -382,7 +383,7 @@ for k in list_keys:
 
 for k in ["finance", "exams", "beat_yesterday", "daily_wins", "judgment_history"]:
     if safe_email not in db[k] or db[k][safe_email] is None: 
-        if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0.0, "current": 0.0, "ledger": []}
+        if k == "finance": db[k][safe_email] = {"goal_name": "ยังไม่ได้ตั้ง", "goal_amount": 0, "current": 0, "ledger": []}
         elif k == "daily_wins": db[k][safe_email] = {"items": [], "logs": {}}
         else: db[k][safe_email] = {}
 
@@ -417,9 +418,9 @@ if overdue_count > 0:
 # ==========================================
 # 🗺️ PREPARE ACTIVE TASKS
 # ==========================================
-raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date"] != today_str]
-raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date"] != today_str]
-raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date"] != today_str]
+raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date") != today_str]
+raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date") != today_str]
+raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
 for h in raw_h: h["ภารกิจ"] = h["name"]; h["is_habit"] = True
 
 all_active_tasks = raw_m + raw_s + raw_h
@@ -849,7 +850,7 @@ with colRight:
         if planner_items:
             exams = [i for i in planner_items if i.get("type") == "exam"]
             tasks_study = [i for i in planner_items if i.get("type") in ["task", "study"]]
-            notes = [i for i in planner_items if i.get("type"] == "note"]
+            notes = [i for i in planner_items if i.get("type") == "note"]
             
             if exams:
                 st.divider()
@@ -1177,25 +1178,20 @@ st.write("บริหารจัดการเงินอย่างชา�
 c_fin1, c_fin2 = st.columns([2, 1])
 with c_fin1:
     st.write(f"**เป้าหมายหลัก:** {finance.get('goal_name', 'ยังไม่ตั้ง')}")
-    total_ledger = sum([t.get("amount", 0.0) for t in finance.get("ledger", []) if t.get("type") in ["income", "savings"]]) - sum([t.get("amount", 0.0) for t in finance.get("ledger", []) if t.get("type") == "expense"])
-    finance["current"] = max(0.0, total_ledger)
+    # คำนวณยอดเงินปัจจุบันจากสมุดบัญชี (Ledger)
+    total_ledger = sum([t.get("amount", 0) for t in finance.get("ledger", []) if t.get("type") in ["income", "savings"]]) - sum([t.get("amount", 0) for t in finance.get("ledger", []) if t.get("type") == "expense"])
+    finance["current"] = max(0, total_ledger) # ซิงค์ยอดรวม
     
-    cur = float(finance.get('current', 0.0))
-    tgt = float(finance.get('goal_amount', 0.0))
-    prog = max(0.0, min(cur / tgt, 1.0)) if tgt > 0 else 0.0
+    cur = finance.get('current', 0); tgt = finance.get('goal_amount', 1); prog = max(0.0, min(cur / tgt, 1.0)) if tgt > 0 else 0.0
     st.progress(prog, text=f"ยอดคงเหลือ (เงินเก็บทั้งหมด): {cur:,.2f} / {tgt:,.2f} บาท")
     
 with c_fin2:
     with st.popover("⚙️ ตั้งเป้าหมาย/เพิ่มธุรกรรม"):
         st.markdown("**1. ตั้งเป้าหมายเก็บเงิน:**")
         new_g_name = st.text_input("ชื่อเป้าหมายเงิน:", value=finance.get('goal_name', ''))
-        
-        # 🛠️ ป้องกัน Error StreamlitMixedNumericTypesError โดยแปลงเป็น float() เสมอ
-        current_goal_amt = float(finance.get('goal_amount', 0.0))
-        new_g_amt = st.number_input("ยอดเป้าหมาย:", value=current_goal_amt, step=100.0)
-        
+        new_g_amt = st.number_input("ยอดเป้าหมาย:", value=finance.get('goal_amount', 0.0), step=100.0)
         if st.button("บันทึกเป้าหมาย"): 
-            finance['goal_name'] = new_g_name; finance['goal_amount'] = float(new_g_amt); save_db(db); safe_rerun()
+            finance['goal_name'] = new_g_name; finance['goal_amount'] = new_g_amt; save_db(db); safe_rerun()
         
         st.divider()
         st.markdown("**2. บันทึกรายรับ/รายจ่าย (Ledger):**")
@@ -1207,7 +1203,7 @@ with c_fin2:
             if tx_name and tx_amt > 0:
                 t_type = "income" if "รายรับ" in tx_type else "expense"
                 finance["ledger"].append({
-                    "id": str(uuid.uuid4()), "date": today_str, "name": tx_name, "type": t_type, "amount": float(tx_amt)
+                    "id": str(uuid.uuid4()), "date": today_str, "name": tx_name, "type": t_type, "amount": tx_amt
                 })
                 save_db(db); st.success("บันทึกยอดสำเร็จ!"); safe_rerun()
 
@@ -1239,9 +1235,11 @@ else:
     else:
         st.write("ระบบทำการคำนวณและประเมินผลงานของมึงทั้งหมดในวันนี้ (ไม่รวมเป้าหมายรายวัน) ตัดสินกันที่เนื้อผ้า!")
         
+        # 1. รวบรวมงานทั้งหมดที่ "แอคทีฟ" (คาดหวังให้เสร็จวันนี้) และงานที่ "เสร็จวันนี้"
         expected_today = []
         completed_today = []
         
+        # Missions & Study
         all_m_and_s = [m for m in db["missions"][safe_email] if isinstance(m, dict)] + [s for s in db["study_missions"][safe_email] if isinstance(s, dict)]
         for item in all_m_and_s:
             if item.get("เสร็จแล้ว") and item.get("done_date") == today_str:
@@ -1250,6 +1248,7 @@ else:
                 if item.get("skip_today_date") != today_str or is_overdue_check(item.get("deadline", "")):
                     expected_today.append(item)
 
+        # Iron Habits
         for h in db["iron_habits"][safe_email]:
             if isinstance(h, dict):
                 if h.get("last_done_date") == today_str: completed_today.append(h)
@@ -1268,6 +1267,7 @@ else:
         elif score_percent >= 40: grade = "C"; grade_color = "#ffa500"
         else: grade = "F"; grade_color = "#ff4b4b"
 
+        # การประเมินจาก Mentor
         evaluations = {
             "S": "ไร้ที่ติ! ความสมบูรณ์แบบคือสิ่งที่คู่ควรกับผู้ที่มุ่งมั่น จงรักษามันไว้!",
             "A": "ทำได้ดีมากไอ้น้อง! แม้จะแอบหลุดไปบ้าง แต่มึงพิสูจน์แล้วว่ามึงเอาจริง!",
@@ -1297,6 +1297,7 @@ else:
         
         st.warning("⚠️ คำเตือน: ถ้ากดยอมรับแล้ว จะถือว่าจบวันทันที แก้ไขผลลัพธ์ไม่ได้อีก!")
         if st.button("⚖️ ยอมรับคำพิพากษาและจบวัน! (End Day)", use_container_width=True, type="primary"):
+            # แจกรางวัลและลงโทษ
             if grade == "S": user["exp"] += 50; user["streak"] += 1; user["failure_prob"] = max(0, user.get("failure_prob",10) - 10)
             elif grade == "A": user["exp"] += 30; user["streak"] += 1; user["failure_prob"] = max(0, user.get("failure_prob",10) - 5)
             elif grade == "B": user["exp"] += 10; user["failure_prob"] = max(0, user.get("failure_prob",10) - 2)
@@ -1306,6 +1307,7 @@ else:
                 user["blood_debt"] += 50; user["failure_prob"] = min(100, user.get("failure_prob",10) + 20)
                 user["in_cage"] = True
                 
+            # บันทึกประวัติศาสตร์
             db["judgment_history"][safe_email][today_str] = {
                 "grade": grade, "score": score_percent, "done": done_count, "missed": missed_count, "mentor": active_mentor
             }
