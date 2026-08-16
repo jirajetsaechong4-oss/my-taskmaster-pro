@@ -7,7 +7,7 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V7 - ACADEMIC ARSENAL)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V8 - ADVANCED ACADEMICS)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -395,11 +395,15 @@ overdue_tasks_names = []
 
 for item in db["command_log"][safe_email]:
     if not isinstance(item, dict): continue 
+    # งานที่มี deadline_type เป็นเป้าหมายส่วนตัว จะเตือนเฉยๆ แต่เราจะลงโทษเฉพาะพวก 🔴 Deadline ครูสั่ง ถ้าอยากให้โดนด้วย ให้เช็ค != "⚪ ไม่มีกำหนด"
     if item.get("type") in ["task", "study"] and item.get("deadline") and item["deadline"] != "":
+        # ถ้าตั้งใจดองงานที่มี Deadline ถือว่าผิด
         if is_overdue_check(item["deadline"]) and item.get("last_penalized") != today_str:
             overdue_count += 1
             item["last_penalized"] = today_str
-            overdue_debt_accum += 50
+            # ถ้าเป็นเป้าหมายส่วนตัว หนี้เลือดอาจจะลดลงครึ่งนึง (ปรานีหน่อยนึง)
+            penalty_val = 50 if "Deadline" in item.get("deadline_type", "🔴 Deadline") else 25 
+            overdue_debt_accum += penalty_val
             overdue_tasks_names.append(item.get("title", ""))
 
 if overdue_count > 0:
@@ -605,8 +609,12 @@ with colRight:
                 st.markdown(f"<div style='{bg_style}'>", unsafe_allow_html=True)
                 c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6]) 
                 
-                is_overdue = is_overdue_check(m.get("deadline", ""))
-                deadline_badge = format_days_left(m.get("deadline", ""))
+                dl_type = m.get("deadline_type", "🔴 Deadline")
+                dl_str = m.get("deadline", "")
+                is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
+                
+                if dl_str == "": deadline_badge = " ⚪ [ไม่มีกำหนด]"
+                else: deadline_badge = f" {dl_type} " + format_days_left(dl_str)
                 
                 is_frozen = (m.get("skip_today_date") == today_str)
                 if m.get("skip_today_date") != "" and not is_frozen: m["skip_today_date"] = ""; save_db(db)
@@ -693,8 +701,13 @@ with colRight:
             for s in todo_study:
                 with st.container(border=True):
                     c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6])
-                    is_overdue = is_overdue_check(s.get("deadline", ""))
-                    deadline_badge = format_days_left(s.get("deadline", ""))
+                    
+                    dl_type = s.get("deadline_type", "🔴 Deadline")
+                    dl_str = s.get("deadline", "")
+                    is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
+                    
+                    if dl_str == "": deadline_badge = " ⚪ [ไม่มีกำหนด]"
+                    else: deadline_badge = f" {dl_type} " + format_days_left(dl_str)
                     
                     is_frozen = (s.get("skip_today_date") == today_str)
                     if s.get("skip_today_date") != "" and not is_frozen: s["skip_today_date"] = ""; save_db(db)
@@ -809,7 +822,7 @@ with colRight:
     # ----------------------------------------------------
     with tab_subjects:
         st.markdown("### 🗂️ คลังแสงรายวิชา (Academic Arsenal)")
-        st.write("สร้างหมวดหมู่วิชาตั้งเป้าหมายคะแนน แล้วติดตามว่าวิชานี้มีงานอะไรที่กำลังจะฆ่ามึง!")
+        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ (ไม่นับเป็นภารกิจ)")
         
         with st.expander("➕ เพิ่มรายวิชาใหม่"):
             with st.form("add_subject_form", clear_on_submit=True):
@@ -826,7 +839,6 @@ with colRight:
         if not user_subjects:
             st.info("ยังไม่มีรายวิชาในคลังแสง ไปสร้างซะ!")
         else:
-            # ดึงข้อมูลงาน/สอบ จาก Command Log, Missions, Study Missions มาจัดกลุ่มตามวิชา
             all_pending_logs = [i for i in db["command_log"][safe_email] if isinstance(i, dict)]
             all_active_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว")]
             all_active_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว")]
@@ -841,36 +853,64 @@ with colRight:
                     if c_s2.button("🗑️ ลบวิชา", key=f"del_subj_{subj['id']}"):
                         db["subjects"][safe_email].remove(subj); save_db(db); safe_rerun()
                     
-                    # รวบรวมงาน/สอบของวิชานี้
-                    related_items = []
+                    # คัดแยกหมวดหมู่
+                    related_tasks = []
+                    related_notes = []
                     
-                    # จาก Command Log (ยังไม่ถูกดึงไปทำ)
+                    # 1. จาก Command Log
                     for log in all_pending_logs:
                         if log.get("subject") == subj_name:
-                            related_items.append({"type": "planner", "icon": "📝" if log.get("type")=="note" else "⚠️" if log.get("type")=="exam" else "⏳", "title": log.get("title", ""), "dl": log.get("deadline", "")})
+                            if log.get("type") == "note": related_notes.append({"source": "planner", "data": log})
+                            else: related_tasks.append({"source": "planner", "data": log})
                             
-                    # จาก Missions (งานที่กำลังทำ)
+                    # 2. จาก Missions
                     for m in all_active_m:
-                        if m.get("subject") == subj_name:
-                            related_items.append({"type": "mission", "icon": "🔪", "title": m.get("ภารกิจ", ""), "dl": m.get("deadline", "")})
+                        if m.get("subject") == subj_name: related_tasks.append({"source": "mission", "data": m})
                             
-                    # จาก Study Missions (เรียนที่กำลังทำ)
+                    # 3. จาก Study Missions
                     for s in all_active_s:
-                        if s.get("subject") == subj_name:
-                            related_items.append({"type": "study", "icon": "📖", "title": s.get("ภารกิจ", ""), "dl": s.get("deadline", "")})
+                        if s.get("subject") == subj_name: related_tasks.append({"source": "study", "data": s})
                     
-                    if not related_items:
-                        st.write("✅ โล่ง! ไม่มีงานค้าง ไม่มีสอบสำหรับวิชานี้!")
+                    if not related_tasks and not related_notes:
+                        st.write("✅ โล่ง! ไม่มีข้อมูลในวิชานี้")
                     else:
-                        st.markdown("**🚨 ภารกิจติดค้างในรายวิชานี้:**")
-                        # เรียงตาม Deadline
-                        related_items.sort(key=lambda x: get_deadline_score(x["dl"]))
-                        for item in related_items:
-                            dl_text = format_days_left(item["dl"])
-                            overdue = is_overdue_check(item["dl"])
-                            bg = "background:rgba(255,0,0,0.1); border-left: 3px solid #ff4b4b;" if overdue else "background:rgba(255,255,255,0.05); border-left: 3px solid #4ba3ff;"
-                            st.markdown(f"<div style='{bg} padding: 5px; margin-bottom: 5px; border-radius: 3px;'>{item['icon']} {item['title']} {dl_text}</div>", unsafe_allow_html=True)
-
+                        col_view1, col_view2 = st.columns(2)
+                        
+                        # --- แผงงานและสอบ (Tasks / Exams) ---
+                        with col_view1:
+                            st.markdown("**🚨 ภารกิจค้าง & เตรียมสอบ**")
+                            if not related_tasks: st.caption("- ไม่มีภารกิจ")
+                            else:
+                                # เรียงตาม Deadline
+                                related_tasks.sort(key=lambda x: get_deadline_score(x["data"].get("deadline", "")))
+                                for wrapper in related_tasks:
+                                    item = wrapper["data"]
+                                    dl = item.get("deadline", "")
+                                    dl_type = item.get("deadline_type", "🔴 Deadline")
+                                    
+                                    if dl == "": dl_badge = " ⚪ [ไม่มีกำหนด]"
+                                    else: dl_badge = f" {dl_type} " + format_days_left(dl)
+                                    
+                                    icon = "🔪" if wrapper["source"] == "mission" or item.get("type") == "task" else "📖" if wrapper["source"] == "study" or item.get("type") == "study" else "⚠️"
+                                    title = item.get("ภารกิจ") if "ภารกิจ" in item else item.get("title", "")
+                                    
+                                    with st.expander(f"{icon} {title} | {dl_badge}"):
+                                        st.write(item.get("รายละเอียด") or item.get("detail") or "ไม่มีรายละเอียด")
+                                        subs = item.get("subtasks", [])
+                                        if subs:
+                                            st.markdown("**งานย่อย:**")
+                                            for sub in subs:
+                                                st.write(f"- {'✅' if sub.get('done') else '⬜'} {sub.get('name')}")
+                        
+                        # --- แผงโน้ต (Notes) ---
+                        with col_view2:
+                            st.markdown("**📝 โน้ตความรู้ / บันทึกช่วยจำ**")
+                            if not related_notes: st.caption("- ไม่มีบันทึก")
+                            else:
+                                for wrapper in related_notes:
+                                    note = wrapper["data"]
+                                    with st.expander(f"📝 {note.get('title', '')}"):
+                                        st.write(note.get("detail", "ไม่มีรายละเอียด"))
 
     # ----------------------------------------------------
     # TAB 5: 📝 สมุดบัญชาการ (COMMAND LOG)
@@ -879,7 +919,7 @@ with colRight:
         st.markdown("### 📝 สมุดบัญชาการ (Command Log)")
         st.write("ที่จดรวมทุกอย่าง: โน้ต งาน เรียน และ **ตารางสอบ**")
         
-        pl_type = st.radio("ประเภทการบันทึก:", ["📝 โน้ตทั่วไป", "🔪 เตรียมงาน", "📖 เตรียมเรียน", "⚠️ ตารางสอบ"], horizontal=True, key="rad_pl_type")
+        pl_type = st.radio("ประเภทการบันทึก:", ["📝 โน้ตทั่วไป (ไม่นับเป็นงาน)", "🔪 เตรียมงาน", "📖 เตรียมเรียน", "⚠️ ตารางสอบ"], horizontal=True, key="rad_pl_type")
         
         # ดึงรายวิชามาให้เลือก
         user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
@@ -894,12 +934,16 @@ with colRight:
         pl_priority = "🟡 ปานกลาง"
         pl_subtasks_str = ""
         pl_date = None
+        pl_dl_type = "⚪ ไม่มีกำหนด"
         
         if "งาน" in pl_type or "เรียน" in pl_type:
             pl_priority = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], key="sb_pl_prio")
             pl_subtasks_str = st.text_area("🔪 ซอยข้อย่อย (Enter ขึ้นบรรทัดใหม่ / เว้นว่างถ้าเป็นงานชิ้นเดียวจบ):", key="txt_pl_subtasks")
-            pl_date = st.date_input("กำหนดส่ง / วันที่ต้องเสร็จ:", key="dt_pl_deadline")
+            pl_dl_type = st.radio("ประเภทเป้าหมายเวลา:", ["🔴 Deadline (ครูสั่ง/ห้ามพลาด)", "🎯 เป้าหมายส่วนตัว (อยากเสร็จ)", "⚪ ไม่มีกำหนด"], horizontal=True, key="rad_dl_type")
+            if "ไม่มีกำหนด" not in pl_dl_type:
+                pl_date = st.date_input("กำหนดวัน:", key="dt_pl_deadline")
         elif "สอบ" in pl_type:
+            pl_dl_type = "🔴 Deadline (ครูสั่ง/ห้ามพลาด)"
             pl_date = st.date_input("วันที่สอบ:", key="dt_pl_exam_date")
 
         if st.button("💾 บันทึกลงสมุดบัญชาการ", type="primary", key="btn_save_command_log"):
@@ -909,12 +953,13 @@ with colRight:
                 elif "เรียน" in pl_type: item_type = "study"
                 elif "สอบ" in pl_type: item_type = "exam"
                 
-                final_dl = str(pl_date) if item_type != "note" else ""
+                # เช็คการเก็บวันที่
+                final_dl = str(pl_date) if pl_date and "ไม่มีกำหนด" not in pl_dl_type and item_type != "note" else ""
                 subtasks = [{"name": s.strip(), "done": False, "done_date": ""} for s in pl_subtasks_str.split('\n') if s.strip()] if item_type in ["task", "study"] else []
                 
                 db["command_log"][safe_email].append({
                     "id": str(uuid.uuid4()), "type": item_type, "title": pl_title, "detail": pl_detail, "priority": pl_priority, 
-                    "subtasks": subtasks, "deadline": final_dl, "date_added": today_str, "subject": pl_subject
+                    "subtasks": subtasks, "deadline": final_dl, "deadline_type": pl_dl_type, "date_added": today_str, "subject": pl_subject
                 })
                 save_db(db); st.success("บันทึกสำเร็จ!"); safe_rerun()
             else: st.warning("ใส่ชื่อหัวข้อด้วยสิวะ!")
@@ -943,14 +988,21 @@ with colRight:
                 active_s_slots = len([s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("subtasks")])
                 
                 for item in sorted(tasks_study, key=lambda x: x.get("deadline", "9999-12-31")):
-                    is_overdue = is_overdue_check(item.get("deadline", ""))
+                    dl_str = item.get("deadline", "")
+                    dl_type = item.get("deadline_type", "🔴 Deadline")
+                    is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
+                    
                     bg_style = "border: 2px solid #ff4b4b; background-color: rgba(255,0,0,0.05);" if is_overdue else "border: 1px solid #444;"
                     st.markdown(f"<div style='{bg_style} padding: 10px; border-radius: 5px; margin-bottom: 10px;'>", unsafe_allow_html=True)
                     c1, c2, c3 = st.columns([5, 2, 1])
                     
                     icon = "🔪 [งาน]" if item.get("type") == "task" else "📖 [เรียน]"
                     subj_tag = f" 🗂️ **[{item.get('subject')}]**" if item.get("subject") and item.get("subject") != "- ไม่ระบุ -" else ""
-                    c1.markdown(f"**{item.get('priority', '🟡 ปานกลาง')}** | **{icon} {item['title']}**{subj_tag} | 📅 {thai_date_format(item.get('deadline', '-'))} {format_days_left(item.get('deadline', ''))}")
+                    
+                    if dl_str == "": dl_badge = " ⚪ [ไม่มีกำหนด]"
+                    else: dl_badge = f" {dl_type} " + format_days_left(dl_str)
+                    
+                    c1.markdown(f"**{item.get('priority', '🟡 ปานกลาง')}** | **{icon} {item['title']}**{subj_tag} | {dl_badge}")
                     
                     with c1.expander("📝 ดูรายละเอียดและงานย่อย"):
                         st.write(item.get("detail", "ไม่มีรายละเอียด"))
@@ -966,7 +1018,7 @@ with colRight:
                                 db["missions"][safe_email].append({
                                     "id": item["id"], "วันที่": today_str, "ภารกิจ": final_task_name, "รายละเอียด": item.get("detail", ""), 
                                     "ประเภท": item.get("priority", "🟡 ปานกลาง"), "bounty": False, "is_boss": False, "custom_order": 99, "user_order": 99, 
-                                    "is_queued": False, "skip_today_date": "", "deadline": item.get("deadline", ""), "deadline_type": "🗓️ Deadline", 
+                                    "is_queued": False, "skip_today_date": "", "deadline": dl_str, "deadline_type": dl_type, 
                                     "subtasks": item.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False, "subject": item.get("subject", "- ไม่ระบุ -")
                                 })
                                 planner_items.remove(item); save_db(db); safe_rerun()
@@ -978,7 +1030,7 @@ with colRight:
                                 db["study_missions"][safe_email].append({
                                     "id": item["id"], "วันที่": today_str, "ภารกิจ": final_task_name, "รายละเอียด": item.get("detail", ""), 
                                     "ประเภท": item.get("priority", "🟡 ปานกลาง"), "bounty": False, "is_boss": False, "custom_order": 99, "user_order": 99, 
-                                    "is_queued": False, "skip_today_date": "", "deadline": item.get("deadline", ""), "deadline_type": "🗓️ Deadline", 
+                                    "is_queued": False, "skip_today_date": "", "deadline": dl_str, "deadline_type": dl_type, 
                                     "subtasks": item.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False, "is_study": True, "subject": item.get("subject", "- ไม่ระบุ -")
                                 })
                                 planner_items.remove(item); save_db(db); safe_rerun()
@@ -990,7 +1042,8 @@ with colRight:
                 st.divider()
                 st.markdown("#### 📝 โน้ตทั่วไป (General Notes)")
                 for note in reversed(notes):
-                    with st.expander(f"📝 {note['title']} (บันทึกเมื่อ: {thai_date_format(note.get('date_added', '-'))})"):
+                    subj_tag = f" 🗂️ **[{note.get('subject')}]**" if note.get("subject") and note.get("subject") != "- ไม่ระบุ -" else ""
+                    with st.expander(f"📝 {note['title']}{subj_tag} (บันทึกเมื่อ: {thai_date_format(note.get('date_added', '-'))})"):
                         with st.form(f"edit_form_{note['id']}"):
                             new_title = st.text_input("แก้หัวข้อ:", value=note['title'], key=f"txt_edit_title_{note['id']}")
                             new_content = st.text_area("แก้เนื้อหา:", value=note.get('detail', ''), height=150, key=f"txt_edit_detail_{note['id']}")
@@ -1289,7 +1342,7 @@ with c_fin2:
                 save_db(db); st.success("บันทึกยอดสำเร็จ!"); safe_rerun()
 
 # ==========================================
-# 6. หนี้เลือด & ⚖️ THE JUDGMENT FEED (AUTOMATED)
+# 6. หหนี้เลือด & ⚖️ THE JUDGMENT FEED (AUTOMATED)
 # ==========================================
 st.divider()
 c_bot1, c_bot2 = st.columns(2)
