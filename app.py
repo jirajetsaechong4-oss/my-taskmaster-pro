@@ -7,60 +7,26 @@ import hashlib
 import random
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V10 - FULL RESTORATION & EXPANDED LORE)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V11 - EFFICIENCY & EDITABILITY OVERHAUL)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 # --- CUSTOM CSS (UI OVERHAUL) ---
 st.markdown("""
 <style>
-    /* แบนเนอร์รายวิชา */
-    .subject-banner {
-        background: linear-gradient(135deg, #141E30 0%, #243B55 100%);
-        padding: 20px 25px;
-        border-radius: 12px;
-        border-left: 6px solid #4ba3ff;
-        color: white;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
+    .subject-banner { background: linear-gradient(135deg, #141E30 0%, #243B55 100%); padding: 20px 25px; border-radius: 12px; border-left: 6px solid #4ba3ff; color: white; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
     .subject-banner h3 { margin: 0; padding-bottom: 5px; font-weight: 700; color: #ffffff; }
     .subject-banner p { margin: 0; color: #a0c4ff; font-size: 0.95em; }
-    
-    /* ป้ายสถานะ (Badges) */
-    .badge {
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 0.75em;
-        font-weight: 600;
-        display: inline-block;
-        margin-left: 5px;
-    }
+    .badge { padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 600; display: inline-block; margin-left: 5px; }
     .b-red { background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid #ff4b4b; }
     .b-blue { background: rgba(75, 163, 255, 0.15); color: #4ba3ff; border: 1px solid #4ba3ff; }
     .b-gold { background: rgba(226, 209, 65, 0.15); color: #e2d141; border: 1px solid #e2d141; }
     .b-gray { background: rgba(150, 150, 150, 0.15); color: #cccccc; border: 1px solid #666666; }
-    
-    /* การ์ดงานทั่วไป */
-    .task-card-ui {
-        background: rgba(255, 255, 255, 0.03);
-        padding: 12px 15px;
-        border-radius: 8px;
-        border-left: 3px solid #555;
-        margin-bottom: 8px;
-    }
+    .b-green { background: rgba(75, 255, 75, 0.15); color: #4bff4b; border: 1px solid #4bff4b; }
+    .task-card-ui { background: rgba(255, 255, 255, 0.03); padding: 12px 15px; border-radius: 8px; border-left: 3px solid #555; margin-bottom: 8px; }
     .task-card-ui.overdue { border-left: 4px solid #ff4b4b; background: rgba(255, 0, 0, 0.05); }
     .task-card-ui.study { border-left: 3px solid #4ba3ff; }
-    
-    /* กล่องข้อความจาก Mentor */
-    .mentor-quote {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 15px;
-        border-radius: 8px;
-        font-style: italic;
-        margin-top: 10px;
-        margin-bottom: 15px;
-    }
+    .mentor-quote { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; font-style: italic; margin-top: 10px; margin-bottom: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,6 +54,11 @@ def thai_date_format(date_str):
         return f"{THAI_DAYS[d.weekday()]} {d.day} {THAI_MONTHS[d.month]} {d.year}"
     except: return str(date_str)
 
+def safe_date_parse(date_str):
+    if not date_str or str(date_str).strip() == "" or str(date_str) == "None": return today_date
+    try: return datetime.strptime(str(date_str).strip(), "%Y-%m-%d").date()
+    except: return today_date
+
 def safe_rerun():
     try: st.rerun()
     except AttributeError: st.experimental_rerun()
@@ -97,7 +68,7 @@ def get_stable_index(id_str, list_len):
     return int(hashlib.md5(id_str.encode('utf-8')).hexdigest(), 16) % list_len
 
 # ==========================================
-# 🧠 THE MENTOR SYSTEM & MASSIVE QUOTES EXPANSION
+# 🧠 THE MENTOR SYSTEM & QUOTES
 # ==========================================
 MENTORS = {
     "None": {
@@ -107,10 +78,7 @@ MENTORS = {
             "มึงจะยอมแพ้แค่นี้หรอวะ? กลับไปกระจอกเหมือนเดิมก็เอาดิ ถ้ารับตัวเองได้!",
             "โลกไม่จำคนเกือบสำเร็จ... เอาให้สุด อย่าหยุดแค่คำว่า 'พอแล้ว'!",
             "ไม่มีใครมาช่วยมึงหรอก ถ้ามึงไม่ช่วยตัวเอง ก็รอวันเน่าตายไปเงียบๆ ละกัน!",
-            "เจ็บปวดจากการมีวินัย หรือเจ็บปวดจากความล้มเหลว มึงเลือกเอาเอง!",
-            "ความขี้เกียจมันหอมหวาน แต่มันจะวางยาพิษอนาคตมึง ลุกขึ้นมาไอ้เวร!",
-            "มึงโม้ไว้เยอะไม่ใช่หรอ? ไหนล่ะผลงาน? เลิกพล่ามแล้วไปทำซะที!",
-            "ความสำเร็จไม่ได้ตกลงมาจากฟ้า มันถูกสร้างจากเหงื่อและเลือดของมึงเอง!"
+            "เจ็บปวดจากการมีวินัย หรือเจ็บปวดจากความล้มเหลว มึงเลือกเอาเอง!"
         ]
     },
     "Jesus": {
@@ -120,8 +88,6 @@ MENTORS = {
             "บรรดาผู้เหน็ดเหนื่อยและแบกภาระหนัก จงมาหาเราเถิด และเราจะให้ท่านทั้งหลายได้พักสงบ",
             "เราจะไม่ละทิ้งเจ้า หรือทอดทิ้งเจ้าเลย",
             "จงเข้มแข็งและกล้าหาญเถิด อย่าหวาดกลัวหรือครั่นคร้ามเลย เพราะพระยาห์เวห์พระเจ้าของท่านสถิตกับท่าน",
-            "สันติสุขของเรา เรามอบให้แก่ท่าน... อย่าให้ใจของท่านหวั่นไหวและอย่ากลัวเลย",
-            "ท่านทำทุกสิ่งได้ โดยพระองค์ผู้ประทานกำลังแก่ท่าน",
             "แม้ท่านจะล้มลงเจ็ดครั้ง ท่านก็จะลุกขึ้นใหม่ได้เสมอ จงก้าวต่อไป"
         ]
     },
@@ -131,9 +97,7 @@ MENTORS = {
         "quotes": [
             "ฉันไม่ได้มาที่นี่เพื่อคุยเล่น ฉันมาเพื่อจบเรื่องนี้!",
             "เตรียมรับมือกับความเร็วที่เหนือกว่าเสียงของฉันได้เลย!",
-            "ถ้ามัวแต่กลัว แล้วเมื่อไหร่จะปกป้องสิ่งที่สำคัญได้ล่ะ!",
             "โฟกัสแค่สิ่งเดียว... แล้วทำมันให้ทะลุขีดจำกัดไปเลย!",
-            "ฉันอาจจะขี้ขลาด แต่เมื่อถึงเวลาที่ต้องทำ ฉันจะไม่ลังเล!",
             "ฟาดฟันความขี้เกียจด้วยสายฟ้า! อย่าให้มันเหลือซาก!"
         ]
     },
@@ -143,9 +107,7 @@ MENTORS = {
         "quotes": [
             "ฉันอาจจะไม่ได้เก่งที่สุด แต่ฉันจะเป็นฟันเฟืองที่ขับเคลื่อนชีวิตตัวเองต่อไปไม่หยุด!",
             "กูไม่รู้หรอกว่าตอนจบจะเป็นไง แต่กูจะสู้จนกว่าจะหมดลมหายใจ!",
-            "ความตายหรือความล้มเหลว มันก็แค่เหตุผลให้เราต้องพยายามให้หนักขึ้น!",
             "ไม่ว่ามันจะเจ็บแค่ไหน ฉันก็จะกัดฟันและเดินหน้าต่อไป!",
-            "ฉันจะไม่ยอมให้การเสียสละที่ผ่านมาต้องสูญเปล่า!",
             "แค่ขยับไปข้างหน้าทีละก้าว... ก้าวเล็กๆ นี่แหละที่จะเปลี่ยนโลกของฉัน!"
         ]
     },
@@ -155,9 +117,7 @@ MENTORS = {
         "quotes": [
             "เรื่องแค่นี้เอง ไม่เป็นไรหรอก เพราะฉันน่ะเก่งที่สุดแล้ว!",
             "ขีดจำกัดมันมีไว้ให้พวกกระจอกเท่านั้นแหละ สำหรับฉันมันไร้ขีดจำกัด!",
-            "เหนื่อยหรอ? โทษทีนะ พอดีฉันไม่รู้จักคำนั้นว่ะ!",
             "จะยอมแพ้ทำไม ในเมื่อชัยชนะมันรออยู่ตรงหน้าแล้ว สบายๆ น่า!",
-            "ปล่อยให้พวกอ่อนแอหาข้ออ้างไปเถอะ ส่วนเราก็แค่ชนะเหมือนเดิม",
             "พลังที่แท้จริง คือการควบคุมตัวเองให้อยู่เหนือทุกอุปสรรค!"
         ]
     },
@@ -167,9 +127,7 @@ MENTORS = {
         "quotes": [
             "ข้ออ้างหรือพรสวรรค์กูไม่สน กูสนแค่ผลลัพธ์และเป้าหมายที่อยู่ตรงหน้า!",
             "เงินและอำนาจเป็นของคนที่ลงมือทำ ไม่ใช่ของพวกขี้แพ้ที่เอาแต่นั่งเพ้อเจ้อ!",
-            "โลกนี้มันมีแค่คนล่า กับคนที่ถูกล่า มึงจะเป็นอะไรล่ะ?",
             "อย่ามาบ่นว่าโลกไม่ยุติธรรม มึงแค่กระจอกเอง ลุกไปทำงานซะ!",
-            "ค่าตัวของกูแพงเสมอ และผลงานของกูก็ต้องสมราคา!",
             "ไร้พลังเวทแล้วไง? กูจะใช้สองมือเนี่ยแหละขยี้ทุกอย่างให้ดู!"
         ]
     },
@@ -180,8 +138,6 @@ MENTORS = {
             "กูรู้ว่ากูมันกาก กูมันอ่อนแอ... แต่กูก็จะกัดฟันเริ่มใหม่และทำให้ได้!",
             "ถ้ากูหนีตอนนี้ ทุกอย่างที่กูทนเจ็บมามันจะสูญเปล่าทันที... ไม่มีทางซะหรอก!",
             "ล้มกี่ร้อยครั้งก็ช่างมัน ขอแค่ครั้งสุดท้ายกูยังยืนหยัดได้ก็พอ!",
-            "เพื่อเป้าหมายนั้น ต่อให้ต้องตายกี่สิบหน กูก็จะคลานกลับมาทำมันให้เสร็จ!",
-            "ความสิ้นหวังหรอ? กูชินกับมันแล้วโว้ย! เข้ามาเลย!",
             "กูอาจจะเริ่มจากศูนย์... ไม่สิ จากติดลบด้วยซ้ำ แต่กูจะปีนขึ้นไปให้ได้!"
         ]
     },
@@ -192,9 +148,7 @@ MENTORS = {
             "ผมจะซ้อมพื้นฐานซ้ำๆ จนกว่ามันจะฝังเข้าไปในกล้ามเนื้อและสายเลือด!",
             "ถึงจะไม่เก่งเท่าคนอื่น แต่ความพยายามของผมต้องไม่แพ้ใครแน่นอน!",
             "เหงื่อทุกหยดที่เสียไปในตอนซ้อม จะกลายเป็นพลังในตอนลงสนามจริง!",
-            "แค่หมัดแย็บธรรมดา ถ้าฝึกเป็นหมื่นครั้ง มันก็ล้มคู่ต่อสู้ได้!",
-            "อย่ายอมแพ้จนกว่าระฆังจะดัง! ก้าวเท้าซ้ายออกไปแล้วซัดมันซะ!",
-            "ความกลัวมันมีกันทุกคน แต่ความกล้าที่จะเผชิญหน้าต่างหากที่แยกผู้ชนะออกจากผู้แพ้!"
+            "อย่ายอมแพ้จนกว่าระฆังจะดัง! ก้าวเท้าซ้ายออกไปแล้วซัดมันซะ!"
         ]
     },
     "Future You": {
@@ -203,60 +157,35 @@ MENTORS = {
         "quotes": [
             "กูคือตัวมึงในอีก 20 ปีข้างหน้า มึงอยากเป็นไอ้ขี้แพ้หรือคนสำเร็จ มึงเลือกเลยวันนี้!",
             "หยาดเหงื่อของมึงวันนี้ คือเงินล้านและความสำเร็จของกูในอนาคต ลุยดิวะ!",
-            "มึงจะฆ่าอนาคตตัวเองด้วยความขี้เกียจชั่วคราวหรอ? ตื่นสิโว้ย!",
             "เวลาที่มึงเสียไปกับการไถฟีดโง่ๆ มันเอากลับคืนมาไม่ได้นะเว้ย!",
-            "กูไม่อยากให้มึงต้องมานั่งเสียใจทีหลังเหมือนไอ้พวกลูซเซอร์ ทำมันเดี๋ยวนี้!",
             "อนาคตของมึงไม่ได้ถูกกำหนดด้วยโชคชะตา แต่มันถูกสร้างจากสิ่งที่มึงกำลังทำในวินาทีนี้!"
         ]
     }
 }
 
 PUNISHMENTS = [
-    "ไปดันพื้น 50 ทีเดี๋ยวนี้! ลงโทษความอ่อนแอ!", 
-    "แพลงก์ 2 นาที! เอาความเจ็บปวดล้างสมองซะ!",
-    "ลุกไปอาบน้ำเย็นจัด 5 นาทีเดี๋ยวนี้ ไป!", 
-    "กระโดดตบ 100 ครั้ง สลัดความขี้เกียจทิ้งไป!",
-    "ห้ามจับมือถือ 1 ชั่วโมงนับจากนี้! นั่งสมาธิทบทวนความกากของตัวเอง!", 
-    "สควอช (ลุกนั่ง) 60 ที เอาให้ขาเบิร์น!",
-    "เดินไปตะโกนใส่กำแพงว่า 'กูจะไม่ยอมกลับไปกระจอกอีก!' 10 รอบ!",
-    "Burpee 30 ครั้ง ห้ามหยุดพัก! ลุย!",
-    "วิดพื้นจนกว่าจะหมดแรง (Failure) เพื่อจำความรู้สึกของการยอมแพ้!",
-    "เก็บกวาดห้องหรือโต๊ะทำงานเดี๋ยวนี้! จัดระเบียบห้องไม่ได้ ก็จัดระเบียบชีวิตไม่ได้!"
+    "ไปดันพื้น 50 ทีเดี๋ยวนี้! ลงโทษความอ่อนแอ!", "แพลงก์ 2 นาที! เอาความเจ็บปวดล้างสมองซะ!",
+    "ลุกไปอาบน้ำเย็นจัด 5 นาทีเดี๋ยวนี้ ไป!", "กระโดดตบ 100 ครั้ง สลัดความขี้เกียจทิ้งไป!",
+    "ห้ามจับมือถือ 1 ชั่วโมงนับจากนี้! นั่งสมาธิทบทวนความกากของตัวเอง!", "สควอช (ลุกนั่ง) 60 ที เอาให้ขาเบิร์น!",
+    "เดินไปตะโกนใส่กำแพงว่า 'กูจะไม่ยอมกลับไปกระจอกอีก!' 10 รอบ!"
 ]
 
 WARRIOR_OATHS = [
     "โลกนี้ไม่มีที่ยืนให้คนอ่อนแอ! ถ้ามึงเลือกที่จะขี้เกียจ ก็เตรียมตัวดูคนที่พยายามน้อยกว่ามึงแซงหน้าไปได้เลย!",
     "ข้ออ้างมีไว้สำหรับไอ้กระจอก! วันนี้มึงจะสร้างผลงาน หรือจะสร้างข้ออ้าง เลือกเอา!",
     "ความสบายในวันนี้ คือความชิบหายในวันหน้า! ลุกขึ้นมาบดขยี้ความขี้เกียจของมึงซะ!",
-    "เวลาไม่เคยรอใคร ทุกวินาทีที่มึงไถมือถือโง่ๆ คือเวลาที่มึงกำลังฆ่าอนาคตตัวเอง!",
-    "มึงบอกว่าอยากสำเร็จ แต่การกระทำมึงเหมือนคนรอวันตาย! ตื่น! แล้วไปทำในสิ่งที่ต้องทำเดี๋ยวนี้!",
-    "วินัยไม่ได้หมายถึงการทำตอนที่อยากทำ แต่มันคือการทำตอนที่มึงโคตรไม่อยากทำต่างหาก!",
-    "เป้าหมายของมึงมันใหญ่ แต่ความพยายามของมึงมันกระจอก! เปลี่ยนแปลงตัวเองเดี๋ยวนี้!",
-    "คนที่บอกว่าพรุ่งนี้ค่อยทำ คือคนที่ไม่มีวันพรุ่งนี้ให้สำเร็จ!"
+    "เวลาไม่เคยรอใคร ทุกวินาทีที่มึงไถมือถือโง่ๆ คือเวลาที่มึงกำลังฆ่าอนาคตตัวเอง!"
 ]
 
 WARRIOR_CONSEQUENCES = [
-    "กูจะต้องทนเห็นคนที่พยายามน้อยกว่ากู ได้ดีกว่ากู!", 
-    "พรุ่งนี้กูก็จะตื่นมาเป็นไอ้ขี้แพ้คนเดิม ที่เก่งแต่ปาก!",
-    "ความฝันที่กูโม้ไว้ ก็จะเป็นแค่อากาศธาตุ!", 
-    "กูจะกลายเป็นภาระของครอบครัวและคนที่รักกู!",
-    "ชีวิตกูก็จะย่ำอยู่กับที่ ไม่มีวันเงยหน้าอ้าปากได้!", 
-    "กูจะต้องก้มหัวให้คนที่กูเกลียดไปตลอดชีวิต!",
-    "อนาคตที่กูวาดฝันไว้ จะพังทลายลงด้วยมือของกูเอง!", 
-    "กูจะต้องเสียใจและเกลียดตัวเองในอีก 5 ปีข้างหน้า!",
-    "กูจะไม่มีวันภูมิใจในตัวเองได้เลย ตลอดชีวิต!",
-    "ความเจ็บปวดจากความล้มเหลว จะตามหลอกหลอนกูไปจนตาย!"
+    "กูจะต้องทนเห็นคนที่พยายามน้อยกว่ากู ได้ดีกว่ากู!", "พรุ่งนี้กูก็จะตื่นมาเป็นไอ้ขี้แพ้คนเดิม ที่เก่งแต่ปาก!",
+    "ความฝันที่กูโม้ไว้ ก็จะเป็นแค่อากาศธาตุ!", "กูจะกลายเป็นภาระของครอบครัวและคนที่รักกู!",
+    "ชีวิตกูก็จะย่ำอยู่กับที่ ไม่มีวันเงยหน้าอ้าปากได้!", "อนาคตที่กูวาดฝันไว้ จะพังทลายลงด้วยมือของกูเอง!"
 ]
 
 ETERNAL_ECHOES = [
-    "มึงบอกว่าไม่อยากกากอีกแล้ว มึงทำตัวให้คู่ควรกับคำพูดรึยัง!?", 
-    "โลกไม่สนหรอกว่ามึงจะเหนื่อย โลกสนแค่ว่ามึงทำสำเร็จหรือเปล่า!",
-    "ทุกวินาทีที่มึงขี้เกียจ คือวินาทีที่มึงปล่อยให้ตัวเองกลับไปเป็นไอ้ขี้แพ้!", 
-    "มึงจะเก่งได้ไงถ้ามึงเอาแต่หาข้ออ้าง ลุกขึ้นมา!",
-    "Pain is temporary, quitting lasts forever!",
-    "They don't know you son! Show them what you're made of!",
-    "Stay hard! อย่าให้ปีศาจในหัวมึงชนะได้!",
-    "มึงหลอกคนอื่นได้ แต่มึงหลอกตัวเองหน้ากระจกไม่ได้หรอกนะ!"
+    "มึงบอกว่าไม่อยากกากอีกแล้ว มึงทำตัวให้คู่ควรกับคำพูดรึยัง!?", "โลกไม่สนหรอกว่ามึงจะเหนื่อย โลกสนแค่ว่ามึงทำสำเร็จหรือเปล่า!",
+    "ทุกวินาทีที่มึงขี้เกียจ คือวินาทีที่มึงปล่อยให้ตัวเองกลับไปเป็นไอ้ขี้แพ้!", "มึงจะเก่งได้ไงถ้ามึงเอาแต่หาข้ออ้าง ลุกขึ้นมา!"
 ]
 
 def get_safe_email(email): return email.replace(".", "-").replace("@", "-")
@@ -273,6 +202,12 @@ def get_priority_score(task_type):
     if "🟡 ปานกลาง" in task_type: return 2
     if "🟢 ชิลๆ" in task_type: return 3
     return 4
+    
+def get_priority_badge(task_type):
+    if not task_type: return "<span class='badge b-gray'>⚪ ไม่ระบุความสำคัญ</span>"
+    if "ด่วนสุด" in task_type or "ฉุกเฉิน" in task_type: return f"<span class='badge b-red'>🚨 {task_type}</span>"
+    if "ปานกลาง" in task_type: return f"<span class='badge b-gold'>🟡 {task_type}</span>"
+    return f"<span class='badge b-green'>🟢 {task_type}</span>"
 
 def get_deadline_score(dl_str):
     if not dl_str or dl_str == "": return 999999
@@ -287,7 +222,7 @@ def format_days_left(dl_str):
     return f"💀 เลยกำหนด {-days} วัน"
 
 def get_badge_html(dl_str, dl_type):
-    if not dl_str or dl_str == "": return "<span class='badge b-gray'>⚪ ไม่มีกำหนด</span>"
+    if not dl_str or dl_str == "": return "<span class='badge b-gray'>⚪ ไม่มีกำหนดเวลา</span>"
     days = get_deadline_score(dl_str)
     txt = format_days_left(dl_str)
     if "Deadline" in dl_type: css = "b-red" if days <= 2 else "b-gray"
@@ -631,7 +566,7 @@ if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!**
 st.divider()
 
 # ==========================================
-# 🔥 สรุปวินัยเหล็กประจำวัน (THE IRON SUMMARY - RESTORED)
+# 🔥 สรุปวินัยเหล็กประจำวัน (THE IRON SUMMARY)
 # ==========================================
 st.markdown("## 🔥 สรุปวินัยเหล็กประจำวัน (THE IRON SUMMARY)")
 st.info("เป้าหมายมีไว้พุ่งชน ไม่ต้องสนเวลา! ว่างตอนไหน ฟาดให้เรียบตามลิสต์นี้! หมดข้ออ้าง!")
@@ -706,6 +641,9 @@ with colRight:
         "🔪 งาน", "📖 เรียน", "⚒️ ตีเหล็ก", "🗂️ คลังแสงวิชา", "📝 บัญชาการ", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
     ])
     
+    user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
+    subj_options = ["- ไม่ระบุ -"] + user_subj_names
+
     # ----------------------------------------------------
     # TAB 1: 🔪 งาน
     # ----------------------------------------------------
@@ -737,6 +675,7 @@ with colRight:
                     is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
                     
                     badge_html = get_badge_html(dl_str, dl_type)
+                    prio_badge = get_priority_badge(m.get('ประเภท',''))
                     
                     is_frozen = (m.get("skip_today_date") == today_str)
                     if m.get("skip_today_date") != "" and not is_frozen: m["skip_today_date"] = ""; save_db(db)
@@ -746,10 +685,38 @@ with colRight:
                     q_tag = f"<span class='badge b-gold'>Q{m.get('user_order', 99)}</span>" if int(m.get('user_order', 99)) != 99 else ""
                     type_icon = "💀 BOSS" if m.get("is_boss") else "🔪" if m.get("subtasks") else "⚡"
                     
-                    c1.markdown(f"<div style='margin-bottom:8px;'><b>{m.get('ประเภท','')}</b> {q_tag} {subj_tag}</div><div style='font-size:1.1em;'>{type_icon} <b>{m['ภารกิจ']}</b> {badge_html} {frozen_badge}</div>", unsafe_allow_html=True)
+                    c1.markdown(f"<div style='margin-bottom:8px;'>{prio_badge} {q_tag} {subj_tag}</div><div style='font-size:1.1em;'>{type_icon} <b>{m['ภารกิจ']}</b> {badge_html} {frozen_badge}</div>", unsafe_allow_html=True)
                     
                     m_id = str(m.get("id", f"unk_m_{m.get('ภารกิจ', '')}"))
                     c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ff4b4b; margin-top:5px; padding:8px;'>🩸 <b>ถ้ากูไม่ทำ:</b> {m.get('consequence', '') or WARRIOR_CONSEQUENCES[get_stable_index(m_id + 'conseq', len(WARRIOR_CONSEQUENCES))]}</div>", unsafe_allow_html=True)
+                    
+                    # --- แก้ไขหน้างาน (EDIT IN-PLACE) ---
+                    with c1.popover("✏️ แก้ไขงาน"):
+                        new_t = st.text_input("ชื่อภารกิจ:", value=m["ภารกิจ"], key=f"ed_m_name_{m['id']}")
+                        new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(m.get("subject", "- ไม่ระบุ -")) if m.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_m_sub_{m['id']}")
+                        new_p = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], index=["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"].index(m.get("ประเภท", "🟡 ปานกลาง")) if m.get("ประเภท", "🟡 ปานกลาง") in ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"] else 2, key=f"ed_m_pri_{m['id']}")
+                        new_d = st.text_area("รายละเอียด:", value=m.get("รายละเอียด", ""), key=f"ed_m_det_{m['id']}")
+                        
+                        curr_subtasks_str = "\n".join([stk['name'] for stk in m.get("subtasks", [])])
+                        new_sub_str = st.text_area("ซอยงานย่อย (Enter เพื่อแยกข้อ):", value=curr_subtasks_str, key=f"ed_m_subs_{m['id']}")
+                        
+                        new_dl_t = st.radio("ประเภท Deadline:", ["🔴 Deadline (ครูสั่ง/ห้ามพลาด)", "🎯 เป้าหมายส่วนตัว (อยากเสร็จ)", "⚪ ไม่มีกำหนด"], index=0 if "Deadline" in m.get("deadline_type", "🔴") else 1 if "เป้าหมาย" in m.get("deadline_type", "") else 2, key=f"ed_m_dlt_{m['id']}")
+                        new_dl_d = ""
+                        if "ไม่มีกำหนด" not in new_dl_t:
+                            parsed_dt = safe_date_parse(m.get("deadline", ""))
+                            new_dl_d = str(st.date_input("วันกำหนด:", value=parsed_dt, key=f"ed_m_dt_{m['id']}"))
+                            
+                        if st.button("💾 เซฟการแก้ไข", key=f"save_ed_m_{m['id']}", use_container_width=True):
+                            m["ภารกิจ"] = new_t; m["subject"] = new_s; m["ประเภท"] = new_p; m["รายละเอียด"] = new_d
+                            m["deadline_type"] = new_dl_t; m["deadline"] = new_dl_d
+                            
+                            old_subs = {stk['name']: stk['done'] for stk in m.get("subtasks", [])}
+                            new_subs_list = []
+                            for line in new_sub_str.split('\n'):
+                                line = line.strip()
+                                if line: new_subs_list.append({"name": line, "done": old_subs.get(line, False), "done_date": ""})
+                            m["subtasks"] = new_subs_list
+                            save_db(db); st.success("อัปเดตแล้ว!"); safe_rerun()
                     
                     with st.expander("📝 ดูรายละเอียดและเนื้องาน"):
                         if m.get("รายละเอียด"): st.write(m["รายละเอียด"])
@@ -817,7 +784,9 @@ with colRight:
                     dl_type = s.get("deadline_type", "🔴 Deadline")
                     dl_str = s.get("deadline", "")
                     is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
+                    
                     badge_html = get_badge_html(dl_str, dl_type)
+                    prio_badge = get_priority_badge(s.get('ประเภท',''))
                     
                     is_frozen = (s.get("skip_today_date") == today_str)
                     if s.get("skip_today_date") != "" and not is_frozen: s["skip_today_date"] = ""; save_db(db)
@@ -827,9 +796,38 @@ with colRight:
                     q_tag = f"<span class='badge b-gold'>Q{s.get('user_order', 99)}</span>" if int(s.get('user_order', 99)) != 99 else ""
                     type_icon = "💀 BOSS" if s.get("is_boss") else "📖" if s.get("subtasks") else "⚡"
                     
-                    c1.markdown(f"<div style='margin-bottom:8px;'><b>{s.get('ประเภท','')}</b> {q_tag} {subj_tag}</div><div style='font-size:1.1em;'>{type_icon} <b>{s['ภารกิจ']}</b> {badge_html} {frozen_badge}</div>", unsafe_allow_html=True)
+                    c1.markdown(f"<div style='margin-bottom:8px;'>{prio_badge} {q_tag} {subj_tag}</div><div style='font-size:1.1em;'>{type_icon} <b>{s['ภารกิจ']}</b> {badge_html} {frozen_badge}</div>", unsafe_allow_html=True)
                     
                     s_id = str(s.get("id", f"unk_s_{s.get('ภารกิจ', '')}"))
+                    
+                    # --- แก้ไขหน้างานเรียน (EDIT IN-PLACE) ---
+                    with c1.popover("✏️ แก้ไขเป้าหมาย"):
+                        new_t = st.text_input("ชื่อภารกิจ:", value=s["ภารกิจ"], key=f"ed_s_name_{s['id']}")
+                        new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(s.get("subject", "- ไม่ระบุ -")) if s.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_s_sub_{s['id']}")
+                        new_p = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], index=["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"].index(s.get("ประเภท", "🟡 ปานกลาง")) if s.get("ประเภท", "🟡 ปานกลาง") in ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"] else 2, key=f"ed_s_pri_{s['id']}")
+                        new_d = st.text_area("รายละเอียด:", value=s.get("รายละเอียด", ""), key=f"ed_s_det_{s['id']}")
+                        
+                        curr_subtasks_str = "\n".join([stk['name'] for stk in s.get("subtasks", [])])
+                        new_sub_str = st.text_area("ซอยบทเรียน (Enter เพื่อแยกข้อ):", value=curr_subtasks_str, key=f"ed_s_subs_{s['id']}")
+                        
+                        new_dl_t = st.radio("ประเภท Deadline:", ["🔴 Deadline (ครูสั่ง/ห้ามพลาด)", "🎯 เป้าหมายส่วนตัว (อยากเสร็จ)", "⚪ ไม่มีกำหนด"], index=0 if "Deadline" in s.get("deadline_type", "🔴") else 1 if "เป้าหมาย" in s.get("deadline_type", "") else 2, key=f"ed_s_dlt_{s['id']}")
+                        new_dl_d = ""
+                        if "ไม่มีกำหนด" not in new_dl_t:
+                            parsed_dt = safe_date_parse(s.get("deadline", ""))
+                            new_dl_d = str(st.date_input("วันกำหนด:", value=parsed_dt, key=f"ed_s_dt_{s['id']}"))
+                            
+                        if st.button("💾 เซฟการแก้ไข", key=f"save_ed_s_{s['id']}", use_container_width=True):
+                            s["ภารกิจ"] = new_t; s["subject"] = new_s; s["ประเภท"] = new_p; s["รายละเอียด"] = new_d
+                            s["deadline_type"] = new_dl_t; s["deadline"] = new_dl_d
+                            
+                            old_subs = {stk['name']: stk['done'] for stk in s.get("subtasks", [])}
+                            new_subs_list = []
+                            for line in new_sub_str.split('\n'):
+                                line = line.strip()
+                                if line: new_subs_list.append({"name": line, "done": old_subs.get(line, False), "done_date": ""})
+                            s["subtasks"] = new_subs_list
+                            save_db(db); st.success("อัปเดตแล้ว!"); safe_rerun()
+                    
                     with st.expander("📝 ดูขอบเขต/รายละเอียด"):
                         if s.get("รายละเอียด"): st.write(s["รายละเอียด"])
                         all_done = True
@@ -960,12 +958,13 @@ with colRight:
                                 dl = item.get("deadline", "")
                                 dl_type = item.get("deadline_type", "🔴 Deadline")
                                 badge_html = get_badge_html(dl, dl_type)
+                                prio_badge = get_priority_badge(item.get('priority', item.get('ประเภท', '')))
                                 
                                 icon = "🔪" if wrapper["source"] == "mission" or item.get("type") == "task" else "📖" if wrapper["source"] == "study" or item.get("type") == "study" else "⚠️"
                                 title = item.get("ภารกิจ") if "ภารกิจ" in item else item.get("title", "")
                                 
                                 with st.expander(f"{icon} {title}"):
-                                    st.markdown(badge_html, unsafe_allow_html=True)
+                                    st.markdown(f"{prio_badge} {badge_html}", unsafe_allow_html=True)
                                     st.write("")
                                     st.write(item.get("รายละเอียด") or item.get("detail") or "ไม่มีรายละเอียด")
                                     subs = item.get("subtasks", [])
@@ -979,41 +978,41 @@ with colRight:
                         else:
                             for wrapper in related_notes:
                                 note = wrapper["data"]
+                                prio_badge = get_priority_badge(note.get('priority', ''))
                                 with st.expander(f"📝 {note.get('title', '')}"):
+                                    st.markdown(prio_badge, unsafe_allow_html=True)
                                     st.write(note.get("detail", "ไม่มีรายละเอียด"))
                 st.write("") 
 
     # ----------------------------------------------------
-    # TAB 5: 📝 สมุดบัญชาการ (COMMAND LOG)
+    # TAB 5: 📝 สมุดบัญชาการ (COMMAND LOG) - ABSOLUTE SEPARATION & EDITABILITY
     # ----------------------------------------------------
     with tab_planner:
         st.markdown("### 📝 สมุดบัญชาการ (Command Log)")
-        st.write("ที่จดรวมทุกอย่าง: โน้ต งาน เรียน และ **ตารางสอบ**")
+        st.write("ที่จดรวมทุกอย่าง! (แยกประเภทชัดเจน และแก้ไขได้ทุกเมื่อ)")
         
-        pl_type = st.radio("ประเภทการบันทึก:", ["📝 โน้ตทั่วไป (ไม่นับเป็นงาน)", "🔪 เตรียมงาน", "📖 เตรียมเรียน", "⚠️ ตารางสอบ"], horizontal=True, key="rad_pl_type")
-        
-        user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
-        subj_options = ["- ไม่ระบุ -"] + user_subj_names
+        pl_type = st.radio("ประเภทการบันทึก:", ["📝 โน้ตทั่วไป (ไม่มี Deadline)", "🔪 เตรียมงาน", "📖 เตรียมเรียน", "⚠️ ตารางสอบ (บังคับ Deadline)"], horizontal=True, key="rad_pl_type")
         
         col_f1, col_f2 = st.columns([3, 1])
         pl_title = col_f1.text_input("หัวข้อเรื่อง:", key="txt_pl_title")
         pl_subject = col_f2.selectbox("🗂️ ผูกกับรายวิชา:", subj_options, key="sb_pl_subject")
-        
         pl_detail = st.text_area("รายละเอียด / ขอบเขตเนื้อหา:", key="txt_pl_detail")
         
-        pl_priority = "🟡 ปานกลาง"
+        # Priority ตอนนี้ให้ใส่ได้กับทุกอย่างรวมถึงโน้ต!
+        pl_priority = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], index=2, key="sb_pl_prio")
+        
         pl_subtasks_str = ""
         pl_date = None
         pl_dl_type = "⚪ ไม่มีกำหนด"
         
         if "งาน" in pl_type or "เรียน" in pl_type:
-            pl_priority = st.selectbox("ระดับความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], key="sb_pl_prio")
             pl_subtasks_str = st.text_area("🔪 ซอยข้อย่อย (Enter ขึ้นบรรทัดใหม่ / เว้นว่างถ้าเป็นงานชิ้นเดียวจบ):", key="txt_pl_subtasks")
             pl_dl_type = st.radio("ประเภทเป้าหมายเวลา:", ["🔴 Deadline (ครูสั่ง/ห้ามพลาด)", "🎯 เป้าหมายส่วนตัว (อยากเสร็จ)", "⚪ ไม่มีกำหนด"], horizontal=True, key="rad_dl_type")
             if "ไม่มีกำหนด" not in pl_dl_type: pl_date = st.date_input("กำหนดวัน:", key="dt_pl_deadline")
         elif "สอบ" in pl_type:
             pl_dl_type = "🔴 Deadline (ครูสั่ง/ห้ามพลาด)"
-            pl_date = st.date_input("วันที่สอบ:", key="dt_pl_exam_date")
+            pl_date = st.date_input("วันที่สอบ (ห้ามพลาด):", key="dt_pl_exam_date")
+        # โน้ต จะไม่เข้า if ไหนเลย ทำให้ pl_date = None และ pl_dl_type = "⚪ ไม่มีกำหนด" โดยสมบูรณ์
 
         if st.button("💾 บันทึกลงสมุดบัญชาการ", type="primary", key="btn_save_command_log"):
             if pl_title:
@@ -1022,7 +1021,9 @@ with colRight:
                 elif "เรียน" in pl_type: item_type = "study"
                 elif "สอบ" in pl_type: item_type = "exam"
                 
-                final_dl = str(pl_date) if pl_date and "ไม่มีกำหนด" not in pl_dl_type and item_type != "note" else ""
+                # โน้ตไม่มี Deadline ชัวร์ๆ
+                final_dl = str(pl_date) if pl_date and item_type != "note" and "ไม่มีกำหนด" not in pl_dl_type else ""
+                
                 subtasks = [{"name": s.strip(), "done": False, "done_date": ""} for s in pl_subtasks_str.split('\n') if s.strip()] if item_type in ["task", "study"] else []
                 
                 db["command_log"][safe_email].append({
@@ -1046,14 +1047,26 @@ with colRight:
                         c1, c2 = st.columns([5, 1])
                         subj_tag = f"<span class='badge b-gray'>🗂️ {exam.get('subject')}</span>" if exam.get("subject") and exam.get("subject") != "- ไม่ระบุ -" else ""
                         badge_html = get_badge_html(exam.get('deadline', ''), "🔴 Deadline")
+                        prio_badge = get_priority_badge(exam.get('priority', ''))
                         
-                        c1.markdown(f"**{exam['title']}** {subj_tag} | 📅 วันสอบ: {thai_date_format(exam.get('deadline', '-'))} {badge_html}", unsafe_allow_html=True)
+                        c1.markdown(f"**{exam['title']}** {subj_tag} | 📅 วันสอบ: {thai_date_format(exam.get('deadline', '-'))} {badge_html} {prio_badge}", unsafe_allow_html=True)
+                        
+                        with c1.popover("✏️ แก้ไขสอบ"):
+                            new_t = st.text_input("หัวข้อ:", value=exam['title'], key=f"ed_e_t_{exam['id']}")
+                            new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(exam.get("subject", "- ไม่ระบุ -")) if exam.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_e_s_{exam['id']}")
+                            new_p = st.selectbox("ความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], index=["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"].index(exam.get("priority", "🟡 ปานกลาง")) if exam.get("priority", "🟡 ปานกลาง") in ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"] else 2, key=f"ed_e_p_{exam['id']}")
+                            new_d = st.text_area("รายละเอียด:", value=exam.get("detail", ""), key=f"ed_e_d_{exam['id']}")
+                            parsed_dt = safe_date_parse(exam.get("deadline", ""))
+                            new_dt = str(st.date_input("วันสอบ:", value=parsed_dt, key=f"ed_e_dt_{exam['id']}"))
+                            if st.button("💾 เซฟการแก้ไข", key=f"sv_e_{exam['id']}", use_container_width=True):
+                                exam['title'] = new_t; exam['subject'] = new_s; exam['priority'] = new_p; exam['detail'] = new_d; exam['deadline'] = new_dt; save_db(db); safe_rerun()
+                                
                         with c1.expander("📝 ดูรายละเอียด"): st.write(exam.get("detail", "ไม่มีรายละเอียด"))
                         if c2.button("🗑️", key=f"del_exm_{exam['id']}"): planner_items.remove(exam); save_db(db); safe_rerun()
             
             if tasks_study:
                 st.divider()
-                st.markdown("#### ⏳ งานและการเรียนที่เตรียมไว้ (ระวังดองเกินกำหนด)")
+                st.markdown("#### ⏳ งานและการเรียนที่เตรียมไว้ (ดึงเข้าหน้าหลักได้เลย)")
                 active_m_slots = len([m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("subtasks")])
                 active_s_slots = len([s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("subtasks")])
                 
@@ -1069,8 +1082,30 @@ with colRight:
                     icon = "🔪 [งาน]" if item.get("type") == "task" else "📖 [เรียน]"
                     subj_tag = f"<span class='badge b-gray'>🗂️ {item.get('subject')}</span>" if item.get("subject") and item.get("subject") != "- ไม่ระบุ -" else ""
                     badge_html = get_badge_html(dl_str, dl_type)
+                    prio_badge = get_priority_badge(item.get('priority', '🟡 ปานกลาง'))
                     
-                    c1.markdown(f"<b>{item.get('priority', '🟡 ปานกลาง')}</b> | <b>{icon} {item['title']}</b> {subj_tag} {badge_html}", unsafe_allow_html=True)
+                    c1.markdown(f"{prio_badge} <b>{icon} {item['title']}</b> {subj_tag} {badge_html}", unsafe_allow_html=True)
+                    
+                    with c1.popover("✏️ แก้ไขงาน/เรียน"):
+                        new_t = st.text_input("หัวข้อ:", value=item['title'], key=f"ed_pl_t_{item['id']}")
+                        new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(item.get("subject", "- ไม่ระบุ -")) if item.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_pl_s_{item['id']}")
+                        new_p = st.selectbox("ความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], index=["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"].index(item.get("priority", "🟡 ปานกลาง")) if item.get("priority", "🟡 ปานกลาง") in ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"] else 2, key=f"ed_pl_p_{item['id']}")
+                        new_d = st.text_area("รายละเอียด:", value=item.get("detail", ""), key=f"ed_pl_d_{item['id']}")
+                        
+                        curr_subtasks = "\n".join([stk['name'] for stk in item.get("subtasks", [])])
+                        new_subs = st.text_area("งานย่อย (Enter เพื่อแยก):", value=curr_subtasks, key=f"ed_pl_subs_{item['id']}")
+                        
+                        new_dl_t = st.radio("ประเภท Deadline:", ["🔴 Deadline (ครูสั่ง/ห้ามพลาด)", "🎯 เป้าหมายส่วนตัว (อยากเสร็จ)", "⚪ ไม่มีกำหนด"], index=0 if "Deadline" in item.get("deadline_type", "🔴") else 1 if "เป้าหมาย" in item.get("deadline_type", "") else 2, key=f"ed_pl_dlt_{item['id']}")
+                        new_dl_d = ""
+                        if "ไม่มีกำหนด" not in new_dl_t:
+                            parsed_dt = safe_date_parse(item.get("deadline", ""))
+                            new_dl_d = str(st.date_input("วันกำหนด:", value=parsed_dt, key=f"ed_pl_dt_{item['id']}"))
+                            
+                        if st.button("💾 เซฟการแก้ไข", key=f"sv_pl_{item['id']}", use_container_width=True):
+                            item['title'] = new_t; item['subject'] = new_s; item['priority'] = new_p; item['detail'] = new_d
+                            item['deadline_type'] = new_dl_t; item['deadline'] = new_dl_d
+                            item['subtasks'] = [{"name": line.strip(), "done": False, "done_date": ""} for line in new_subs.split('\n') if line.strip()]
+                            save_db(db); safe_rerun()
                     
                     with c1.expander("📝 ดูรายละเอียดและงานย่อย"):
                         st.write(item.get("detail", "ไม่มีรายละเอียด"))
@@ -1079,26 +1114,26 @@ with colRight:
                             for s in item["subtasks"]: st.write(f"- {s.get('name', '')}")
                     
                     if item.get("type") == "task":
-                        if not item.get("subtasks") and active_m_slots >= 3: c2.button("⚡ โควตางานเดี่ยวเต็ม", key=f"pl_{item['id']}", disabled=True)
+                        if not item.get("subtasks") and active_m_slots >= 3: c2.button("⚡ โควตางานเดี่ยวเต็ม", key=f"pull_{item['id']}", disabled=True)
                         else:
-                            if c2.button("⚡ ดึงเข้าหน้างาน", key=f"pl_{item['id']}", type="primary"):
+                            if c2.button("⚡ ดึงเข้าหน้างาน", key=f"pull_{item['id']}", type="primary"):
                                 final_task_name = f"[{item['subject']}] {item['title']}" if item.get('subject') and item.get('subject') != "- ไม่ระบุ -" else item['title']
                                 db["missions"][safe_email].append({
                                     "id": item["id"], "วันที่": today_str, "ภารกิจ": final_task_name, "รายละเอียด": item.get("detail", ""), 
                                     "ประเภท": item.get("priority", "🟡 ปานกลาง"), "bounty": False, "is_boss": False, "custom_order": 99, "user_order": 99, 
-                                    "is_queued": False, "skip_today_date": "", "deadline": dl_str, "deadline_type": dl_type, 
+                                    "is_queued": False, "skip_today_date": "", "deadline": item.get("deadline", ""), "deadline_type": item.get("deadline_type", "🔴 Deadline"), 
                                     "subtasks": item.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False, "subject": item.get("subject", "- ไม่ระบุ -")
                                 })
                                 planner_items.remove(item); save_db(db); safe_rerun()
                     else:
-                        if not item.get("subtasks") and active_s_slots >= 3: c2.button("📖 โควตาเรียนเดี่ยวเต็ม", key=f"pl_{item['id']}", disabled=True)
+                        if not item.get("subtasks") and active_s_slots >= 3: c2.button("📖 โควตาเรียนเดี่ยวเต็ม", key=f"pull_{item['id']}", disabled=True)
                         else:
-                            if c2.button("📖 ดึงเข้าหน้าเรียน", key=f"pl_{item['id']}", type="primary"):
+                            if c2.button("📖 ดึงเข้าหน้าเรียน", key=f"pull_{item['id']}", type="primary"):
                                 final_task_name = f"[{item['subject']}] {item['title']}" if item.get('subject') and item.get('subject') != "- ไม่ระบุ -" else item['title']
                                 db["study_missions"][safe_email].append({
                                     "id": item["id"], "วันที่": today_str, "ภารกิจ": final_task_name, "รายละเอียด": item.get("detail", ""), 
                                     "ประเภท": item.get("priority", "🟡 ปานกลาง"), "bounty": False, "is_boss": False, "custom_order": 99, "user_order": 99, 
-                                    "is_queued": False, "skip_today_date": "", "deadline": dl_str, "deadline_type": dl_type, 
+                                    "is_queued": False, "skip_today_date": "", "deadline": item.get("deadline", ""), "deadline_type": item.get("deadline_type", "🔴 Deadline"), 
                                     "subtasks": item.get("subtasks", []), "เสร็จแล้ว": False, "รอตรวจ": False, "is_study": True, "subject": item.get("subject", "- ไม่ระบุ -")
                                 })
                                 planner_items.remove(item); save_db(db); safe_rerun()
@@ -1108,18 +1143,27 @@ with colRight:
 
             if notes:
                 st.divider()
-                st.markdown("#### 📝 โน้ตทั่วไป (General Notes)")
+                st.markdown("#### 📝 โน้ตทั่วไป (General Notes) - ไม่มี Deadline")
                 for note in reversed(notes):
                     subj_tag = f"<span class='badge b-gray'>🗂️ {note.get('subject')}</span>" if note.get("subject") and note.get("subject") != "- ไม่ระบุ -" else ""
+                    prio_badge = get_priority_badge(note.get('priority', ''))
+                    
                     with st.expander(f"📝 {note['title']} | (บันทึกเมื่อ: {thai_date_format(note.get('date_added', '-'))})"):
-                        st.markdown(subj_tag, unsafe_allow_html=True)
-                        with st.form(f"edit_form_{note['id']}"):
-                            new_title = st.text_input("แก้หัวข้อ:", value=note['title'], key=f"txt_edit_title_{note['id']}")
-                            new_content = st.text_area("แก้เนื้อหา:", value=note.get('detail', ''), height=150, key=f"txt_edit_detail_{note['id']}")
+                        st.markdown(f"{prio_badge} {subj_tag}", unsafe_allow_html=True)
+                        
+                        with st.popover("✏️ แก้ไขโน้ต"):
+                            new_title = st.text_input("แก้หัวข้อ:", value=note['title'], key=f"txt_ed_title_{note['id']}")
+                            new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(note.get("subject", "- ไม่ระบุ -")) if note.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_n_sub_{note['id']}")
+                            new_p = st.selectbox("ความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], index=["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"].index(note.get("priority", "🟡 ปานกลาง")) if note.get("priority", "🟡 ปานกลาง") in ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"] else 2, key=f"ed_n_pri_{note['id']}")
+                            new_content = st.text_area("แก้เนื้อหา:", value=note.get('detail', ''), height=150, key=f"txt_ed_det_{note['id']}")
+                            
                             c1, c2 = st.columns([1, 1])
-                            if c1.form_submit_button("💾 บันทึกการแก้ไข"):
-                                note['title'] = new_title; note['detail'] = new_content; save_db(db); st.success("อัปเดตเรียบร้อย!"); safe_rerun()
-                            if c2.form_submit_button("🗑️ ลบทิ้ง"): planner_items.remove(note); save_db(db); safe_rerun()
+                            if c1.button("💾 บันทึกการแก้ไข", key=f"sv_n_{note['id']}", use_container_width=True):
+                                note['title'] = new_title; note['subject'] = new_s; note['priority'] = new_p; note['detail'] = new_content; save_db(db); st.success("อัปเดตเรียบร้อย!"); safe_rerun()
+                            if c2.button("🗑️ ลบทิ้ง", key=f"del_n_{note['id']}", use_container_width=True): planner_items.remove(note); save_db(db); safe_rerun()
+                            
+                        st.write("---")
+                        st.write(note.get("detail", "ไม่มีเนื้อหา"))
 
     # ----------------------------------------------------
     # TAB 6: 🪞 กระจกแห่งความรับผิดชอบ
@@ -1343,7 +1387,7 @@ else:
             save_db(db); st.balloons(); safe_rerun()
 
 # ==========================================
-# 8. 📜 ประวัติศาสตร์เส้นทางวินัย (HISTORY LOG - RESTORED FULLY)
+# 8. 📜 ประวัติศาสตร์เส้นทางวินัย (HISTORY LOG)
 # ==========================================
 st.divider()
 st.markdown("## 📜 ประวัติศาสตร์เส้นทางวินัย (HISTORY LOG)")
