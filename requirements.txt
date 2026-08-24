@@ -2,3 +2,4 @@ streamlit
 pandas
 requests
 google-generativeai
+pip install anthropic google-generativeai
