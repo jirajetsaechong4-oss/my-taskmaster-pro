@@ -22,7 +22,7 @@ except ImportError:
     HAS_CLAUDE = False
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V21 FLAWLESS DUAL AI)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V22 UNSTOPPABLE DUAL AI)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -253,7 +253,7 @@ WARRIOR_CONSEQUENCES = ["1. กูจะต้องทนเห็นคนท�
 ETERNAL_ECHOES = ["1. มึงบอกว่าไม่อยากกากอีกแล้ว มึงทำตัวให้คู่ควรกับคำพูดรึยัง!?", "2. โลกไม่สนหรอกว่ามึงจะเหนื่อย โลกสนแค่ว่ามึงทำสำเร็จหรือเปล่า!", "3. ทุกวินาทีที่ขี้เกียจ คือการกลับไปเป็นขี้แพ้!", "4. จะเก่งได้ไงถ้ามึงเอาแต่หาข้ออ้าง ลุกขึ้นมา!", "5. Pain is temporary, quitting lasts forever!", "6. They don't know you son! Show them what you're made of!", "7. Stay hard! อย่าให้ปีศาจในหัวมึงชนะได้!", "8. มึงหลอกคนอื่นได้ แต่มึงหลอกตัวเองหน้ากระจกไม่ได้หรอกนะ!", "9. อย่าให้ความกลัว ขโมยความฝันของมึงไป!", "10. ความสำเร็จสร้างด้วยมือ ไม่ใช่ด้วยน้ำลาย!", "11. ถ้ามึงไม่สร้างฝันของตัวเอง คนอื่นก็จะจ้างมึงไปสร้างฝันของเขา!", "12. ล้มได้ ร้องไห้ได้ แต่มึงห้ามยอมแพ้เด็ดขาด!", "13. หนทางที่ยากลำบาก มักจะนำไปสู่จุดหมายที่งดงามเสมอ!", "14. ความอดทนมันขมขื่น แต่ผลของมันช่างหอมหวาน!", "15. พิสูจน์ตัวเองด้วยผลงาน ไม่ใช่ด้วยคำแก้ตัว!", "16. ยิ่งเหนื่อย ยิ่งต้องพยายาม เพราะชัยชนะอยู่ใกล้แค่เอื้อม!", "17. จงเป็นเวอร์ชั่นที่ดีที่สุด ของตัวมึงเองในทุกๆ วัน!", "18. อนาคตของมึง ซ่อนอยู่ในกิจวัตรประจำวันของมึงนั่นแหละ!", "19. อย่าลดขนาดความฝัน แต่จงเพิ่มขนาดความพยายาม!", "20. ผู้ชนะไม่เคยล้มเลิก ผู้ล้มเลิกไม่เคยชนะ!", "21. เริ่มต้นจากศูนย์ ดีกว่าไม่เริ่มต้นอะไรเลย!", "22. ความกล้าหาญ คือการก้าวไปข้างหน้า แม้จะรู้สึกกลัวก็ตาม!", "23. เชื่อมั่นในตัวเอง แล้วทุกอย่างจะเป็นไปได้!", "24. อุปสรรคมีไว้ให้ข้าม ไม่ใช่มีไว้ให้หยุด!", "25. จงทำวันนี้ให้ดีที่สุด เหมือนไม่มีวันพรุ่งนี้ให้แก้ตัว!", "26. ความพยายามอยู่ที่ไหน ความสำเร็จอยู่ที่นั่น คำนี้ยังใช้ได้เสมอ!", "27. เหงื่อของมึงในวันนี้ จะกลายเป็นรอยยิ้มในวันพรุ่งนี้!", "28. อย่าเอาชีวิตมึง ไปเปรียบเทียบกับใคร มึงมีเส้นทางของมึงเอง!", "29. จงเรียนรู้จากความผิดพลาด แล้วทำให้มันดีขึ้นในครั้งต่อไป!", "30. ความสำเร็จ ไม่ได้วัดกันที่ความฉลาด แต่วัดกันที่ความขยัน!", "31. อย่าปล่อยให้คำวิจารณ์ของคนอื่น มาทำลายความตั้งใจของมึง!", "32. จงเป็นแรงบันดาลใจ ให้กับคนที่กำลังมองดูมึงอยู่!", "33. ความยิ่งใหญ่ ไม่ได้เกิดขึ้นในชั่วข้ามคืน มันต้องใช้เวลาและความพยายาม!", "34. เมื่อมึงคิดจะยอมแพ้ ให้นึกถึงเหตุผลที่มึงเริ่มต้น!", "35. จงแข็งแกร่งดั่งหินผา และอ่อนโยนดั่งสายน้ำ!", "36. ความมีวินัย คือกุญแจสำคัญ สู่ความสำเร็จในทุกๆ เรื่อง!", "37. อย่ากลัวความล้มเหลว เพราะมันคือส่วนหนึ่งของความสำเร็จ!", "38. จงก้าวออกจาก Comfort Zone แล้วมึงจะค้นพบโลกใบใหม่!", "39. ทุกๆ วันคือโอกาสใหม่ ในการเริ่มต้นทำสิ่งดีๆ!", "40. จงทำในสิ่งที่มึงรัก แล้วมึงจะไม่รู้สึกว่าต้องทำงานเลย!", "41. ความมุ่งมั่นของมึง จะทำลายทุกกำแพงที่ขวางกั้น!", "42. จงเป็นแสงสว่าง ในความมืดมิดให้กับตัวเองและผู้อื่น!", "43. ความหวัง คือพลังที่ทำให้มนุษย์ก้าวต่อไปได้เสมอ!", "44. จงเชื่อว่ามึงทำได้ แล้วมึงจะหาทางทำให้มันสำเร็จจนได้!", "45. อย่าปล่อยให้ความฝัน เป็นเพียงแค่ความฝัน จงลงมือทำให้มันเป็นจริง!", "46. พลังที่ซ่อนอยู่ในตัวมึง มันยิ่งใหญ่กว่าที่มึงคิดไว้มาก!", "47. จงขอบคุณทุกอุปสรรค ที่เข้ามาทำให้มึงแข็งแกร่งขึ้น!", "48. ชีวิตนี้สั้นนัก จงใช้มันอย่างคุ้มค่า และมีความหมาย!", "49. มึงคือสถาปนิก ผู้ออกแบบชีวิตของมึงเอง!", "50. ลุยให้สุดขีดจำกัด แล้วมึงจะพบว่าตัวเองเจ๋งแค่ไหน!"]
 
 # ==========================================
-# 4. DATABASE INIT
+# 4. DATABASE & STATE INIT
 # ==========================================
 db = load_db()
 
@@ -288,6 +288,7 @@ with st.sidebar:
     st.title("⚙️ DISCIPLINE ARC")
     st.caption(f"🗓️ วันที่: {thai_date_format(today_str)}") 
     
+    # --- DUAL AI SETTINGS ---
     if st.session_state.current_user is not None:
         safe_email = st.session_state.current_user
         u_data = db["users"][safe_email]
@@ -622,7 +623,7 @@ with colRight:
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
     # ----------------------------------------------------
-    # TAB AI: 🧠 DUAL AI TACTICAL PLANNER (V21)
+    # TAB AI: 🧠 DUAL AI TACTICAL PLANNER (V22)
     # ----------------------------------------------------
     with tab_ai:
         st.markdown("### 🧠 สภาปัญญาประดิษฐ์ (DUAL AI COMMAND CENTER)")
@@ -712,25 +713,49 @@ with colRight:
                     # --- EXECUTION ---
                     tab_ai_1, tab_ai_2 = st.tabs(["🧠 THE TACTICIAN (Claude)", "🔥 THE COMMANDER (Gemini)"])
                     
-                    # CLAUDE EXECUTION (REMOVED TEMPERATURE)
+                    # CLAUDE EXECUTION (AUTO-FALLBACK)
                     with tab_ai_1:
                         if not HAS_CLAUDE or not api_claude_check:
                             st.warning("⚠️ ไม่ได้เชื่อมต่อ Claude API")
                         else:
                             try:
                                 client = anthropic.Anthropic(api_key=api_claude_check)
-                                message = client.messages.create(
-                                    model="claude-3-5-sonnet-20240620",
-                                    max_tokens=1000,
-                                    system="You are an elite, logical tactical planner. Speak direct Thai.",
-                                    messages=[{"role": "user", "content": claude_prompt}]
-                                )
-                                st.markdown("### 🗺️ แผนยุทธวิธี (Logical Strategy)")
-                                st.markdown(message.content[0].text)
-                            except Exception as e:
-                                st.error(f"❌ Claude API Error: {e}")
                                 
-                    # GEMINI EXECUTION
+                                # โมเดลไล่ระดับ ถ้าระบบหาตัวแรกไม่เจอ จะไหลไปหาตัวถัดไป
+                                claude_models = [
+                                    "claude-3-5-sonnet-latest", 
+                                    "claude-3-5-sonnet-20241022", 
+                                    "claude-3-5-sonnet-20240620", 
+                                    "claude-3-sonnet-20240229", 
+                                    "claude-3-haiku-20240307"
+                                ]
+                                claude_response = None
+                                claude_error = ""
+                                
+                                for c_model in claude_models:
+                                    try:
+                                        message = client.messages.create(
+                                            model=c_model,
+                                            max_tokens=1000,
+                                            system="You are an elite, logical tactical planner. Speak direct Thai.",
+                                            messages=[{"role": "user", "content": claude_prompt}]
+                                        )
+                                        claude_response = message.content[0].text
+                                        st.toast(f"🧠 Claude วางแผนสำเร็จด้วยโมเดล: {c_model}", icon="🧠")
+                                        break
+                                    except Exception as e:
+                                        claude_error += f"[{c_model} failed] "
+                                        continue
+                                        
+                                if claude_response:
+                                    st.markdown("### 🗺️ แผนยุทธวิธี (Logical Strategy)")
+                                    st.markdown(claude_response)
+                                else:
+                                    st.error(f"❌ Claude API Error ไม่พบโมเดลที่รองรับ: {claude_error}")
+                            except Exception as e:
+                                st.error(f"❌ Claude System Error: {e}")
+                                
+                    # GEMINI EXECUTION (AUTO-FALLBACK)
                     with tab_ai_2:
                         if not HAS_GENAI or not api_gemini_check:
                             st.warning("⚠️ ไม่ได้เชื่อมต่อ Gemini API")
@@ -1088,7 +1113,7 @@ with colRight:
                 if col3.button("🗑️", key=f"del_sk_{sk['id']}"): db["skill_forge"][safe_email].remove(sk); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 4: 🗂️ คลังแสงวิชา (ACADEMIC ARSENAL)
+    # TAB 4: 🗂️ คลังแสงวิชา (ACADEMIC ARArsenal)
     # ----------------------------------------------------
     with tab_subjects:
         st.markdown("### 🗂️ คลังแสงรายวิชา (Academic Arsenal)")
