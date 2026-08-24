@@ -15,10 +15,11 @@ except ImportError:
     HAS_GENAI = False
 
 # ==========================================
-# 1. ตั้งค่าระบบ & UI CSS
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V14.1 - AI SAFETY UNLOCKED)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
+# --- CUSTOM CSS (UI OVERHAUL) ---
 st.markdown("""
 <style>
     .subject-banner { background: linear-gradient(135deg, #141E30 0%, #243B55 100%); padding: 20px 25px; border-radius: 12px; border-left: 6px solid #4ba3ff; color: white; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
@@ -47,9 +48,6 @@ st.markdown("""
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app" 
 FIREBASE_SECRET = "Wv2Ha7WZrDLwnpJyKMt29z9I0MGb0kxitoOaaoGe"
 
-# ==========================================
-# 2. ฟังก์ชันพื้นฐานทั้งหมด (HELPER FUNCTIONS - ย้ายมาบนสุดป้องกัน Error)
-# ==========================================
 def get_current_thai_time():
     tz_thai = timezone(timedelta(hours=7))
     return datetime.now(tz_thai)
@@ -87,105 +85,8 @@ def get_stable_index(id_str, list_len):
 def clean_quote(text):
     return re.sub(r'^\d+\.\s*', '', text)
 
-def get_safe_email(email): 
-    return email.replace(".", "-").replace("@", "-")
-
-def get_title(level):
-    if level < 3: return "🤡 ไอ้ขี้แพ้ที่รอการพิสูจน์"
-    elif level < 7: return "⚙️ ผู้ทุบทำลายขีดจำกัด (Limit Breaker)"
-    elif level < 12: return "🦍 นักรบผู้คุมปีศาจในใจ (Mind Master)"
-    else: return "👑 ปรมาจารย์แห่งวินัยเหล็ก (Discipline God)"
-
-def get_priority_score(task_type):
-    if not task_type: return 4
-    if "🔴 ด่วนสุด" in task_type or "🔥 งานฉุกเฉิน" in task_type: return 1
-    if "🟡 ปานกลาง" in task_type: return 2
-    if "🟢 ชิลๆ" in task_type: return 3
-    return 4
-    
-def get_priority_badge(task_type):
-    if not task_type: return "<span class='badge b-gray'>⚪ ไม่ระบุความสำคัญ</span>"
-    if "ด่วนสุด" in task_type or "ฉุกเฉิน" in task_type: return f"<span class='badge b-red'>🚨 {task_type}</span>"
-    if "ปานกลาง" in task_type: return f"<span class='badge b-gold'>🟡 {task_type}</span>"
-    return f"<span class='badge b-green'>🟢 {task_type}</span>"
-
-def get_deadline_score(dl_str):
-    if not dl_str or dl_str == "": return 999999
-    try: return (datetime.strptime(str(dl_str).strip(), "%Y-%m-%d").date() - today_date).days
-    except: return 999999
-
-def format_days_left(dl_str):
-    days = get_deadline_score(dl_str)
-    if days == 999999: return ""
-    if days > 0: return f"⏳ เหลือ {days} วัน"
-    if days == 0: return f"🚨 เสร็จวันนี้!"
-    return f"💀 เลยกำหนด {-days} วัน"
-
-def get_badge_html(dl_str, dl_type, is_must_do=False):
-    if is_must_do:
-        return f"<span class='badge b-death blink-text'>🩸 MUST DO TODAY! (พลาด=ตาย)</span>"
-        
-    if not dl_str or dl_str == "": return "<span class='badge b-gray'>⚪ ไม่มีกำหนดเวลา</span>"
-    days = get_deadline_score(dl_str)
-    txt = format_days_left(dl_str)
-    if "Deadline" in dl_type: css = "b-red" if days <= 2 else "b-gray"
-    else: css = "b-blue" if days <= 2 else "b-gray"
-    
-    icon = "🔴" if "Deadline" in dl_type else "🎯"
-    if days < 0: css = "b-red"; icon = "💀"
-    return f"<span class='badge {css}'>{icon} {txt}</span>"
-
-def is_overdue_check(dl_str): return get_deadline_score(dl_str) < 0
-
-def calculate_task_rewards(task, current_streak, mentor_name):
-    score = get_priority_score(task.get("ประเภท", ""))
-    base_exp = 40 if score == 1 else 20 if score == 2 else 10
-    bonus_exp = 100 if task.get("is_boss") else 0
-    if task.get("bounty"): bonus_exp += 50
-    if task.get("subtasks"): bonus_exp += len(task["subtasks"]) * 10  
-        
-    raw_total_exp = base_exp + bonus_exp
-    multiplier = 1.5 if current_streak >= 30 else 1.2 if current_streak >= 7 else 1.1 if current_streak >= 3 else 1.0
-    final_exp = int(raw_total_exp * multiplier)
-    
-    fail_reduce = 10 if score == 1 else 5 if score == 2 else 2
-    if task.get("is_boss"): fail_reduce += 15
-    if task.get("bounty"): fail_reduce += 5
-    if task.get("is_must_do"): fail_reduce += 10 
-    
-    if mentor_name == "Toji" and task.get("is_boss"):
-        final_exp = int(final_exp * 1.3); st.toast("🐛 [สัญญาสวรรค์] ได้โบนัส EXP +30%!", icon="🩸")
-    if mentor_name == "Zenitsu" and st.session_state.get("locked_in_active", False) and score == 1:
-        fail_reduce *= 2; st.toast("⚡ [Godspeed] ทะลวงงานด่วน! ลดความอ่อนแอ 2 เท่า!", icon="🔥")
-    if mentor_name == "Future You" and score == 1:
-        final_exp += 20; st.toast("⏳ [รากฐานแห่งอนาคต] รับโบนัสพิเศษ!", icon="🔥")
-    return final_exp, fail_reduce
-
-def load_db():
-    if FIREBASE_URL == "" or FIREBASE_URL is None: st.error("🚨 ใส่ลิงก์ Firebase ก่อน!"); st.stop()
-    try:
-        res = requests.get(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}")
-        if res.status_code == 200 and res.json() is not None:
-            data = res.json()
-            if not isinstance(data, dict): data = {}
-            defaults = {
-                "users": {}, "missions": {}, "study_missions": {}, 
-                "command_log": {}, "accountability_mirror": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, 
-                "haters": {}, "finance": {}, "iron_habits": {}, "daily_wins": {}, "exams": {}, "beat_yesterday": {}, 
-                "limit_breaks": {}, "weakness_fuel": {}, "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {}
-            }
-            for k, v in defaults.items():
-                if k not in data or data[k] is None: data[k] = v
-            return data
-    except: pass
-    return {"users": {}, "missions": {}, "study_missions": {}, "command_log": {}, "accountability_mirror": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "haters": {}, "finance": {}, "iron_habits": {}, "daily_wins": {}, "exams": {}, "beat_yesterday": {}, "limit_breaks": {}, "weakness_fuel": {}, "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {}}
-
-def save_db(data):
-    try: requests.put(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}", json=data)
-    except Exception as e: st.error(f"🚨 เซฟข้อมูลลงฐานข้อมูลไม่สำเร็จ! Error: {e}")
-
 # ==========================================
-# 3. ข้อมูลคำพูด (QUOTES & MENTORS)
+# 🧠 THE MASSIVE MENTOR SYSTEM & QUOTES
 # ==========================================
 MENTORS = {
     "None": {
@@ -401,32 +302,204 @@ PUNISHMENTS = [
     "1. ไปดันพื้น 50 ทีเดี๋ยวนี้! ลงโทษความอ่อนแอ!", "2. แพลงก์ 2 นาที! เอาความเจ็บปวดล้างสมองซะ!", "3. ลุกไปอาบน้ำเย็นจัด 5 นาทีเดี๋ยวนี้ ไป!", 
     "4. กระโดดตบ 100 ครั้ง สลัดความขี้เกียจทิ้งไป!", "5. ห้ามจับมือถือ 1 ชั่วโมงนับจากนี้! นั่งสมาธิทบทวนความกากของตัวเอง!", "6. สควอช (ลุกนั่ง) 60 ที เอาให้ขาเบิร์น!", 
     "7. เดินไปตะโกนใส่กำแพงว่า 'กูจะไม่ยอมกลับไปกระจอกอีก!' 10 รอบ!", "8. Burpee 30 ครั้ง ห้ามหยุดพัก! ลุย!", "9. วิดพื้นจนกว่าจะหมดแรง (Failure) เพื่อจำความรู้สึกของการยอมแพ้!", 
-    "10. เก็บกวาดห้องหรือโต๊ะทำงานเดี๋ยวนี้! จัดระเบียบห้องไม่ได้ ก็จัดระเบียบชีวิตไม่ได้!"
+    "10. เก็บกวาดห้องหรือโต๊ะทำงานเดี๋ยวนี้! จัดระเบียบห้องไม่ได้ ก็จัดระเบียบชีวิตไม่ได้!", "11. วิ่งรอบบ้าน 10 รอบ ห้ามเดินเด็ดขาด!", "12. ลุกนั่ง (Sit-up) 50 ครั้ง สร้างความแข็งแกร่งให้แกนกลางลำตัว!",
+    "13. ยืนขาเดียว หลับตา 3 นาที ฝึกสมาธิและความอดทน!", "14. คัดลายมือคำว่า 'วินัย' 100 จบ ให้มันฝังลึกเข้าไปในสมอง!", "15. งดขนมหวานและน้ำอัดลม 1 สัปดาห์ ลงโทษความมักง่ายในการกิน!",
+    "16. ตื่นเช้ากว่าเดิม 1 ชั่วโมง เป็นเวลา 3 วันติด!", "17. อ่านหนังสือที่มีประโยชน์ 1 บท ทันทีที่โดนทำโทษ!", "18. ยกของหนักๆ (เช่น แกลลอนน้ำ) เดินไปมา 5 นาที!",
+    "19. ทำความสะอาดห้องน้ำให้สะอาดเอี่ยมอ่อง!", "20. ล้างจานทุกใบในบ้าน ห้ามเหลือแม้แต่ใบเดียว!", "21. ซักผ้าด้วยมือ 1 กะละมัง (ถ้ามี) ให้รู้ซึ้งถึงความลำบาก!",
+    "22. นั่งคุกเข่า สำนึกผิด 10 นาที ห้ามขยับเขยื้อน!", "23. ห้ามดูทีวี/ซีรีส์/อนิเมะ 1 วันเต็ม!", "24. ปิดการแจ้งเตือนโซเชียลมีเดียทุกแอป 24 ชั่วโมง!",
+    "25. เขียนเรียงความ 1 หน้ากระดาษ อธิบายว่าทำไมถึงหลุดวินัย และจะแก้ไขยังไง!", "26. เดินขึ้นลงบันได 20 รอบ ห้ามหยุดพัก!", "27. กระโดดเชือก 500 ครั้ง ถ้าสะดุดให้เริ่มนับใหม่!",
+    "28. โหนบาร์ (Pull-up) ให้ได้มากที่สุดเท่าที่จะทำได้!", "29. ทำ High Knees (วิ่งยกเข่าสูง) 3 นาที ต่อเนื่อง!", "30. ทำ Mountain Climbers 100 ครั้ง เร่งจังหวะให้เร็วที่สุด!",
+    "31. ยืนกางแขน ถือหนังสือหนักๆ ไว้ข้างละเล่ม นาน 2 นาที!", "32. ดื่มน้ำเปล่ารวดเดียว 2 แก้ว ล้างพิษความขี้เกียจ!", "33. กินผักใบเขียวที่ไม่ชอบ 1 จานเต็มๆ!",
+    "34. ห้ามบ่น ห้ามสบถ เป็นเวลา 24 ชั่วโมง!", "35. ยิ้มให้กับตัวเองในกระจก 1 นาที ฝืนใจทำให้ได้!", "36. พูดคำว่า 'ขอบคุณ' กับสิ่งรอบตัว 10 อย่าง!",
+    "37. บริจาคเงิน (จำนวนตามเหมาะสม) ให้กับองค์กรการกุศล เพื่อดัดนิสัยตัวเอง!", "38. ทิ้งของที่ไม่จำเป็นในห้อง 3 ชิ้น หัดตัดใจ!", "39. จัดตารางเวลาชีวิตของวันพรุ่งนี้ให้ละเอียดถยิบ!",
+    "40. เขียนเป้าหมายระยะสั้น 3 ข้อ แล้วแปะไว้ที่หน้าคอม!", "41. โทรไปหาคนที่เคารพ แล้วบอกว่า 'ผมจะตั้งใจทำให้ดีที่สุด'!", "42. ถอดแอปพลิเคชันที่กินเวลาทิ้งไป 1 แอป เป็นเวลา 1 สัปดาห์!",
+    "43. ทำ Plank Jacks 50 ครั้ง กระตุ้นอัตราการเต้นของหัวใจ!", "44. ทำ Wall Sit (นั่งพิงกำแพงลม) 2 นาที ให้ขาสั่น!", "45. ทำ Lunges สลับขา 40 ครั้ง ให้กล้ามเนื้อก้นทำงาน!",
+    "46. งดพูดคุยเรื่องไร้สาระกับเพื่อน 1 วัน!", "47. ตั้งใจเรียน/ทำงานอย่างเต็มที่ 100% เป็นเวลา 2 ชั่วโมง โดยไม่วอกแวก!", "48. เขียนข้อดีของตัวเอง 5 ข้อ เพื่อเรียกความมั่นใจกลับมา!",
+    "49. กอดตัวเอง แล้วบอกว่า 'เริ่มใหม่ได้เสมอ'!", "50. วิดพื้นเพิ่มอีก 10 ที เป็นโบนัสของการทำโทษ!"
 ]
 
 WARRIOR_OATHS = [
     "1. โลกนี้ไม่มีที่ยืนให้คนอ่อนแอ! ถ้าขี้เกียจ ก็เตรียมดูคนอื่นแซงหน้าไปเลย!", "2. ข้ออ้างมีไว้สำหรับไอ้กระจอก! วันนี้มึงจะสร้างผลงาน หรือข้ออ้าง เลือกเอา!", "3. ความสบายวันนี้ คือความชิบหายวันหน้า! บดขยี้ความขี้เกียจซะ!",
-    "4. เวลาไม่เคยรอใคร ไถมือถือโง่ๆ คือฆ่าอนาคตตัวเอง!", "5. มึงบอกอยากสำเร็จ แต่การกระทำเหมือนคนรอวันตาย! ตื่น ไปทำเดี๋ยวนี้!"
+    "4. เวลาไม่เคยรอใคร ไถมือถือโง่ๆ คือฆ่าอนาคตตัวเอง!", "5. มึงบอกอยากสำเร็จ แต่การกระทำเหมือนคนรอวันตาย! ตื่น ไปทำเดี๋ยวนี้!", "6. วินัยคือการทำตอนที่มึงโคตรไม่อยากทำต่างหาก!",
+    "7. เป้าหมายใหญ่ แต่พยายามกระจอก! เปลี่ยนแปลงตัวเองเดี๋ยวนี้!", "8. คนบอกพรุ่งนี้ค่อยทำ คือคนที่ไม่มีวันพรุ่งนี้ให้สำเร็จ!", "9. หยาดเหงื่อวันนี้ คือความสำเร็จในวันพรุ่งนี้!",
+    "10. ฉันจะไม่ยอมแพ้ ต่อให้อุปสรรคจะใหญ่แค่ไหนก็ตาม!", "11. ทุกก้าวที่เดินไปข้างหน้า คือการเข้าใกล้เป้าหมายอีกก้าว!", "12. ความล้มเหลวไม่ใช่จุดจบ แต่มันคือจุดเริ่มต้นของความสำเร็จ!",
+    "13. ฉันจะแข็งแกร่งขึ้น ทั้งร่างกายและจิตใจ!", "14. ไม่มีใครมากำหนดชีวิตฉันได้ นอกจากตัวฉันเอง!", "15. ความสำเร็จ ไม่ได้มาเพราะโชคช่วย แต่มาจากการลงมือทำ!",
+    "16. ฉันจะทำลายทุกขีดจำกัด ของตัวเองให้พินาศ!", "17. เสียงนกเสียงกา จะไม่ทำให้ฉันหวั่นไหว!", "18. ฉันโฟกัสแค่เป้าหมายเท่านั้น สิ่งเร้าอื่นไม่มีผล!",
+    "19. วินัยเหล็ก จะหล่อหลอมให้ฉันเป็นยอดคน!", "20. ฉันจะสู้จนกว่าจะหมดลมหายใจ เพื่อสิ่งที่ฝัน!", "21. ความเกียจคร้าน คือศัตรูตัวฉกาจ ฉันจะฆ่ามันให้ตาย!",
+    "22. ทุกๆ วัน ฉันต้องพัฒนาตัวเองให้ดีขึ้น 1%!", "23. ความเจ็บปวดในวันนี้ คือความแข็งแกร่งในวันพรุ่งนี้!", "24. ฉันจะไม่ยอมให้ใคร มาดูถูกความพยายามของฉัน!",
+    "25. โลกใบนี้ เป็นของคนที่กล้าลงมือทำเท่านั้น!", "26. ความฝันมันจะไม่มีวันเป็นจริง ถ้าฉันเอาแต่นอน!", "27. ฉันจะใช้ชีวิต ให้คุ้มค่าทุกวินาที!",
+    "28. พรุ่งนี้ต้องดีกว่าวันนี้ นี่คือสัจธรรมของฉัน!", "29. พลังใจของฉัน ยิ่งใหญ่กว่าอุปสรรคใดๆ!", "30. ฉันจะพิสูจน์ให้ทุกคนเห็น ว่าฉันทำได้!",
+    "31. ความสำเร็จ มันรอฉันอยู่แค่เอื้อมมือ!", "32. ฉันจะไม่หยุดเดิน จนกว่าจะถึงเส้นชัย!", "33. เหงื่อทุกหยด น้ำตาแห่งความเหนื่อยล้า จะกลายเป็นเพชรเม็ดงาม!",
+    "34. ฉันคือผู้สร้างโชคชะตาของตัวเอง ไม่ใช่ผู้ถูกกระทำ!", "35. ความมุ่งมั่นของฉัน ร้อนแรงดั่งเปลวเพลิง!", "36. ฉันจะเหยียบย่ำความกลัว แล้วก้าวเดินต่อไปอย่างสง่างาม!",
+    "37. อุปสรรค คือแบบทดสอบความแข็งแกร่งของจิตใจฉัน!", "38. ฉันจะไม่ยอมอ่อนข้อ ให้กับความอ่อนแอของตัวเอง!", "39. ฉันมีศักยภาพที่ซ่อนอยู่ และฉันจะระเบิดมันออกมา!",
+    "40. ทุกความท้าทาย คือโอกาสในการเรียนรู้และเติบโต!", "41. ฉันจะสร้างประวัติศาสตร์ หน้าใหม่ให้กับชีวิตของฉัน!", "42. ความสำเร็จของฉัน จะเป็นแรงบันดาลใจให้กับผู้อื่น!",
+    "43. ฉันจะไม่ยอมเป็นแค่ คนธรรมดาที่ไม่มีใครจดจำ!", "44. ฉันจะทิ้งร่องรอยแห่งความยิ่งใหญ่ ไว้บนโลกใบนี้!", "45. จิตวิญญาณแห่งนักรบ ไหลเวียนอยู่ในสายเลือดของฉัน!",
+    "46. ฉันพร้อมที่จะเผชิญหน้า กับทุกสิ่งที่จะเข้ามาในวันนี้!", "47. พลังแห่งความเชื่อมั่น จะนำพาฉันไปสู่ชัยชนะ!", "48. ฉันคือผู้กุมชะตาชีวิต ของตัวฉันเองแต่เพียงผู้เดียว!",
+    "49. วันนี้ ฉันจะสร้างตำนานบทใหม่!", "50. ลุยเลย! ตัวฉันในอนาคตกำลังรอคอยความสำเร็จนี้อยู่!"
 ]
 
 WARRIOR_CONSEQUENCES = [
     "1. กูจะต้องทนเห็นคนที่พยายามน้อยกว่ากู ได้ดีกว่ากู!", "2. พรุ่งนี้กูก็จะตื่นมาเป็นไอ้ขี้แพ้คนเดิม ที่เก่งแต่ปาก!", "3. ความฝันที่กูโม้ไว้ ก็จะเป็นแค่อากาศธาตุ!",
     "4. กูจะกลายเป็นภาระของครอบครัวและคนที่รักกู!", "5. ชีวิตกูก็จะย่ำอยู่กับที่ ไม่มีวันเงยหน้าอ้าปากได้!", "6. กูจะต้องก้มหัวให้คนที่กูเกลียดไปตลอดชีวิต!",
-    "7. อนาคตที่กูวาดฝันไว้ จะพังทลายลงด้วยมือของกูเอง!"
+    "7. อนาคตที่กูวาดฝันไว้ จะพังทลายลงด้วยมือของกูเอง!", "8. กูจะต้องเสียใจและเกลียดตัวเองในอีก 5 ปีข้างหน้า!", "9. กูจะไม่มีวันภูมิใจในตัวเองได้เลย ตลอดชีวิต!",
+    "10. ความเจ็บปวดจากความล้มเหลว จะตามหลอกหลอนกูไปจนตาย!", "11. คนที่เคยดูถูกกู จะหัวเราะเยาะกูได้เต็มปาก!", "12. โอกาสดีๆ จะหลุดลอยไปตกอยู่ในมือของคนอื่น!",
+    "13. กูจะต้องทนทำงานที่ไม่ได้รัก ไปตลอดชีวิต!", "14. ความยากจนและความขัดสน จะกลายเป็นเพื่อนสนิทกู!", "15. ลูกหลานกู จะต้องเกิดมาเจอกับความลำบาก!",
+    "16. กูจะสูญเสียความน่าเชื่อถือ ไม่มีใครเชื่อคำพูดกูอีก!", "17. กูจะต้องทนเห็นคนที่กูรัก ต้องตกระกำลำบากเพราะความขี้เกียจของกู!", "18. กูจะกลายเป็น ตัวตลก ในสายตาของสังคม!",
+    "19. ความอิจฉาริษยา จะกัดกินจิตใจกู จนเน่าเฟะ!", "20. กูจะไม่มีวันได้สัมผัส กับคำว่า ความสำเร็จ อย่างแท้จริง!", "21. กูจะต้องแก่ตายไป อย่างโดดเดี่ยวและไร้ค่า!",
+    "22. ประวัติศาสตร์ จะจารึกชื่อกูไว้ในฐานะ คนขี้แพ้!", "23. กูจะสูญเสียเวลาอันมีค่า ที่ไม่สามารถย้อนกลับคืนมาได้!", "24. สุขภาพกูจะย่ำแย่ เพราะไม่ได้ดูแลตัวเองอย่างดี!",
+    "25. ความสัมพันธ์กับคนรอบข้าง จะพังทลายลง!", "26. กูจะถูกสังคมทอดทิ้ง ให้อยู่เบื้องหลัง!", "27. กูจะไม่มีวัน ได้เติมเต็มศักยภาพของตัวเอง!",
+    "28. กูจะต้องทนอยู่กับ ความรู้สึกผิด ไปจนวันตาย!", "29. โลกนี้ จะไม่รับรู้ถึงการมีอยู่ของกูเลย!", "30. กูจะกลายเป็น แค่ฝุ่นผงในจักรวาล ไม่มีค่าอะไร!",
+    "31. ความสามารถกูจะถดถอย ลงเรื่อยๆ ตามกาลเวลา!", "32. กูจะถูกเด็กรุ่นใหม่ แซงหน้าไปอย่างง่ายดาย!", "33. กูจะต้องพึ่งพาจมูกคนอื่นหายใจ ไปตลอดชีวิต!",
+    "34. กูจะไม่มีสิทธิ์ เลือกทางเดินชีวิตของตัวเองได้!", "35. กูจะต้องยอมรับ สภาพความเป็นอยู่ที่เลวร้าย อย่างหลีกเลี่ยงไม่ได้!", "36. กูจะสูญเสีย อิสรภาพ ทางการเงินและเวลา!",
+    "37. ความคิดสร้างสรรค์กู จะถูกแช่แข็งและตายจากไป!", "38. กูจะกลายเป็น หุ่นยนต์ ที่ทำตามคำสั่งของคนอื่น!", "39. กูจะไม่มีวัน ได้ค้นพบความหมายที่แท้จริงของชีวิต!",
+    "40. รอยยิ้มของกู จะหายไปจากใบหน้าอย่างถาวร!", "41. กูจะต้องทนฟัง คำด่าทอและคำวิจารณ์ จากคนรอบข้าง!", "42. กูจะสูญเสีย ความเคารพในตัวเอง ไปอย่างหมดสิ้น!",
+    "43. กูจะกลายเป็น ภาระของโลกใบนี้!", "44. ชีวิตกู จะเต็มไปด้วยความเสียดายและคำว่า รู้งี้!", "45. กูจะไม่มีวัน ได้ชื่นชมผลงานของตัวเองอย่างภาคภูมิใจ!",
+    "46. กูจะต้องใช้ชีวิต ด้วยความหวาดระแวงและกังวลอยู่เสมอ!", "47. กูจะสูญเสีย เสน่ห์และความมั่นใจในตัวเอง!", "48. กูจะกลายเป็น คนแปลกหน้า สำหรับตัวเองในที่สุด!",
+    "49. ความหวังทุกอย่าง จะดับวูบลงอย่างไม่มีวันหวนกลับ!", "50. กูจะตายไป พร้อมกับความว่างเปล่าในจิตใจ!"
 ]
 
 ETERNAL_ECHOES = [
     "1. มึงบอกว่าไม่อยากกากอีกแล้ว มึงทำตัวให้คู่ควรกับคำพูดรึยัง!?", "2. โลกไม่สนหรอกว่ามึงจะเหนื่อย โลกสนแค่ว่ามึงทำสำเร็จหรือเปล่า!", "3. ทุกวินาทีที่ขี้เกียจ คือการกลับไปเป็นขี้แพ้!",
-    "4. จะเก่งได้ไงถ้ามึงเอาแต่หาข้ออ้าง ลุกขึ้นมา!", "5. Pain is temporary, quitting lasts forever!"
+    "4. จะเก่งได้ไงถ้ามึงเอาแต่หาข้ออ้าง ลุกขึ้นมา!", "5. Pain is temporary, quitting lasts forever!", "6. They don't know you son! Show them what you're made of!",
+    "7. Stay hard! อย่าให้ปีศาจในหัวมึงชนะได้!", "8. มึงหลอกคนอื่นได้ แต่มึงหลอกตัวเองหน้ากระจกไม่ได้หรอกนะ!", "9. อย่าให้ความกลัว ขโมยความฝันของมึงไป!",
+    "10. ความสำเร็จสร้างด้วยมือ ไม่ใช่ด้วยน้ำลาย!", "11. ถ้ามึงไม่สร้างฝันของตัวเอง คนอื่นก็จะจ้างมึงไปสร้างฝันของเขา!", "12. ล้มได้ ร้องไห้ได้ แต่มึงห้ามยอมแพ้เด็ดขาด!",
+    "13. หนทางที่ยากลำบาก มักจะนำไปสู่จุดหมายที่งดงามเสมอ!", "14. ความอดทนมันขมขื่น แต่ผลของมันช่างหอมหวาน!", "15. พิสูจน์ตัวเองด้วยผลงาน ไม่ใช่ด้วยคำแก้ตัว!",
+    "16. ยิ่งเหนื่อย ยิ่งต้องพยายาม เพราะชัยชนะอยู่ใกล้แค่เอื้อม!", "17. จงเป็นเวอร์ชั่นที่ดีที่สุด ของตัวมึงเองในทุกๆ วัน!", "18. อนาคตของมึง ซ่อนอยู่ในกิจวัตรประจำวันของมึงนั่นแหละ!",
+    "19. อย่าลดขนาดความฝัน แต่จงเพิ่มขนาดความพยายาม!", "20. ผู้ชนะไม่เคยล้มเลิก ผู้ล้มเลิกไม่เคยชนะ!", "21. เริ่มต้นจากศูนย์ ดีกว่าไม่เริ่มต้นอะไรเลย!",
+    "22. ความกล้าหาญ คือการก้าวไปข้างหน้า แม้จะรู้สึกกลัวก็ตาม!", "23. เชื่อมั่นในตัวเอง แล้วทุกอย่างจะเป็นไปได้!", "24. อุปสรรคมีไว้ให้ข้าม ไม่ใช่มีไว้ให้หยุด!",
+    "25. จงทำวันนี้ให้ดีที่สุด เหมือนไม่มีวันพรุ่งนี้ให้แก้ตัว!", "26. ความพยายามอยู่ที่ไหน ความสำเร็จอยู่ที่นั่น คำนี้ยังใช้ได้เสมอ!", "27. เหงื่อของมึงในวันนี้ จะกลายเป็นรอยยิ้มในวันพรุ่งนี้!",
+    "28. อย่าเอาชีวิตมึง ไปเปรียบเทียบกับใคร มึงมีเส้นทางของมึงเอง!", "29. จงเรียนรู้จากความผิดพลาด แล้วทำให้มันดีขึ้นในครั้งต่อไป!", "30. ความสำเร็จ ไม่ได้วัดกันที่ความฉลาด แต่วัดกันที่ความขยัน!",
+    "31. อย่าปล่อยให้คำวิจารณ์ของคนอื่น มาทำลายความตั้งใจของมึง!", "32. จงเป็นแรงบันดาลใจ ให้กับคนที่กำลังมองดูมึงอยู่!", "33. ความยิ่งใหญ่ ไม่ได้เกิดขึ้นในชั่วข้ามคืน มันต้องใช้เวลาและความพยายาม!",
+    "34. เมื่อมึงคิดจะยอมแพ้ ให้นึกถึงเหตุผลที่มึงเริ่มต้น!", "35. จงแข็งแกร่งดั่งหินผา และอ่อนโยนดั่งสายน้ำ!", "36. ความมีวินัย คือกุญแจสำคัญ สู่ความสำเร็จในทุกๆ เรื่อง!",
+    "37. อย่ากลัวความล้มเหลว เพราะมันคือส่วนหนึ่งของความสำเร็จ!", "38. จงก้าวออกจาก Comfort Zone แล้วมึงจะค้นพบโลกใบใหม่!", "39. ทุกๆ วันคือโอกาสใหม่ ในการเริ่มต้นทำสิ่งดีๆ!",
+    "40. จงทำในสิ่งที่มึงรัก แล้วมึงจะไม่รู้สึกว่าต้องทำงานเลย!", "41. ความมุ่งมั่นของมึง จะทำลายทุกกำแพงที่ขวางกั้น!", "42. จงเป็นแสงสว่าง ในความมืดมิดให้กับตัวเองและผู้อื่น!",
+    "43. ความหวัง คือพลังที่ทำให้มนุษย์ก้าวต่อไปได้เสมอ!", "44. จงเชื่อว่ามึงทำได้ แล้วมึงจะหาทางทำให้มันสำเร็จจนได้!", "45. อย่าปล่อยให้ความฝัน เป็นเพียงแค่ความฝัน จงลงมือทำให้มันเป็นจริง!",
+    "46. พลังที่ซ่อนอยู่ในตัวมึง มันยิ่งใหญ่กว่าที่มึงคิดไว้มาก!", "47. จงขอบคุณทุกอุปสรรค ที่เข้ามาทำให้มึงแข็งแกร่งขึ้น!", "48. ชีวิตนี้สั้นนัก จงใช้มันอย่างคุ้มค่า และมีความหมาย!",
+    "49. มึงคือสถาปนิก ผู้ออกแบบชีวิตของมึงเอง!", "50. ลุยให้สุดขีดจำกัด แล้วมึงจะพบว่าตัวเองเจ๋งแค่ไหน!"
 ]
 
-# ==========================================
-# 4. DATABASE & STATE INIT
-# ==========================================
+def get_safe_email(email): return email.replace(".", "-").replace("@", "-")
+
+def get_title(level):
+    if level < 3: return "🤡 ไอ้ขี้แพ้ที่รอการพิสูจน์"
+    elif level < 7: return "⚙️ ผู้ทุบทำลายขีดจำกัด (Limit Breaker)"
+    elif level < 12: return "🦍 นักรบผู้คุมปีศาจในใจ (Mind Master)"
+    else: return "👑 ปรมาจารย์แห่งวินัยเหล็ก (Discipline God)"
+
+def get_priority_score(task_type):
+    if not task_type: return 4
+    if "🔴 ด่วนสุด" in task_type or "🔥 งานฉุกเฉิน" in task_type: return 1
+    if "🟡 ปานกลาง" in task_type: return 2
+    if "🟢 ชิลๆ" in task_type: return 3
+    return 4
+    
+def get_priority_badge(task_type):
+    if not task_type: return "<span class='badge b-gray'>⚪ ไม่ระบุความสำคัญ</span>"
+    if "ด่วนสุด" in task_type or "ฉุกเฉิน" in task_type: return f"<span class='badge b-red'>🚨 {task_type}</span>"
+    if "ปานกลาง" in task_type: return f"<span class='badge b-gold'>🟡 {task_type}</span>"
+    return f"<span class='badge b-green'>🟢 {task_type}</span>"
+
+def get_deadline_score(dl_str):
+    if not dl_str or dl_str == "": return 999999
+    try: return (datetime.strptime(str(dl_str).strip(), "%Y-%m-%d").date() - today_date).days
+    except: return 999999
+
+def format_days_left(dl_str):
+    days = get_deadline_score(dl_str)
+    if days == 999999: return ""
+    if days > 0: return f"⏳ เหลือ {days} วัน"
+    if days == 0: return f"🚨 เสร็จวันนี้!"
+    return f"💀 เลยกำหนด {-days} วัน"
+
+def get_badge_html(dl_str, dl_type, is_must_do=False):
+    if is_must_do:
+        return f"<span class='badge b-death blink-text'>🩸 MUST DO TODAY! (พลาด=ตาย)</span>"
+        
+    if not dl_str or dl_str == "": return "<span class='badge b-gray'>⚪ ไม่มีกำหนดเวลา</span>"
+    days = get_deadline_score(dl_str)
+    txt = format_days_left(dl_str)
+    if "Deadline" in dl_type: css = "b-red" if days <= 2 else "b-gray"
+    else: css = "b-blue" if days <= 2 else "b-gray"
+    
+    icon = "🔴" if "Deadline" in dl_type else "🎯"
+    if days < 0: css = "b-red"; icon = "💀"
+    return f"<span class='badge {css}'>{icon} {txt}</span>"
+
+def is_overdue_check(dl_str): return get_deadline_score(dl_str) < 0
+
+def calculate_task_rewards(task, current_streak, mentor_name):
+    score = get_priority_score(task.get("ประเภท", ""))
+    base_exp = 40 if score == 1 else 20 if score == 2 else 10
+    bonus_exp = 100 if task.get("is_boss") else 0
+    if task.get("bounty"): bonus_exp += 50
+    if task.get("subtasks"): bonus_exp += len(task["subtasks"]) * 10  
+        
+    raw_total_exp = base_exp + bonus_exp
+    multiplier = 1.5 if current_streak >= 30 else 1.2 if current_streak >= 7 else 1.1 if current_streak >= 3 else 1.0
+    final_exp = int(raw_total_exp * multiplier)
+    
+    fail_reduce = 10 if score == 1 else 5 if score == 2 else 2
+    if task.get("is_boss"): fail_reduce += 15
+    if task.get("bounty"): fail_reduce += 5
+    if task.get("is_must_do"): fail_reduce += 10 
+    
+    if mentor_name == "Toji" and task.get("is_boss"):
+        final_exp = int(final_exp * 1.3); st.toast("🐛 [สัญญาสวรรค์] ได้โบนัส EXP +30%!", icon="🩸")
+    if mentor_name == "Zenitsu" and st.session_state.get("locked_in_active", False) and score == 1:
+        fail_reduce *= 2; st.toast("⚡ [Godspeed] ทะลวงงานด่วน! ลดความอ่อนแอ 2 เท่า!", icon="🔥")
+    if mentor_name == "Future You" and score == 1:
+        final_exp += 20; st.toast("⏳ [รากฐานแห่งอนาคต] รับโบนัสพิเศษ!", icon="🔥")
+    return final_exp, fail_reduce
+
+def load_db():
+    if FIREBASE_URL == "" or FIREBASE_URL is None: st.error("🚨 ใส่ลิงก์ Firebase ก่อน!"); st.stop()
+    try:
+        res = requests.get(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}")
+        if res.status_code == 200 and res.json() is not None:
+            data = res.json()
+            if not isinstance(data, dict): data = {}
+            defaults = {
+                "users": {}, "missions": {}, "study_missions": {}, 
+                "command_log": {}, "accountability_mirror": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, 
+                "haters": {}, "finance": {}, "iron_habits": {}, "daily_wins": {}, "exams": {}, "beat_yesterday": {}, 
+                "limit_breaks": {}, "weakness_fuel": {}, "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {}
+            }
+            for k, v in defaults.items():
+                if k not in data or data[k] is None: data[k] = v
+            return data
+    except: pass
+    return {"users": {}, "missions": {}, "study_missions": {}, "command_log": {}, "accountability_mirror": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "haters": {}, "finance": {}, "iron_habits": {}, "daily_wins": {}, "exams": {}, "beat_yesterday": {}, "limit_breaks": {}, "weakness_fuel": {}, "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {}}
+
+def save_db(data):
+    try: requests.put(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}", json=data)
+    except Exception as e: st.error(f"🚨 เซฟข้อมูลลงฐานข้อมูลไม่สำเร็จ! Error: {e}")
+
 db = load_db()
 
 # ==========================================
-# 5. AUTH & SIDEBAR (MAIN LOGIC STARTS HERE)
+# 2. OVERLAY นรก & SLAP AWAKE
+# ==========================================
+if "punishment_active" in st.session_state:
+    st.error("🚨 วงล้อแห่งกรรมทำงาน! มึงหลุดจากวินัย ต้องชดใช้! 🚨")
+    p_text = clean_quote(st.session_state.punishment_task)
+    st.title(f"🔥 คำสั่งชดใช้กรรม: {p_text}")
+    if st.button("🩸 กูทำเสร็จแล้ว! (กลับสู่ Discipline Arc)", key="btn_finish_punish"):
+        del st.session_state.punishment_active; safe_rerun()
+    st.stop() 
+
+if st.session_state.get("slap_awake_active", False):
+    st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 4em;'>💥 ตื่นได้แล้วไอ้เวร!</h1>", unsafe_allow_html=True)
+    st.error("🚨 **คำสั่งกระชากสติ:** ลุกไปล้างหน้าด้วยน้ำเย็นจัด แล้ววิดพื้น 20 ทีเดี๋ยวนี้! ถ้าทำไม่ได้ก็เป็นไอ้ขี้แพ้ต่อไป!")
+    st.warning("พิมพ์คำปฏิญาณนี้เพื่อปลดล็อกหน้าจอ: **'กูจะไม่ยอมกลับไปเป็นขยะ'**")
+    confirm_text = st.text_input("พิมพ์ที่นี่:", key="txt_confirm_oath")
+    if st.button("🔥 กูพร้อมกลับไปลุยแล้ว!", key="btn_confirm_slap"):
+        if confirm_text.strip() == "กูจะไม่ยอมกลับไปเป็นขยะ":
+            del st.session_state["slap_awake_active"]; st.toast("🔥 ดีมาก! กลับไปลุยงานของมึงซะ!", icon="⚔️"); safe_rerun()
+        else: st.error("พิมพ์ให้ถูกทุกตัวอักษร! มึงยังไม่ตั้งใจพอ!")
+    st.stop()
+
+# ==========================================
+# 3. ระบบล็อกอิน & แถบด้านข้าง
 # ==========================================
 if "current_user" not in st.session_state: st.session_state.current_user = None
 
@@ -434,7 +507,7 @@ with st.sidebar:
     st.title("⚙️ DISCIPLINE ARC")
     st.caption(f"🗓️ วันที่: {thai_date_format(today_str)}") 
     
-    # --- GEMINI API SETTINGS (SAFE & SAVED) ---
+    # --- GEMINI API SETTINGS ---
     if st.session_state.current_user is not None:
         safe_email = st.session_state.current_user
         u_data = db["users"][safe_email]
@@ -559,15 +632,15 @@ if st.session_state.current_user is None:
     st.info("👈 ล็อกอินด้านซ้ายเพื่อเผชิญหน้ากับปีศาจในใจและสร้างวินัยเหล็ก!")
     st.stop()
 
-# ==========================================
-# 6. APP MAIN LOGIC (USER DATA LOADED)
-# ==========================================
 safe_email = st.session_state.current_user
 user = db["users"][safe_email]
 active_mentor = user.get("anime_mentor", "None")
 active_quotes = MENTORS[active_mentor]["quotes"]
 is_locked_in = st.session_state.get("locked_in_active", False)
 
+# ==========================================
+# 🚨 THE DAILY OATH
+# ==========================================
 if user.get("daily_oath_date") != today_str:
     st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 3em;'>🩸 ดึงสติรับวันใหม่!</h1>", unsafe_allow_html=True)
     oath_text = clean_quote(random.choice(WARRIOR_OATHS))
@@ -579,7 +652,9 @@ if user.get("daily_oath_date") != today_str:
             user["daily_oath_date"] = today_str; save_db(db); safe_rerun()
     st.stop() 
 
-# CHECK DB STRUCTURE
+# ==========================================
+# 🔥 คอนฟิกโครงสร้าง Database & PREPARATION
+# ==========================================
 list_keys = ["missions", "study_missions", "command_log", "accountability_mirror", "dopamine_fails", "excuses", "cookie_jar", "haters", "iron_habits", "limit_breaks", "weakness_fuel", "sanctuary", "skill_forge", "subjects"]
 for k in list_keys:
     if safe_email not in db[k] or db[k][safe_email] is None: db[k][safe_email] = []
@@ -595,7 +670,7 @@ finance = db["finance"][safe_email]
 if "ledger" not in finance: finance["ledger"] = []
 current_streak = user.get("streak", 0)
 
-# CHECK OVERDUE COMMAND LOG
+# ===== 🚨 CHECK OVERDUE COMMAND LOG =====
 overdue_count = 0
 overdue_debt_accum = 0
 overdue_tasks_names = []
@@ -620,7 +695,9 @@ if overdue_count > 0:
     user["in_cage"] = True; save_db(db)
     if not is_locked_in: st.error(f"🚨 **มึงโดนลงโทษ {overdue_debt_accum} ที!** ข้อหา: ดองงานในสมุดบัญชาการจนเลยเวลา! ({', '.join(overdue_tasks_names)})")
 
-# PREPARE ACTIVE TASKS
+# ==========================================
+# 🗺️ PREPARE ACTIVE TASKS
+# ==========================================
 raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date") != today_str]
 raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date") != today_str]
 raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
@@ -634,7 +711,9 @@ all_active_tasks.sort(key=lambda x: (
     get_deadline_score(x.get("deadline", ""))
 ))
 
-# LOCKED IN MODE
+# ==========================================
+# 🔒 LOCKED IN MODE
+# ==========================================
 if is_locked_in:
     st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 3em;'>🔒 LOCKED IN MODE</h1>", unsafe_allow_html=True)
     st.divider()
@@ -687,7 +766,7 @@ if is_locked_in:
     st.stop()
 
 # ==========================================
-# 🎯 TOP CONTROLS
+# 🎯 ส่วนหัว: ปุ่มควบคุมฉุกเฉิน
 # ==========================================
 try: t_date = datetime.strptime(str(user.get("target_date", str(today_date))).strip(), "%Y-%m-%d").date()
 except: t_date = today_date + timedelta(days=90)
@@ -745,9 +824,11 @@ with colLeft:
 
 with colRight:
     st.markdown("## ⚙️ DISCIPLINE ZONE")
+    
     tab_ai, tab_missions, tab_study, tab_forge, tab_subjects, tab_planner, tab_mirror, tab_habits, tab_daily_wins, tab_sanctuary = st.tabs([
         "🤖 AI วางแผน", "🔪 งาน", "📖 เรียน", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
     ])
+    
     user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
@@ -760,7 +841,7 @@ with colRight:
         
         api_key_check = user.get("api_key", "")
         if not api_key_check or not HAS_GENAI:
-            st.warning("⚠️ โปรดกรอก Gemini API Key ที่แถบด้านซ้ายล่างก่อนใช้งาน และตรวจสอบให้แน่ใจว่าติดตั้งไลบรารี `google-generativeai` แล้ว")
+            st.warning("⚠️ โปรดกรอก Gemini API Key ที่แถบด้านซ้ายล่างก่อนใช้งาน และตรวจสอบให้แน่ใจว่าติดตั้งไลบรารี `google-generativeai` แล้ว (รันบน Streamlit Cloud ต้องมีไฟล์ requirements.txt)")
         else:
             with st.form("ai_assessment_form"):
                 st.markdown("**1. ซักประวัติสถานการณ์ปัจจุบัน:**")
@@ -809,12 +890,22 @@ with colRight:
                     try:
                         genai.configure(api_key=api_key_check)
                         model = genai.GenerativeModel('gemini-1.5-flash')
-                        response = model.generate_content(prompt)
+                        
+                        # 🔥 ปลดล็อก Safety Settings ให้ด่าได้เต็มที่
+                        safety_settings = [
+                            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                        ]
+                        
+                        response = model.generate_content(prompt, safety_settings=safety_settings)
                         st.markdown("---")
                         st.markdown("<h4 style='color:#4ba3ff;'>📊 แผนการรบจาก AI (TACTICAL REPORT)</h4>", unsafe_allow_html=True)
-                        st.markdown(response.text)
+                        if response.text: st.markdown(response.text)
+                        else: st.error("❌ AI ไม่ยอมตอบ (อาจจะโดนบล็อกจากระบบเซฟตี้)")
                     except Exception as e:
-                        st.error(f"❌ AI ประมวลผลล้มเหลว (เช็ค API Key หรือการเชื่อมต่ออินเทอร์เน็ต): {e}")
+                        st.error(f"❌ AI ประมวลผลล้มเหลว (เช็ค API Key, เน็ต, หรือ requirements.txt): {e}")
 
     # ----------------------------------------------------
     # TAB 1: 🔪 งาน
@@ -823,12 +914,7 @@ with colRight:
         st.markdown("### 🔪 งานที่ต้องบดขยี้วันนี้")
         raw_active_missions = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว")]
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
-        todo_missions.sort(key=lambda x: (
-            0 if x.get("is_must_do") else 1,
-            int(x.get("user_order", 99)), 
-            get_priority_score(x.get("ประเภท", "")), 
-            get_deadline_score(x.get("deadline", ""))
-        ))
+        todo_missions.sort(key=lambda x: (0 if x.get("is_must_do") else 1, int(x.get("user_order", 99)), get_priority_score(x.get("ประเภท", "")), get_deadline_score(x.get("deadline", ""))))
         
         if todo_missions:
             with st.expander("🎯 วางแผนลำดับงาน (Q-Order)"):
@@ -869,6 +955,7 @@ with colRight:
                 m_id = str(m.get("id", f"unk_m_{m.get('ภารกิจ', '')}"))
                 csq_text = clean_quote(WARRIOR_CONSEQUENCES[get_stable_index(m_id + 'conseq', len(WARRIOR_CONSEQUENCES))])
                 c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ff4b4b;'>🩸 <b>ถ้ากูไม่ทำ:</b> {m.get('consequence', '') or csq_text}</div>", unsafe_allow_html=True)
+                
                 m_hype = clean_quote(active_quotes[get_stable_index(m_id + 'task_hype', len(active_quotes))])
                 c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ffa500;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {m_hype}</div>", unsafe_allow_html=True)
                 
@@ -891,8 +978,13 @@ with colRight:
                     if st.button("💾 เซฟการแก้ไข", key=f"save_ed_m_{m['id']}", use_container_width=True):
                         m["ภารกิจ"] = new_t; m["subject"] = new_s; m["ประเภท"] = new_p; m["รายละเอียด"] = new_d
                         m["deadline_type"] = new_dl_t; m["deadline"] = new_dl_d; m["is_must_do"] = new_must_do
+                        
                         old_subs = {stk['name']: stk['done'] for stk in m.get("subtasks", [])}
-                        m["subtasks"] = [{"name": l.strip(), "done": old_subs.get(l.strip(), False), "done_date": ""} for l in new_sub_str.split('\n') if l.strip()]
+                        new_subs_list = []
+                        for line in new_sub_str.split('\n'):
+                            line = line.strip()
+                            if line: new_subs_list.append({"name": line, "done": old_subs.get(line, False), "done_date": ""})
+                        m["subtasks"] = new_subs_list
                         save_db(db); st.success("อัปเดตแล้ว!"); safe_rerun()
                 
                 with st.expander("📝 ดูรายละเอียดและเนื้องาน"):
@@ -952,14 +1044,21 @@ with colRight:
         st.markdown("### 📖 วิชาที่ต้องบรรลุในวันนี้")
         raw_active_study = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว")]
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
-        todo_study.sort(key=lambda x: (
-            0 if x.get("is_must_do") else 1,
-            int(x.get("user_order", 99)), 
-            get_priority_score(x.get("ประเภท", "")), 
-            get_deadline_score(x.get("deadline", ""))
-        ))
+        todo_study.sort(key=lambda x: (0 if x.get("is_must_do") else 1, int(x.get("user_order", 99)), get_priority_score(x.get("ประเภท", "")), get_deadline_score(x.get("deadline", ""))))
         
         if todo_study:
+            with st.expander("🎯 วางแผนลำดับวิชาเรียน (Q-Order)"):
+                with st.form("set_study_order_form"):
+                    new_s_orders = {}
+                    for s in todo_study:
+                        col_q, col_n = st.columns([1, 5])
+                        new_s_orders[s["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=int(s.get("user_order", 99)), step=1, key=f"q_s_{s['id']}", label_visibility="collapsed")
+                        col_n.write(f"{'💀 [BOSS] ' if s.get('is_boss') else ''}{s['ภารกิจ']}")
+                    if st.form_submit_button("🔒 ล็อคผังเรียน!"):
+                        for s in db["study_missions"][safe_email]:
+                            if isinstance(s, dict) and s.get("id") in new_s_orders: s["user_order"] = int(new_s_orders[s["id"]])
+                        save_db(db); st.success("✅ อัปเดตผังเรียนเรียบร้อย!"); safe_rerun()
+
             for s in todo_study:
                 is_must_do = s.get("is_must_do", False)
                 css_class = "task-card-ui death-mark" if is_must_do else "task-card-ui overdue" if is_overdue_check(s.get("deadline", "")) else "task-card-ui study"
@@ -986,6 +1085,7 @@ with colRight:
                 s_id = str(s.get("id", f"unk_s_{s.get('ภารกิจ', '')}"))
                 csq_s_text = clean_quote(WARRIOR_CONSEQUENCES[get_stable_index(s_id + 'conseq', len(WARRIOR_CONSEQUENCES))])
                 c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ff4b4b;'>🩸 <b>ถ้ากูไม่ทำ:</b> {s.get('consequence', '') or csq_s_text}</div>", unsafe_allow_html=True)
+                
                 s_hype = clean_quote(active_quotes[get_stable_index(s_id + 'study_hype', len(active_quotes))])
                 c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #4ba3ff;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {s_hype}</div>", unsafe_allow_html=True)
                 
@@ -1008,8 +1108,13 @@ with colRight:
                     if st.button("💾 เซฟการแก้ไข", key=f"save_ed_s_{s['id']}", use_container_width=True):
                         s["ภารกิจ"] = new_t; s["subject"] = new_s; s["ประเภท"] = new_p; s["รายละเอียด"] = new_d
                         s["deadline_type"] = new_dl_t; s["deadline"] = new_dl_d; s["is_must_do"] = new_must_do
+                        
                         old_subs = {stk['name']: stk['done'] for stk in s.get("subtasks", [])}
-                        s["subtasks"] = [{"name": l.strip(), "done": old_subs.get(l.strip(), False), "done_date": ""} for l in new_sub_str.split('\n') if l.strip()]
+                        new_subs_list = []
+                        for line in new_sub_str.split('\n'):
+                            line = line.strip()
+                            if line: new_subs_list.append({"name": line, "done": old_subs.get(line, False), "done_date": ""})
+                        s["subtasks"] = new_subs_list
                         save_db(db); st.success("อัปเดตแล้ว!"); safe_rerun()
                 
                 with st.expander("📝 ดูขอบเขต/รายละเอียด"):
@@ -1029,6 +1134,11 @@ with colRight:
                         total_subs = len(s["subtasks"]); done_subs = len([stk for stk in s["subtasks"] if stk.get("done")])
                         st.progress(done_subs / total_subs if total_subs > 0 else 0, text=f"คืบหน้า: {done_subs} / {total_subs} บท")
 
+                if active_mentor == "Subaru" and is_overdue:
+                    if user.get("exp", 0) >= 10:
+                        if c1.button("⏪ Return by Death (-10 EXP)", key=f"rbds_{s['id']}", type="primary"): user["exp"] -= 10; s["deadline"] = today_str; save_db(db); safe_rerun()
+                    else: c1.caption("⏪ ต้องการ 10 EXP")
+
                 if is_frozen:
                     if c4.button("🔥 ปลดแช่แข็ง", key=f"unfrz_stud_{s['id']}", use_container_width=True): s["skip_today_date"] = ""; save_db(db); safe_rerun()
                 else:
@@ -1044,6 +1154,18 @@ with colRight:
                 if c5.button("🗑️", key=f"del_stud_{s['id']}"): db["study_missions"][safe_email].remove(s); save_db(db); safe_rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
         else: st.success("📚 ติวทบทวนเนื้อหาครบหมดแล้วใน Roadmap!")
+
+        pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
+        if pending_study:
+            st.divider(); st.markdown("### ⏳ วิชาที่รออนุมัติ")
+            for s in pending_study:
+                c1, c2, c3 = st.columns([5, 2, 2])
+                c1.caption(f"⏳ {s['ภารกิจ']}")
+                if c2.button("✅ ผ่าน", key=f"appr_stud_{s['id']}"):
+                    s["เสร็จแล้ว"] = True; s["รอตรวจ"] = False; s["done_date"] = today_str
+                    exp_gain, fail_reduce = calculate_task_rewards(s, current_streak, active_mentor)
+                    user["exp"] += exp_gain; user["failure_prob"] = max(0, user.get("failure_prob",10) - fail_reduce); save_db(db); st.balloons(); safe_rerun()
+                if c3.button("⏪ กลับมาอ่าน", key=f"revert_stud_{s['id']}"): s["รอตรวจ"] = False; save_db(db); safe_rerun()
 
     # ----------------------------------------------------
     # TAB 3: ⚒️ โรงตีเหล็ก (THE SKILL FORGE)
@@ -1082,7 +1204,7 @@ with colRight:
     # ----------------------------------------------------
     with tab_subjects:
         st.markdown("### 🗂️ คลังแสงรายวิชา (Academic Arsenal)")
-        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ")
+        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ (ไม่นับเป็นภารกิจ)")
         
         with st.expander("➕ เพิ่มรายวิชาใหม่"):
             with st.form("add_subject_form", clear_on_submit=True):
