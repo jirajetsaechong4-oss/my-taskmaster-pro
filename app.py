@@ -15,7 +15,7 @@ except ImportError:
     HAS_GENAI = False
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V14 - TACTICAL AI COMMANDER)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - ULTIMATE EDITION V15 - BUG FREE & AI SAVED)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -401,7 +401,6 @@ def get_badge_html(dl_str, dl_type, is_must_do=False):
 # ==========================================
 # 🔥 CORE FUNCTIONS & DB
 # ==========================================
-# (เหมือน V13 เป๊ะๆ ไม่มีลบโค้ดโหลดฐานข้อมูล)
 def calculate_task_rewards(task, current_streak, mentor_name):
     score = get_priority_score(task.get("ประเภท", ""))
     base_exp = 40 if score == 1 else 20 if score == 2 else 10
@@ -482,16 +481,26 @@ with st.sidebar:
     st.title("⚙️ DISCIPLINE ARC")
     st.caption(f"🗓️ วันที่: {thai_date_format(today_str)}") 
     
-    # --- GEMINI API SETTINGS ---
-    st.markdown("### 🔑 AI SETTINGS")
-    api_key_input = st.text_input("Gemini API Key:", type="password", key="sidebar_api_key", help="ใส่ API Key ของมึงที่นี่เพื่อปลดล็อกระบบ AI วางแผน")
-    if api_key_input and HAS_GENAI:
-        try:
-            genai.configure(api_key=api_key_input)
-            st.success("✅ AI พร้อมทำงาน!")
-        except Exception as e:
-            st.error("❌ API Key ผิดพลาด!")
+    # --- GEMINI API SETTINGS (SAFE & SAVED) ---
+    if st.session_state.current_user is not None:
+        safe_email = st.session_state.current_user
+        u_data = db["users"][safe_email]
+        
+        st.markdown("### 🔑 AI SETTINGS")
+        saved_key = u_data.get("api_key", "")
+        api_key_input = st.text_input("Gemini API Key:", value=saved_key, type="password", key="sidebar_api_key", help="ใส่ API Key ของมึงที่นี่เพื่อปลดล็อกระบบ AI วางแผน")
+        
+        if api_key_input != saved_key:
+            u_data["api_key"] = api_key_input
+            save_db(db)
+            st.success("💾 บันทึก API Key เข้าสู่ระบบสำเร็จ!")
             
+        if api_key_input and HAS_GENAI:
+            try:
+                genai.configure(api_key=api_key_input)
+                st.caption("✅ AI พร้อมทำงาน!")
+            except Exception as e:
+                st.error("❌ API Key ผิดพลาด!")
     st.divider()
     
     if st.session_state.current_user is None:
@@ -509,7 +518,7 @@ with st.sidebar:
                             "username": name_input, "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False, "ghost_exp": 0, 
                             "ambush_task": "", "failure_prob": 10, "last_login": today_str, "cleared_yesterday": True, "judged_today": "",
                             "target_name": "เป้าหมายสูงสุดของชีวิต", "target_date": str(today_date + timedelta(days=90)),
-                            "daily_oath_date": "", "anime_mentor": "None", "mentor_date": ""
+                            "daily_oath_date": "", "anime_mentor": "None", "mentor_date": "", "api_key": ""
                         }
                         save_db(db); st.success("🔥 ลงทะเบียนสำเร็จ! ล็อกอินเลย!")
                 else: st.warning("กรอกข้อมูลให้ครบ!")
@@ -646,7 +655,7 @@ for item in db["command_log"][safe_email]:
         if is_overdue_check(item["deadline"]) and item.get("last_penalized") != today_str:
             overdue_count += 1
             item["last_penalized"] = today_str
-            penalty_val = 150 if item.get("is_must_do") else 50 if "Deadline" in item.get("deadline_type", "🔴") else 25 
+            penalty_val = 150 if item.get("is_must_do") else 50 if "Deadline" in item.get("deadline_type", "🔴 Deadline") else 25 
             overdue_debt_accum += penalty_val
             overdue_tasks_names.append(item.get("title", ""))
 
@@ -796,21 +805,22 @@ with colRight:
     
     user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
-
+    
     # ----------------------------------------------------
-    # TAB AI: 🤖 TACTICAL AI PLANNER (THE REAL DEAL)
+    # TAB AI: 🤖 TACTICAL AI PLANNER 
     # ----------------------------------------------------
     with tab_ai:
         st.markdown("### 🤖 TACTICAL AI (ผู้บัญชาการสมองกล)")
         st.write("เวลาเหลือน้อย งานท่วมหัว? ให้ AI สวมวิญญาณ David Goggins คำนวณตารางเวลาและยุทธวิธีให้มึงซะ!")
         
-        if not api_key_input or not HAS_GENAI:
-            st.warning("⚠️ โปรดกรอก Gemini API Key ที่แถบด้านซ้ายล่างก่อนใช้งาน และต้องมีไลบรารี `google-generativeai` ติดตั้งอยู่")
+        api_key_check = user.get("api_key", "")
+        if not api_key_check or not HAS_GENAI:
+            st.warning("⚠️ โปรดกรอก Gemini API Key ที่แถบด้านซ้ายล่างก่อนใช้งาน และตรวจสอบให้แน่ใจว่าติดตั้งไลบรารี `google-generativeai` แล้ว")
         else:
             with st.form("ai_assessment_form"):
                 st.markdown("**1. ซักประวัติสถานการณ์ปัจจุบัน:**")
                 col_ai1, col_ai2 = st.columns(2)
-                time_avail = col_ai1.number_input("มึงมีเวลาลุยงานกี่นาที? (เช่น 120):", min_value=10, max_value=1440, value=120)
+                time_avail = col_ai1.number_input("มึงมีเวลาลุยงานกี่นาที? (เช่น 120):", min_value=10, max_value=1440, value=120, step=10)
                 energy_level = col_ai2.select_slider("สภาพร่างกายและจิตใจตอนนี้?", options=["ล้าสุดๆ (ใกล้ตาย)", "พอไหว (ตึงๆ)", "พลังล้น (พร้อมบวก)"])
                 constraints = st.text_input("ข้อจำกัดอื่นๆ (เช่น ต้องนอนก่อนเที่ยงคืน, วันนี้ปวดหัวมาก):")
                 
@@ -818,14 +828,16 @@ with colRight:
 
             if submitted_ai:
                 with st.spinner("🔥 กำลังให้ AI ประมวลผลยุทธวิธีระดับทหาร... รอแป๊บไอ้นักรบ!"):
-                    # Roster all tasks
                     active_tasks = []
                     for m in db["missions"][safe_email]:
-                        if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False): active_tasks.append(f"[งาน] {m.get('ภารกิจ')} (Priority: {m.get('ประเภท')}, Must Do: {m.get('is_must_do', False)})")
+                        if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False): 
+                            active_tasks.append(f"[งาน] {m.get('ภารกิจ')} (Priority: {m.get('ประเภท')}, Must Do: {m.get('is_must_do', False)})")
                     for s in db["study_missions"][safe_email]:
-                        if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False): active_tasks.append(f"[เรียน] {s.get('ภารกิจ')} (Priority: {s.get('ประเภท')}, Must Do: {s.get('is_must_do', False)})")
+                        if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False): 
+                            active_tasks.append(f"[เรียน] {s.get('ภารกิจ')} (Priority: {s.get('ประเภท')}, Must Do: {s.get('is_must_do', False)})")
                     for h in db["iron_habits"][safe_email]:
-                        if isinstance(h, dict) and h.get("last_done_date") != today_str: active_tasks.append(f"[วินัย] {h.get('name')}")
+                        if isinstance(h, dict) and h.get("last_done_date") != today_str: 
+                            active_tasks.append(f"[วินัย] {h.get('name')}")
                         
                     task_str = "\n".join(active_tasks) if active_tasks else "ไม่มีงานค้างเลย ถือว่าว่าง!"
                     
@@ -851,13 +863,14 @@ with colRight:
                     """
                     
                     try:
+                        genai.configure(api_key=api_key_check)
                         model = genai.GenerativeModel('gemini-1.5-flash')
                         response = model.generate_content(prompt)
                         st.markdown("---")
                         st.markdown("<h4 style='color:#4ba3ff;'>📊 แผนการรบจาก AI (TACTICAL REPORT)</h4>", unsafe_allow_html=True)
                         st.markdown(response.text)
                     except Exception as e:
-                        st.error(f"❌ AI ประมวลผลล้มเหลว: {e}")
+                        st.error(f"❌ AI ประมวลผลล้มเหลว (เช็ค API Key หรือการเชื่อมต่ออินเทอร์เน็ต): {e}")
 
     # ----------------------------------------------------
     # TAB 1: 🔪 งาน
@@ -866,7 +879,13 @@ with colRight:
         st.markdown("### 🔪 งานที่ต้องบดขยี้วันนี้")
         raw_active_missions = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว")]
         todo_missions = [m for m in raw_active_missions if not m.get("รอตรวจ", False)]
-        todo_missions.sort(key=lambda x: (0 if x.get("is_must_do") else 1, int(x.get("user_order", 99)), get_priority_score(x.get("ประเภท", "")), get_deadline_score(x.get("deadline", ""))))
+        # Sort priority: Must Do -> User Order -> Prio Score -> Deadline
+        todo_missions.sort(key=lambda x: (
+            0 if x.get("is_must_do") else 1,
+            int(x.get("user_order", 99)), 
+            get_priority_score(x.get("ประเภท", "")), 
+            get_deadline_score(x.get("deadline", ""))
+        ))
         
         if todo_missions:
             with st.expander("🎯 วางแผนลำดับงาน (Q-Order)"):
@@ -997,7 +1016,12 @@ with colRight:
         st.markdown("### 📖 วิชาที่ต้องบรรลุในวันนี้")
         raw_active_study = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว")]
         todo_study = [s for s in raw_active_study if not s.get("รอตรวจ", False)]
-        todo_study.sort(key=lambda x: (0 if x.get("is_must_do") else 1, int(x.get("user_order", 99)), get_priority_score(x.get("ประเภท", "")), get_deadline_score(x.get("deadline", ""))))
+        todo_study.sort(key=lambda x: (
+            0 if x.get("is_must_do") else 1,
+            int(x.get("user_order", 99)), 
+            get_priority_score(x.get("ประเภท", "")), 
+            get_deadline_score(x.get("deadline", ""))
+        ))
         
         if todo_study:
             for s in todo_study:
@@ -1091,6 +1115,18 @@ with colRight:
                 if c5.button("🗑️", key=f"del_stud_{s['id']}"): db["study_missions"][safe_email].remove(s); save_db(db); safe_rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
         else: st.success("📚 ติวทบทวนเนื้อหาครบหมดแล้วใน Roadmap!")
+
+        pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
+        if pending_study:
+            st.divider(); st.markdown("### ⏳ วิชาที่รออนุมัติ")
+            for s in pending_study:
+                c1, c2, c3 = st.columns([5, 2, 2])
+                c1.caption(f"⏳ {s['ภารกิจ']}")
+                if c2.button("✅ ผ่าน", key=f"appr_stud_{s['id']}"):
+                    s["เสร็จแล้ว"] = True; s["รอตรวจ"] = False; s["done_date"] = today_str
+                    exp_gain, fail_reduce = calculate_task_rewards(s, current_streak, active_mentor)
+                    user["exp"] += exp_gain; user["failure_prob"] = max(0, user.get("failure_prob",10) - fail_reduce); save_db(db); st.balloons(); safe_rerun()
+                if c3.button("⏪ กลับมาอ่าน", key=f"revert_stud_{s['id']}"): s["รอตรวจ"] = False; save_db(db); safe_rerun()
 
     # ----------------------------------------------------
     # TAB 3: ⚒️ โรงตีเหล็ก (THE SKILL FORGE)
@@ -1406,7 +1442,6 @@ with colRight:
         st.markdown("### 🪞 กระจกแห่งความรับผิดชอบ (Accountability Mirror)")
         mirror_notes = db["accountability_mirror"].get(safe_email, [])
         with st.form("mirror_add_form", clear_on_submit=True):
-            st.markdown("**เขียน Post-it แปะกระจก**")
             note_text = st.text_area("ความจริงหรือเป้าหมาย (เช่น 'กูแม่งขี้เกียจตอนเช้า' หรือ 'ต้องลุกไปวิ่ง'):", height=100, key="txt_mirror_text")
             note_type = st.radio("ประเภท:", ["🔥 ความจริงอันน่าเกลียด (Brutal Truth)", "🎯 เป้าหมายที่ต้องบดขยี้ (Goal)"], horizontal=True, key="rad_mirror_type")
             if st.form_submit_button("แปะกระจกเดี๋ยวนี้!"):
@@ -1462,9 +1497,9 @@ with colRight:
                     c1, c2, c3 = st.columns([5, 3, 1])
                     h_streak = h.get("streak", 0)
                     streak_badge = f"<span class='badge b-gold'>🔥 Streak: {h_streak} วัน!</span>" if h_streak > 0 else "<span class='badge b-gray'>❄️ ไม่มี Streak</span>"
-                    c1.markdown(f"⛓️ **{h['name']}** {streak_badge}", unsafe_allow_html=True)
+                    c1.markdown(f"⛓️ {'🎯 **[Q' + str(h.get('user_order', 99)) + ']** ' if int(h.get('user_order', 99)) != 99 else ''}**{h['name']}**  *({streak_badge} | รวม {h.get('total_done', 0)} ครั้ง)*", unsafe_allow_html=True)
                     
-                    with c1.expander("📝 ดูรายละเอียด"):
+                    with c1.expander("📝 ดูรายละเอียดและเสียงเตือนใจ"):
                         if h.get("รายละเอียด"): st.write(f"💡 **เป้าหมาย:** {h['รายละเอียด']}")
                         h_id = str(h.get("id", f"unk_h_{h.get('name', '')}"))
                         
