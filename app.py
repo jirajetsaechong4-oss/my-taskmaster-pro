@@ -7,7 +7,7 @@ import hashlib
 import random
 import re
 
-# 🚀 นำเข้า Gemini AI (ตัด Claude ทิ้งตามคำสั่ง)
+# 🚀 นำเข้า Gemini AI (ตัด Claude ทิ้งตามสั่ง)
 try:
     import google.generativeai as genai
     HAS_GENAI = True
@@ -15,15 +15,32 @@ except ImportError:
     HAS_GENAI = False
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V26 CYBER-TACTICAL UI & BULLETPROOF)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V27 CYBER-TACTICAL 1000X)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
-# --- CUSTOM CSS (สวยสัดๆ CYBER-TACTICAL OVERHAUL) ---
+# 🛡️ THE SHIELD: ป้องกัน AttributeError แบบ 100%
+if "current_user" not in st.session_state: st.session_state["current_user"] = None
+if "punishment_active" not in st.session_state: st.session_state["punishment_active"] = False
+if "punishment_task" not in st.session_state: st.session_state["punishment_task"] = ""
+if "slap_awake_active" not in st.session_state: st.session_state["slap_awake_active"] = False
+if "active_slap_message" not in st.session_state: st.session_state["active_slap_message"] = ""
+if "locked_in_active" not in st.session_state: st.session_state["locked_in_active"] = False
+
+# --- CUSTOM CSS (โคตรสวย สวยสัดๆ 1000X OVERHAUL) ---
 st.markdown("""
 <style>
-    /* Global Theme & Scrollbar */
-    .stApp { background: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 100%); color: #E2E8F0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    /* Global Tactical Dark Theme */
+    .stApp { 
+        background-color: #070B14;
+        background-image: 
+            radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 25%),
+            radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.06), transparent 25%);
+        color: #E2E8F0; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #0f172a; border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 10px; }
@@ -32,60 +49,83 @@ st.markdown("""
     /* Glassmorphism Panels */
     .glass-panel {
         background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(56, 189, 248, 0.2);
-        padding: 20px;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(56, 189, 248, 0.15);
+        padding: 22px;
         border-radius: 16px;
         margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);
     }
     
     /* Subject Banners */
     .subject-banner { 
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
+        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); 
         padding: 20px 30px; 
         border-radius: 16px; 
-        border-left: 6px solid #38bdf8; 
+        border-left: 6px solid #38BDF8; 
         color: white; 
         margin-bottom: 15px; 
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+        box-shadow: 0 8px 25px rgba(0,0,0,0.6); 
         position: relative;
         overflow: hidden;
     }
-    .subject-banner::after { content: ''; position: absolute; top: 0; right: 0; width: 100px; height: 100%; background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.1)); transform: skewX(-45deg); }
+    .subject-banner::after { content: ''; position: absolute; top: 0; right: 0; width: 150px; height: 100%; background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.15)); transform: skewX(-45deg); }
     .subject-banner h3 { margin: 0; padding-bottom: 5px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 2px;}
-    .subject-banner p { margin: 0; color: #94a3b8; font-size: 0.95em; }
+    .subject-banner p { margin: 0; color: #94A3B8; font-size: 0.95em; }
     
     /* Sleek Badges */
-    .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; display: inline-block; margin-left: 6px; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-    .b-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5); }
-    .b-blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); }
-    .b-gold { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.5); }
-    .b-gray { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.5); }
-    .b-green { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.5); }
+    .badge { padding: 5px 14px; border-radius: 20px; font-size: 0.75em; font-weight: 800; display: inline-block; margin-left: 6px; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .b-red { background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.5); }
+    .b-blue { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.5); }
+    .b-gold { background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.5); }
+    .b-gray { background: rgba(148, 163, 184, 0.15); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.5); }
+    .b-green { background: rgba(34, 197, 94, 0.15); color: #22C55E; border: 1px solid rgba(34, 197, 94, 0.5); }
     
     /* Death Mark Animation */
-    @keyframes deathPulse { 0% { box-shadow: 0 0 5px #ef4444; } 50% { box-shadow: 0 0 20px #ef4444, inset 0 0 10px rgba(239,68,68,0.2); } 100% { box-shadow: 0 0 5px #ef4444; } }
-    .b-death { background: linear-gradient(90deg, #7f1d1d, #991b1b); color: #fca5a5; border: 1px solid #ef4444; text-transform: uppercase; animation: deathPulse 2s infinite; }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 5px #ef4444; } 50% { box-shadow: 0 0 20px #ef4444, inset 0 0 10px rgba(239,68,68,0.2); } 100% { box-shadow: 0 0 5px #ef4444; } }
+    .b-death { background: linear-gradient(90deg, #7f1d1d, #991b1b); color: #fca5a5; border: 1px solid #ef4444; text-transform: uppercase; animation: pulse-red 2s infinite; }
     
-    /* 3D Task Cards */
+    /* ------------------------------------- */
+    /* 3D Task Cards - DYNAMIC PRIORITY CSS  */
+    /* ------------------------------------- */
     .task-card-ui { 
-        background: rgba(30, 41, 59, 0.5); 
-        padding: 16px 20px; 
+        padding: 18px 20px; 
         border-radius: 12px; 
-        border-left: 4px solid #64748b; 
         margin-bottom: 15px; 
         border-top: 1px solid rgba(255,255,255,0.05);
         border-right: 1px solid rgba(255,255,255,0.05);
         border-bottom: 1px solid rgba(0,0,0,0.5);
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
     }
-    .task-card-ui:hover { transform: translateY(-4px) scale(1.01); background: rgba(30, 41, 59, 0.8); border-left-color: #38bdf8; box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 15px rgba(56, 189, 248, 0.2); z-index: 10;}
-    .task-card-ui.overdue { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05); }
-    .task-card-ui.overdue:hover { border-left-color: #ef4444; box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 15px rgba(239, 68, 68, 0.3); }
-    .task-card-ui.study { border-left: 4px solid #38bdf8; }
-    .task-card-ui.death-mark { border-left: 4px solid #ef4444; animation: deathPulse 2s infinite; background: rgba(239, 68, 68, 0.08); }
+    
+    /* 🔴 Priority 1: ด่วนสุด */
+    .task-priority-1 { border-left: 5px solid #EF4444; background: linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(30,41,59,0.5) 100%); }
+    .task-priority-1:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(239,68,68,0.3); z-index: 10; }
+    
+    /* 🟠 Priority 2: งานฉุกเฉิน */
+    .task-priority-2 { border-left: 5px solid #F97316; background: linear-gradient(135deg, rgba(249,115,22,0.1) 0%, rgba(30,41,59,0.5) 100%); }
+    .task-priority-2:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(249,115,22,0.18) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(249,115,22,0.3); z-index: 10; }
+    
+    /* 🟡 Priority 3: ปานกลาง */
+    .task-priority-3 { border-left: 5px solid #EAB308; background: linear-gradient(135deg, rgba(234,179,8,0.08) 0%, rgba(30,41,59,0.5) 100%); }
+    .task-priority-3:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(234,179,8,0.15) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(234,179,8,0.25); z-index: 10; }
+    
+    /* 🟢 Priority 4: ชิลๆ */
+    .task-priority-4 { border-left: 5px solid #22C55E; background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(30,41,59,0.5) 100%); }
+    .task-priority-4:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(34,197,94,0.25); z-index: 10; }
+    
+    /* Death Mark Overrides */
+    .task-card-ui.death-mark { border: 2px solid #ef4444; border-left: 8px solid #ef4444; animation: pulse-red 2s infinite; background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(30,41,59,0.8) 100%); }
+    
+    /* Metric Typography Gradient */
+    [data-testid="stMetricValue"] {
+        font-size: 2.5rem;
+        font-weight: 900;
+        background: -webkit-linear-gradient(45deg, #38BDF8, #818CF8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
     
     /* Mentor Quotes */
     .mentor-quote { background: rgba(2, 6, 23, 0.6); padding: 14px 18px; border-radius: 8px; font-style: italic; margin-top: 10px; margin-bottom: 12px; font-size: 0.95em; border-left: 4px solid #475569; color: #e2e8f0; }
@@ -99,7 +139,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. ฟังก์ชันพื้นฐาน & ฐานข้อมูล (HELPER FUNCTIONS - ป้องกัน NameError)
+# 2. ฟังก์ชันพื้นฐานทั้งหมด (HELPER FUNCTIONS)
 # ==========================================
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app" 
 FIREBASE_SECRET = "Wv2Ha7WZrDLwnpJyKMt29z9I0MGb0kxitoOaaoGe"
@@ -176,7 +216,7 @@ def format_days_left(dl_str):
     return f"💀 เลยกำหนด {-days} วัน"
 
 def get_badge_html(dl_str, dl_type, is_must_do=False):
-    if is_must_do: return f"<span class='badge b-death blink-text'>🩸 MUST DO TODAY!</span>"
+    if is_must_do: return f"<span class='badge b-death blink-text'>🩸 MUST DO TODAY! (พลาด=ตาย)</span>"
     if not dl_str or dl_str == "": return "<span class='badge b-gray'>⚪ ไม่มีกำหนดเวลา</span>"
     days = get_deadline_score(dl_str)
     txt = format_days_left(dl_str)
@@ -188,6 +228,26 @@ def get_badge_html(dl_str, dl_type, is_must_do=False):
 
 def is_overdue_check(dl_str): 
     return get_deadline_score(dl_str) < 0
+
+# 🔥 ฟังก์ชันใหม่: ดึง CSS Class แยกสีตามความสำคัญของการ์ด
+def get_task_css_class(item, base_type="task"):
+    dl_str = item.get("deadline", "")
+    is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
+    is_must_do = item.get("is_must_do", False)
+    prio_str = item.get("priority", item.get("ประเภท", ""))
+    
+    prio_css = "task-priority-3" # ค่าพื้นฐาน
+    if "ด่วนสุด" in prio_str: prio_css = "task-priority-1"
+    elif "ฉุกเฉิน" in prio_str: prio_css = "task-priority-2"
+    elif "ปานกลาง" in prio_str: prio_css = "task-priority-3"
+    elif "ชิลๆ" in prio_str: prio_css = "task-priority-4"
+    
+    classes = ["task-card-ui", prio_css]
+    if base_type == "study": classes.append("study")
+    if is_must_do: classes.append("death-mark")
+    elif is_overdue: classes.append("overdue")
+    
+    return " ".join(classes)
 
 def calculate_task_rewards(task, current_streak, mentor_name):
     score = get_priority_score(task.get("ประเภท", ""))
@@ -295,6 +355,7 @@ with st.sidebar:
     st.title("⚙️ DISCIPLINE ARC")
     st.caption(f"🗓️ วันที่: {thai_date_format(today_str)}") 
     
+    # --- GEMINI API SETTINGS (SAFE & SAVED) ---
     if safe_email is not None:
         u_data = db["users"].get(safe_email)
         st.markdown("### 🔑 AI SETTINGS")
@@ -364,7 +425,7 @@ with st.sidebar:
         u_data = db["users"][safe_email]
         
         st_echo = clean_quote(random.choice(ETERNAL_ECHOES))
-        st.markdown(f"<div class='subject-banner' style='padding:15px; border-left-color: #ff4b4b; background: #2a0000;'><h4 style='color:#ff4b4b; margin:0;'>🎯 เป้าหมายสูงสุด:</h4><b style='font-size:1.1em;'>{u_data.get('target_name', '')}</b><p style='color:#ffaaaa; font-style:italic; margin-top:5px;'>\"{st_echo}\"</p></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='subject-banner' style='padding:15px; border-left-color: #ef4444; background: linear-gradient(135deg, #450a0a 0%, #000 100%);'><h4 style='color:#ef4444; margin:0;'>🎯 เป้าหมายสูงสุด:</h4><b style='font-size:1.1em;'>{u_data.get('target_name', '')}</b><p style='color:#fca5a5; font-style:italic; margin-top:5px;'>\"{st_echo}\"</p></div>", unsafe_allow_html=True)
         st.error(f"👤 ตัวตน: {u_data['username']}")
         st.info(f"🛡️ ฉายา: {get_title(u_data['level'])}")
         
@@ -431,7 +492,7 @@ active_quotes = MENTORS[active_mentor]["quotes"]
 is_locked_in = st.session_state.get("locked_in_active", False)
 
 if user.get("daily_oath_date") != today_str:
-    st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 3em;'>🩸 ดึงสติรับวันใหม่!</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #ef4444; font-size: 3.5em; text-shadow: 0 0 20px #ef4444;'>🩸 ดึงสติรับวันใหม่!</h1>", unsafe_allow_html=True)
     oath_text = clean_quote(random.choice(WARRIOR_OATHS))
     st.error(f"### ⚔️ เสียงจากแม่ทัพเหล็ก:\n\n> **\"{oath_text}\"**")
     st.warning("มึงจะยอมแพ้ตั้งแต่ยังไม่เริ่ม แล้วกลับไปซุกผ้าห่ม หรือจะลุกขึ้นมาสู้เพื่อชีวิตตัวเอง?")
@@ -498,7 +559,7 @@ all_active_tasks.sort(key=lambda x: (
 
 # LOCKED IN MODE
 if is_locked_in:
-    st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 3em;'>🔒 LOCKED IN MODE</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #38bdf8; font-size: 4em; text-shadow: 0 0 20px #38bdf8;'>🔒 LOCKED IN MODE</h1>", unsafe_allow_html=True)
     st.divider()
     if not all_active_tasks: st.success("🎉 ไม่มีงานค้างแล้ว! ปิดโหมด Locked In ได้เลย")
     else:
@@ -585,35 +646,47 @@ st.info("เป้าหมายมีไว้พุ่งชน ไม่ต�
 
 col_sum1, col_sum2, col_sum3 = st.columns(3)
 with col_sum1:
+    st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
     st.markdown("### 🔪 งาน & 📖 เรียน")
     has_tasks = False
     for task in all_active_tasks:
         if not task.get("is_habit"):
             has_tasks = True
             icon = "📖" if task.get("is_study") else "🔪"
-            must_do = " 🩸 **[ชี้เป็นชี้ตาย]**" if task.get("is_must_do") else ""
-            bg = "border-left:4px solid #ff4b4b; background: rgba(239, 68, 68, 0.1);" if task.get("is_must_do") else "border-left:3px solid #64748b; background:rgba(255,255,255,0.05);"
-            st.markdown(f"<div style='{bg} padding:8px; margin-bottom:5px; border-radius:5px;'>{icon} <b>{task.get('ภารกิจ', '')}</b>{must_do}</div>", unsafe_allow_html=True)
+            must_do = " <span class='badge b-death'>🩸 MUST DO</span>" if task.get("is_must_do") else ""
+            prio = task.get("ประเภท", "")
+            bl = "border-left: 3px solid #64748b;"
+            if "ด่วนสุด" in prio: bl = "border-left: 3px solid #ef4444;"
+            elif "ฉุกเฉิน" in prio: bl = "border-left: 3px solid #f97316;"
+            elif "ปานกลาง" in prio: bl = "border-left: 3px solid #eab308;"
+            elif "ชิลๆ" in prio: bl = "border-left: 3px solid #22c55e;"
+            if task.get("is_must_do"): bl = "border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.1);"
+            st.markdown(f"<div style='background:rgba(255,255,255,0.03); padding:10px; margin-bottom:8px; border-radius:8px; {bl}'>{icon} <b>{task.get('ภารกิจ', '')}</b>{must_do}</div>", unsafe_allow_html=True)
     if not has_tasks: st.success("✅ กวาดงานเรียบ!")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with col_sum2:
+    st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
     st.markdown("### ⛓️ วินัยเหล็กประจำวัน")
     has_habits = False
     for task in all_active_tasks:
         if task.get("is_habit"):
             has_habits = True
-            st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:8px; border-left:3px solid #38BDF8; margin-bottom:5px; border-radius:5px;'>⛓️ <b>{task.get('ภารกิจ', '')}</b></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background:rgba(255,255,255,0.03); padding:10px; border-left:3px solid #38BDF8; margin-bottom:8px; border-radius:8px;'>⛓️ <b>{task.get('ภารกิจ', '')}</b></div>", unsafe_allow_html=True)
     if not has_habits: st.success("✅ รักษาวินัยครบถ้วน!")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with col_sum3:
+    st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
     st.markdown("### 🏅 ชัยชนะรายวัน")
     win_items_summary = db["daily_wins"][safe_email].get("items", [])
     if not win_items_summary: st.caption("ยังไม่มีลิสต์ชัยชนะ")
     for d_win in win_items_summary:
         log_status = db["daily_wins"][safe_email].get("logs", {}).get(today_str, {}).get(d_win["id"])
-        if log_status == "win": st.markdown(f"<div style='background:rgba(34,197,94,0.1); padding:8px; border-left:3px solid #22C55E; margin-bottom:5px; border-radius:5px;'>✅ <del>{d_win['name']}</del></div>", unsafe_allow_html=True)
-        elif log_status == "lose": st.markdown(f"<div style='background:rgba(239,68,68,0.1); padding:8px; border-left:3px solid #EF4444; margin-bottom:5px; border-radius:5px;'>❌ <del>{d_win['name']}</del></div>", unsafe_allow_html=True)
-        else: st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:8px; border-left:3px solid #F59E0B; margin-bottom:5px; border-radius:5px;'>⏳ <b>{d_win['name']}</b></div>", unsafe_allow_html=True)
+        if log_status == "win": st.markdown(f"<div style='background:rgba(34,197,94,0.15); padding:10px; border-left:3px solid #22C55E; margin-bottom:8px; border-radius:8px; box-shadow: 0 0 10px rgba(34,197,94,0.2);'>✅ <del>{d_win['name']}</del></div>", unsafe_allow_html=True)
+        elif log_status == "lose": st.markdown(f"<div style='background:rgba(239,68,68,0.15); padding:10px; border-left:3px solid #EF4444; margin-bottom:8px; border-radius:8px; box-shadow: 0 0 10px rgba(239,68,68,0.2);'>❌ <del>{d_win['name']}</del></div>", unsafe_allow_html=True)
+        else: st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-left:3px solid #F59E0B; margin-bottom:8px; border-radius:8px;'>⏳ <b>{d_win['name']}</b></div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 st.divider()
 
@@ -665,7 +738,7 @@ with colRight:
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
     # ----------------------------------------------------
-    # TAB AI: 🤖 TACTICAL AI PLANNER (GEMINI ONLY - V26)
+    # TAB AI: 🤖 TACTICAL AI PLANNER (GEMINI ONLY - V27)
     # ----------------------------------------------------
     with tab_ai:
         st.markdown("### 🤖 TACTICAL AI (ผู้บัญชาการสมองกลสูงสุด)")
@@ -803,17 +876,16 @@ with colRight:
                         save_db(db); st.success("✅ อัปเดตผังเรียบร้อย!"); safe_rerun()
 
             for m in todo_missions:
-                is_must_do = m.get("is_must_do", False)
-                css_class = "task-card-ui death-mark" if is_must_do else "task-card-ui overdue" if is_overdue_check(m.get("deadline", "")) else "task-card-ui"
-                
+                css_class = get_task_css_class(m, "task")
                 st.markdown(f"<div class='{css_class}'>", unsafe_allow_html=True)
+                
                 c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6]) 
                 
                 dl_type = m.get("deadline_type", "🔴 Deadline")
                 dl_str = m.get("deadline", "")
                 is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
                 
-                badge_html = get_badge_html(dl_str, dl_type, is_must_do=is_must_do)
+                badge_html = get_badge_html(dl_str, dl_type, is_must_do=m.get("is_must_do", False))
                 prio_badge = get_priority_badge(m.get('ประเภท',''))
                 
                 is_frozen = (m.get("skip_today_date") == today_str)
@@ -831,7 +903,7 @@ with colRight:
                 c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ff4b4b;'>🩸 <b>ถ้ากูไม่ทำ:</b> {m.get('consequence', '') or csq_text}</div>", unsafe_allow_html=True)
                 
                 m_hype = clean_quote(active_quotes[get_stable_index(m_id + 'task_hype', len(active_quotes))])
-                c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ffa500;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {m_hype}</div>", unsafe_allow_html=True)
+                c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #f59e0b;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {m_hype}</div>", unsafe_allow_html=True)
                 
                 with c1.popover("✏️ แก้ไขงาน"):
                     new_t = st.text_input("ชื่อภารกิจ:", value=m["ภารกิจ"], key=f"ed_m_name_{m['id']}")
@@ -939,17 +1011,16 @@ with colRight:
                         save_db(db); st.success("✅ อัปเดตผังเรียนเรียบร้อย!"); safe_rerun()
 
             for s in todo_study:
-                is_must_do = s.get("is_must_do", False)
-                css_class = "task-card-ui death-mark" if is_must_do else "task-card-ui overdue" if is_overdue_check(s.get("deadline", "")) else "task-card-ui study"
-                
+                css_class = get_task_css_class(s, "study")
                 st.markdown(f"<div class='{css_class}'>", unsafe_allow_html=True)
+                
                 c1, c2, c3, c4, c5 = st.columns([4.2, 1.8, 1.8, 1.6, 0.6])
                 
                 dl_type = s.get("deadline_type", "🔴 Deadline")
                 dl_str = s.get("deadline", "")
                 is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
                 
-                badge_html = get_badge_html(dl_str, dl_type, is_must_do=is_must_do)
+                badge_html = get_badge_html(dl_str, dl_type, is_must_do=s.get("is_must_do", False))
                 prio_badge = get_priority_badge(s.get('ประเภท',''))
                 
                 is_frozen = (s.get("skip_today_date") == today_str)
@@ -1094,7 +1165,7 @@ with colRight:
     # ----------------------------------------------------
     with tab_subjects:
         st.markdown("### 🗂️ คลังแสงรายวิชา (Academic Arsenal)")
-        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ (ไม่นับเป็นภารกิจ)")
+        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ")
         
         with st.expander("➕ เพิ่มรายวิชาใหม่"):
             with st.form("add_subject_form", clear_on_submit=True):
@@ -1160,6 +1231,8 @@ with colRight:
                                 icon = "🔪" if wrapper["source"] == "mission" or item.get("type") == "task" else "📖" if wrapper["source"] == "study" or item.get("type") == "study" else "⚠️"
                                 title = item.get("ภารกิจ") if "ภารกิจ" in item else item.get("title", "")
                                 
+                                css_wrapper = get_task_css_class(item, wrapper["source"] if wrapper["source"] in ["task", "study"] else "task")
+                                st.markdown(f"<div class='{css_wrapper}' style='padding:10px;'>", unsafe_allow_html=True)
                                 with st.expander(f"{icon} {title}"):
                                     st.markdown(f"{prio_badge} {badge_html}", unsafe_allow_html=True)
                                     st.write(item.get("รายละเอียด") or item.get("detail") or "ไม่มีรายละเอียด")
@@ -1167,6 +1240,7 @@ with colRight:
                                     if subs:
                                         st.markdown("**งานย่อย:**")
                                         for sub in subs: st.write(f"- {'✅' if sub.get('done') else '⬜'} {sub.get('name')}")
+                                st.markdown("</div>", unsafe_allow_html=True)
                     
                     with col_view2:
                         st.markdown("<h5 style='color:#38bdf8;'>📝 โน้ตความรู้ / บันทึกช่วยจำ</h5>", unsafe_allow_html=True)
@@ -1175,9 +1249,12 @@ with colRight:
                             for wrapper in related_notes:
                                 note = wrapper["data"]
                                 prio_badge = get_priority_badge(note.get('priority', ''))
+                                css_wrapper = get_task_css_class(note, "task")
+                                st.markdown(f"<div class='{css_wrapper}' style='padding:10px;'>", unsafe_allow_html=True)
                                 with st.expander(f"📝 {note.get('title', '')}"):
                                     st.markdown(prio_badge, unsafe_allow_html=True)
                                     st.write(note.get("detail", "ไม่มีรายละเอียด"))
+                                st.markdown("</div>", unsafe_allow_html=True)
                 st.write("") 
 
     # ----------------------------------------------------
@@ -1236,26 +1313,28 @@ with colRight:
                 st.divider()
                 st.markdown("#### ⚠️ ตารางสอบ (Exams)")
                 for exam in sorted(exams, key=lambda x: x.get("deadline", "9999-12-31")):
-                    with st.container(border=True):
-                        c1, c2 = st.columns([5, 1])
-                        subj_tag = f"<span class='badge b-gray'>🗂️ {exam.get('subject')}</span>" if exam.get("subject") and exam.get("subject") != "- ไม่ระบุ -" else ""
-                        badge_html = get_badge_html(exam.get('deadline', ''), "🔴 Deadline")
-                        prio_badge = get_priority_badge(exam.get('priority', ''))
-                        
-                        c1.markdown(f"**{exam['title']}** {subj_tag} | 📅 วันสอบ: {thai_date_format(exam.get('deadline', '-'))} {badge_html} {prio_badge}", unsafe_allow_html=True)
-                        
-                        with c1.popover("✏️ แก้ไขสอบ"):
-                            new_t = st.text_input("หัวข้อ:", value=exam['title'], key=f"ed_e_t_{exam['id']}")
-                            new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(exam.get("subject", "- ไม่ระบุ -")) if exam.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_e_s_{exam['id']}")
-                            new_p = st.selectbox("ความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], index=["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"].index(exam.get("priority", "🟡 ปานกลาง")) if exam.get("priority", "🟡 ปานกลาง") in ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"] else 2, key=f"ed_e_p_{exam['id']}")
-                            new_d = st.text_area("รายละเอียด:", value=exam.get("detail", ""), key=f"ed_e_d_{exam['id']}")
-                            parsed_dt = safe_date_parse(exam.get("deadline", ""))
-                            new_dt = str(st.date_input("วันสอบ:", value=parsed_dt, key=f"ed_e_dt_{exam['id']}"))
-                            if st.button("💾 เซฟการแก้ไข", key=f"sv_e_{exam['id']}", use_container_width=True):
-                                exam['title'] = new_t; exam['subject'] = new_s; exam['priority'] = new_p; exam['detail'] = new_d; exam['deadline'] = new_dt; save_db(db); safe_rerun()
-                                
-                        with c1.expander("📝 ดูรายละเอียด"): st.write(exam.get("detail", "ไม่มีรายละเอียด"))
-                        if c2.button("🗑️", key=f"del_exm_{exam['id']}"): planner_items.remove(exam); save_db(db); safe_rerun()
+                    css_class = get_task_css_class(exam, "task")
+                    st.markdown(f"<div class='{css_class}'>", unsafe_allow_html=True)
+                    c1, c2 = st.columns([5, 1])
+                    subj_tag = f"<span class='badge b-gray'>🗂️ {exam.get('subject')}</span>" if exam.get("subject") and exam.get("subject") != "- ไม่ระบุ -" else ""
+                    badge_html = get_badge_html(exam.get('deadline', ''), "🔴 Deadline")
+                    prio_badge = get_priority_badge(exam.get('priority', ''))
+                    
+                    c1.markdown(f"**{exam['title']}** {subj_tag} | 📅 วันสอบ: {thai_date_format(exam.get('deadline', '-'))} {badge_html} {prio_badge}", unsafe_allow_html=True)
+                    
+                    with c1.popover("✏️ แก้ไขสอบ"):
+                        new_t = st.text_input("หัวข้อ:", value=exam['title'], key=f"ed_e_t_{exam['id']}")
+                        new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(exam.get("subject", "- ไม่ระบุ -")) if exam.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_e_s_{exam['id']}")
+                        new_p = st.selectbox("ความสำคัญ:", ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"], index=["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"].index(exam.get("priority", "🟡 ปานกลาง")) if exam.get("priority", "🟡 ปานกลาง") in ["🔴 ด่วนสุด", "🔥 งานฉุกเฉิน", "🟡 ปานกลาง", "🟢 ชิลๆ"] else 2, key=f"ed_e_p_{exam['id']}")
+                        new_d = st.text_area("รายละเอียด:", value=exam.get("detail", ""), key=f"ed_e_d_{exam['id']}")
+                        parsed_dt = safe_date_parse(exam.get("deadline", ""))
+                        new_dt = str(st.date_input("วันสอบ:", value=parsed_dt, key=f"ed_e_dt_{exam['id']}"))
+                        if st.button("💾 เซฟการแก้ไข", key=f"sv_e_{exam['id']}", use_container_width=True):
+                            exam['title'] = new_t; exam['subject'] = new_s; exam['priority'] = new_p; exam['detail'] = new_d; exam['deadline'] = new_dt; save_db(db); safe_rerun()
+                            
+                    with c1.expander("📝 ดูรายละเอียด"): st.write(exam.get("detail", "ไม่มีรายละเอียด"))
+                    if c2.button("🗑️", key=f"del_exm_{exam['id']}"): planner_items.remove(exam); save_db(db); safe_rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
             
             if tasks_study:
                 st.divider()
@@ -1265,21 +1344,20 @@ with colRight:
                 
                 tasks_study.sort(key=lambda x: (0 if x.get("is_must_do") else 1, get_priority_score(x.get("priority", "")), get_deadline_score(x.get("deadline", ""))))
                 for item in tasks_study:
+                    css_class = get_task_css_class(item, item.get("type", "task"))
+                    st.markdown(f"<div class='{css_class}'>", unsafe_allow_html=True)
+                    c1, c2, c3 = st.columns([5, 2, 1])
+                    
                     dl_str = item.get("deadline", "")
                     dl_type = item.get("deadline_type", "🔴 Deadline")
                     is_must_do = item.get("is_must_do", False)
-                    is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
-                    
-                    css_class = "task-card-ui death-mark" if is_must_do else "task-card-ui overdue" if is_overdue else "task-card-ui study" if item.get("type") == "study" else "task-card-ui"
-                    st.markdown(f"<div class='{css_class}'>", unsafe_allow_html=True)
-                    c1, c2, c3 = st.columns([5, 2, 1])
                     
                     icon = "🔪 [งาน]" if item.get("type") == "task" else "📖 [เรียน]"
                     subj_tag = f"<span class='badge b-gray'>🗂️ {item.get('subject')}</span>" if item.get("subject") and item.get("subject") != "- ไม่ระบุ -" else ""
                     badge_html = get_badge_html(dl_str, dl_type, is_must_do=is_must_do)
                     prio_badge = get_priority_badge(item.get('priority', '🟡 ปานกลาง'))
                     
-                    c1.markdown(f"{prio_badge} <b>{icon} {item['title']}</b> {subj_tag} {badge_html}", unsafe_allow_html=True)
+                    c1.markdown(f"<div style='margin-bottom:8px;'>{prio_badge} {subj_tag}</div><div style='font-size:1.1em;'><b>{icon} {item['title']}</b> {badge_html}</div>", unsafe_allow_html=True)
                     
                     with c1.popover("✏️ แก้ไขงาน/เรียน"):
                         new_t = st.text_input("หัวข้อ:", value=item['title'], key=f"ed_pl_t_{item['id']}")
@@ -1343,6 +1421,8 @@ with colRight:
                 st.divider()
                 st.markdown("#### 📝 โน้ตทั่วไป (General Notes) - ไม่มี Deadline")
                 for note in reversed(notes):
+                    css_class = get_task_css_class(note, "task")
+                    st.markdown(f"<div class='{css_class}'>", unsafe_allow_html=True)
                     subj_tag = f"<span class='badge b-gray'>🗂️ {note.get('subject')}</span>" if note.get("subject") and note.get("subject") != "- ไม่ระบุ -" else ""
                     prio_badge = get_priority_badge(note.get('priority', ''))
                     
@@ -1362,6 +1442,7 @@ with colRight:
                             
                         st.write("---")
                         st.write(note.get("detail", "ไม่มีเนื้อหา"))
+                    st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
     # TAB 6: 🪞 กระจกแห่งความรับผิดชอบ
@@ -1384,7 +1465,7 @@ with colRight:
                 col = cols[idx % 3]
                 bg_color, border_color, icon = ("rgba(34,197,94,0.1)", "#22c55e", "🎯") if note.get('is_goal') else ("rgba(239,68,68,0.1)", "#ef4444", "🔥")
                 with col:
-                    st.markdown(f"<div style='background-color: {bg_color}; border-left: 5px solid {border_color}; padding: 10px; margin-bottom: 10px; border-radius: 5px;'><b>{icon} {thai_date_format(note.get('date_added', '-'))}</b><br><p style='margin-top: 5px;'>{note.get('text', '')}</p></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background-color: {bg_color}; border-left: 5px solid {border_color}; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);'><b>{icon} {thai_date_format(note.get('date_added', '-'))}</b><br><p style='margin-top: 8px;'>{note.get('text', '')}</p></div>", unsafe_allow_html=True)
                     if st.button("🗑️ ดึงออก", key=f"del_mirror_{note['id']}", use_container_width=True): db["accountability_mirror"][safe_email].remove(note); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
@@ -1634,7 +1715,7 @@ with tab_h_judgement:
             j_data = judgements[j_date]
             g = j_data.get("grade", "F")
             g_color = "#e2d141" if g == "S" else "#38bdf8" if g == "A" else "#22c55e" if g == "B" else "#f59e0b" if g == "C" else "#ef4444"
-            st.markdown(f"<div style='padding: 10px; border-left: 5px solid {g_color}; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius:5px;'><b>{thai_date_format(j_date)}</b> | เกรด: <span style='color:{g_color}; font-weight:bold; font-size:1.2em;'>{g}</span> ({j_data.get('score', 0)}%) | สำเร็จ {j_data.get('done', 0)} พลาด {j_data.get('missed', 0)}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='padding: 15px; border-left: 5px solid {g_color}; background: rgba(255,255,255,0.03); margin-bottom: 8px; border-radius:8px;'><b>{thai_date_format(j_date)}</b> | เกรด: <span style='color:{g_color}; font-weight:bold; font-size:1.2em;'>{g}</span> ({j_data.get('score', 0)}%) | สำเร็จ {j_data.get('done', 0)} พลาด {j_data.get('missed', 0)}</div>", unsafe_allow_html=True)
 
 with tab_h_finance:
     st.markdown("### 💰 สมุดบัญชีการเงิน (Financial Ledger)")
@@ -1643,7 +1724,7 @@ with tab_h_finance:
         for tx in reversed(finance["ledger"]):
             color = "#22c55e" if tx.get("type") in ["income", "savings"] else "#ef4444"
             icon = "🟢" if tx.get("type") in ["income", "savings"] else "🔴"
-            st.markdown(f"<div style='border-left: 3px solid {color}; padding-left: 10px; margin-bottom: 5px; background:rgba(255,255,255,0.02); padding: 8px; border-radius:5px;'>{icon} <b>{thai_date_format(tx.get('date', ''))}</b> : {tx.get('name', 'ไม่ระบุ')} <span style='color:{color}; float:right;'>{'+' if icon == '🟢' else '-'}{float(tx.get('amount', 0)):,.2f} ฿</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-left: 4px solid {color}; margin-bottom: 8px; background:rgba(255,255,255,0.03); padding: 12px; border-radius:8px;'>{icon} <b>{thai_date_format(tx.get('date', ''))}</b> : {tx.get('name', 'ไม่ระบุ')} <span style='color:{color}; float:right; font-weight:bold;'>{'+' if icon == '🟢' else '-'}{float(tx.get('amount', 0)):,.2f} ฿</span></div>", unsafe_allow_html=True)
 
 with tab_h_journey:
     st.markdown("### 🗺️ ประวัติภารกิจที่พิชิตแล้ว")
