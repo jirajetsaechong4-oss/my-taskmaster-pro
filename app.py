@@ -14,39 +14,57 @@ try:
 except ImportError:
     HAS_GENAI = False
 
+# 🚀 นำเข้า Claude AI (Anthropic)
+try:
+    import anthropic
+    HAS_CLAUDE = True
+except ImportError:
+    HAS_CLAUDE = False
+
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V19 THE INDESTRUCTIBLE CODE)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V24 FLAWLESS EXECUTION)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
+# 🛡️ THE SHIELD: ป้องกัน AttributeError แบบ 100% (ห้ามลบเด็ดขาด)
+if "current_user" not in st.session_state: st.session_state["current_user"] = None
+if "punishment_active" not in st.session_state: st.session_state["punishment_active"] = False
+if "punishment_task" not in st.session_state: st.session_state["punishment_task"] = ""
+if "slap_awake_active" not in st.session_state: st.session_state["slap_awake_active"] = False
+if "active_slap_message" not in st.session_state: st.session_state["active_slap_message"] = ""
+if "locked_in_active" not in st.session_state: st.session_state["locked_in_active"] = False
+
+# --- CUSTOM CSS (UI OVERHAUL) ---
 st.markdown("""
 <style>
-    .subject-banner { background: linear-gradient(135deg, #141E30 0%, #243B55 100%); padding: 20px 25px; border-radius: 12px; border-left: 6px solid #4ba3ff; color: white; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-    .subject-banner h3 { margin: 0; padding-bottom: 5px; font-weight: 700; color: #ffffff; }
-    .subject-banner p { margin: 0; color: #a0c4ff; font-size: 0.95em; }
-    .badge { padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 600; display: inline-block; margin-left: 5px; }
-    .b-red { background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid #ff4b4b; }
-    .b-blue { background: rgba(75, 163, 255, 0.15); color: #4ba3ff; border: 1px solid #4ba3ff; }
-    .b-gold { background: rgba(226, 209, 65, 0.15); color: #e2d141; border: 1px solid #e2d141; }
-    .b-gray { background: rgba(150, 150, 150, 0.15); color: #cccccc; border: 1px solid #666666; }
-    .b-green { background: rgba(75, 255, 75, 0.15); color: #4bff4b; border: 1px solid #4bff4b; }
-    .b-death { background: #ff0000; color: #ffffff; border: 1px solid #ff0000; text-transform: uppercase; letter-spacing: 1px; }
-    @keyframes blinker { 50% { opacity: 0.5; } }
-    .blink-text { animation: blinker 1s linear infinite; font-weight: bold; color: #ff4b4b; }
-    .task-card-ui { background: rgba(255, 255, 255, 0.03); padding: 12px 15px; border-radius: 8px; border-left: 3px solid #555; margin-bottom: 8px; }
+    .stApp { background-color: #0E1117; color: #E0E6ED; }
+    .glass-panel { background: rgba(30, 34, 45, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
+    .subject-banner { background: linear-gradient(135deg, #1A2536 0%, #0E1117 100%); padding: 20px 25px; border-radius: 12px; border-left: 6px solid #4ba3ff; color: white; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .subject-banner h3 { margin: 0; padding-bottom: 5px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1px;}
+    .subject-banner p { margin: 0; color: #8FA2B8; font-size: 0.95em; }
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; display: inline-block; margin-left: 5px; letter-spacing: 0.5px; }
+    .b-red { background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid rgba(255, 75, 75, 0.5); }
+    .b-blue { background: rgba(75, 163, 255, 0.15); color: #4ba3ff; border: 1px solid rgba(75, 163, 255, 0.5); }
+    .b-gold { background: rgba(226, 209, 65, 0.15); color: #e2d141; border: 1px solid rgba(226, 209, 65, 0.5); }
+    .b-gray { background: rgba(150, 150, 150, 0.15); color: #cccccc; border: 1px solid rgba(150, 150, 150, 0.5); }
+    .b-green { background: rgba(75, 255, 75, 0.15); color: #4bff4b; border: 1px solid rgba(75, 255, 75, 0.5); }
+    @keyframes deathBlink { 0% { box-shadow: 0 0 10px #ff0000; } 50% { box-shadow: 0 0 25px #ff0000, inset 0 0 10px rgba(255,0,0,0.3); } 100% { box-shadow: 0 0 10px #ff0000; } }
+    .b-death { background: #5a0000; color: #ff4b4b; border: 1px solid #ff0000; text-transform: uppercase; animation: deathBlink 2s infinite; }
+    .task-card-ui { background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 10px; border-left: 4px solid #555; margin-bottom: 12px; transition: all 0.3s ease; }
+    .task-card-ui:hover { transform: translateX(5px); background: rgba(255, 255, 255, 0.05); }
     .task-card-ui.overdue { border-left: 4px solid #ff4b4b; background: rgba(255, 0, 0, 0.05); }
-    .task-card-ui.study { border-left: 3px solid #4ba3ff; }
-    .task-card-ui.death-mark { border: 2px solid #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.5); background: rgba(255,0,0,0.1); }
-    .mentor-quote { background: rgba(255, 255, 255, 0.05); padding: 12px 15px; border-radius: 8px; font-style: italic; margin-top: 5px; margin-bottom: 10px; font-size: 0.95em;}
+    .task-card-ui.study { border-left: 4px solid #4ba3ff; }
+    .task-card-ui.death-mark { border-left: 4px solid #ff0000; animation: deathBlink 2s infinite; background: rgba(255,0,0,0.05); }
+    .mentor-quote { background: rgba(0, 0, 0, 0.4); padding: 12px 15px; border-radius: 8px; font-style: italic; margin-top: 8px; margin-bottom: 10px; font-size: 0.95em; border-left: 3px solid #666; }
 </style>
 """, unsafe_allow_html=True)
 
+# ==========================================
+# 2. ฟังก์ชันพื้นฐานทั้งหมด (HELPER FUNCTIONS)
+# ==========================================
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app" 
 FIREBASE_SECRET = "Wv2Ha7WZrDLwnpJyKMt29z9I0MGb0kxitoOaaoGe"
 
-# ==========================================
-# 2. ฟังก์ชันพื้นฐานทั้งหมด (HELPER FUNCTIONS - อยู่บนสุดเสมอ)
-# ==========================================
 def get_current_thai_time():
     tz_thai = timezone(timedelta(hours=7))
     return datetime.now(tz_thai)
@@ -119,7 +137,7 @@ def format_days_left(dl_str):
     return f"💀 เลยกำหนด {-days} วัน"
 
 def get_badge_html(dl_str, dl_type, is_must_do=False):
-    if is_must_do: return f"<span class='badge b-death blink-text'>🩸 MUST DO TODAY! (พลาด=ตาย)</span>"
+    if is_must_do: return f"<span class='badge b-death'>🩸 MUST DO TODAY! (พลาด=ตาย)</span>"
     if not dl_str or dl_str == "": return "<span class='badge b-gray'>⚪ ไม่มีกำหนดเวลา</span>"
     days = get_deadline_score(dl_str)
     txt = format_days_left(dl_str)
@@ -146,7 +164,7 @@ def calculate_task_rewards(task, current_streak, mentor_name):
     if task.get("bounty"): fail_reduce += 5
     if task.get("is_must_do"): fail_reduce += 10 
     if mentor_name == "Toji" and task.get("is_boss"): final_exp = int(final_exp * 1.3)
-    if mentor_name == "Zenitsu" and st.session_state.get("locked_in_active", False) and score == 1: fail_reduce *= 2
+    if mentor_name == "Zenitsu" and st.session_state.get("locked_in_active"): fail_reduce *= 2
     if mentor_name == "Future You" and score == 1: final_exp += 20
     return final_exp, fail_reduce
 
@@ -205,7 +223,7 @@ MENTORS = {
     },
     "Subaru": {
         "name": "ซุบารุ (Return by Death)", "icon": "⏪", "desc": "เลื่อน Deadline เป็นวันนี้ จ่าย 10 EXP",
-        "quotes": ["1. กูรู้ว่ากูมันกาก แต่กูก็จะกัดฟันทำให้ได้!", "2. ถ้าหนีตอนนี้ ทุกอย่างจะสูญเปล่า ไม่มีทางหรอก!", "3. ล้มกี่ร้อยครั้งก็ช่าง ขอแค่ครั้งสุดท้ายยืนได้ก็พอ!", "4. เพื่อเป้าหมาย ตายกี่สิบหนก็จะคลานกลับมาทำ!", "5. ความสิ้นหวังหรอ? กูชินกับมันแล้ว เข้ามาเลย!", "6. กูเริ่มจากติดลบ แต่กูจะปีนขึ้นไปให้ได้!", "7. เอมิเลียตัน ฉันจะปกป้องเธอเอง!", "8. เรม ขอบใจนะที่เชื่อมั่นในตัวฉันเสมอ", "9. กลับจากความตาย (Return by Death)! กูจะแก้ไขมัน!", "10. ความทรงจำที่มีแต่ฉันที่จำได้ มันช่างเจ็บปวด", "11. แต่ฉันจะไม่ยอมให้ความตายของทุกคนต้องสูญเปล่า", "12. กูมันอ่อนแอ ไร้พลังเวท แต่กูมีสมองและลูกบ้า!", "13. ใช้ข้อมูลจากลูปที่แล้ว วางแผนให้รัดกุมที่สุด!", "14. บาปแห่งความเย่อหยิ่ง กูจะบดขยี้มันซะ!", "15. แม่มดแห่งความริษยา ปล่อยกูไปสักทีเถอะ!", "16. ฉันคือ นัตสึกิ ซุบารุ อัศวินของเอมิเลีย!", "17. จะทลายกำแพงแห่งโชคชะตา นี้ให้ดู", "18. ต่อให้ต้องแบกรับความเจ็บปวดทั้งหมดไว้คนเดียว", "19. เพื่อรอยยิ้มของทุกคน ฉันยอมทนได้!", "20. ความมืดมิดในใจ ฉันจะเอาชนะมันให้ได้!", "21. อย่าดูถูกมนุษย์ธรรมดาอย่างกูนะเว้ย!", "22. ปาฏิหาริย์ ฉันจะสร้างมันขึ้นมาด้วยมือของฉันเอง!", "23. ไม่ว่าจะกี่ลูป ฉันก็จะไม่ยอมแพ้!", "24. น้ำตาที่ไหลออกมา จะเป็นพลังผลักดันให้ก้าวต่อไป", "25. ความผิดพลาดสอนให้เราแข็งแกร่งขึ้น", "26. ฉันเกลียดตัวเองที่อ่อนแอ แต่ฉันก็จะพยายามเปลี่ยนแปลง!", "27. ขอบคุณที่สอนให้ฉันรู้จักความรักนะ เรม", "28. เสียงเรียกร้องของหัวใจ บอกให้ฉันสู้ต่อ!", "29. ดาบที่มองไม่เห็น ฉันจะหลบมันให้พ้น!", "30. เอาชนะวาฬขาว ด้วยพลังของทุกคนร่วมกัน!", "31. เบียทริซ ออกมาเถอะ ฉันจะจับมือเธอไว้เอง!", "32. คำสัญญาที่ให้ไว้ จะต้องรักษาให้ได้!", "33. อนาคตที่สดใส รอเราอยู่ข้างหน้า!", "34. กูจะไม่ยอมให้เรื่องเลวร้ายแบบนี้เกิดขึ้นอีก!", "35. ทุกความตาย มีความหมายซ่อนอยู่เสมอ", "36. ใช้ความตายเป็นบทเรียน เพื่อก้าวไปสู่ความสำเร็จ", "37. จิตใจที่บอบช้ำ แต่ไม่เคยแตกสลาย", "38. ความกล้าหาญที่แท้จริง คือการเผชิญหน้ากับความกลัว", "39. ฉันจะเขียนตอนจบของเรื่องราวนี้ด้วยตัวเอง!", "40. แม้โลกทั้งใบจะหันหลังให้ฉัน ฉันก็จะสู้ต่อไป!", "41. อุปสรรคมีไว้ให้พุ่งชน ไม่ใช่ให้หลบหนี", "42. ความหวังอันริบหรี่ แต่ก็ยังคงส่องสว่างอยู่ในใจ", "43. ฉันจะแสดงให้เห็น ว่าคนธรรมดาก็สร้างปาฏิหาริย์ได้!", "44. เสียงหัวใจที่เต้นอย่างรุนแรง บ่งบอกถึงการมีชีวิต", "45. ฉันจะไม่ยอมตาย จนกว่าจะทำเป้าหมายให้สำเร็จ!", "46. พลังใจที่ไม่มีวันหมด นี่แหละคืออาวุธที่แข็งแกร่งที่สุด", "47. จะจดจำทุกความรู้สึกไว้ เพื่อเป็นแรงผลักดัน", "48. ความรักคือพลังที่ทำให้มนุษย์ทำสิ่งที่เป็นไปไม่ได้", "49. ขอบคุณที่อยู่เคียงข้างฉันมาตลอดนะ ทุกคน", "50. นัตสึกิ ซุบารุ จะไม่ยอมให้ชีวิตนี้ต้องสูญเปล่าแน่นอน!"]
+        "quotes": ["1. กูรู้ว่ากูมันกาก แต่กูก็จะกัดฟันทำให้ได้!", "2. ถ้าหนีตอนนี้ ทุกอย่างจะสูญเปล่า ไม่มีทางหรอก!", "3. ล้มกี่ร้อยครั้งก็ช่าง ขอแค่ครั้งสุดท้ายยืนได้ก็พอ!", "4. เพื่อเป้าหมาย ตายกี่สิบหนก็จะคลานกลับมาทำ!", "5. ความสิ้นหวังหรอ? กูชินกับมันแล้ว เข้ามาเลย!", "6. กูเริ่มจากติดลบ แต่กูจะปีนขึ้นไปให้ได้!", "7. เอมิเลียตัน ฉันจะปกป้องเธอเอง!", "8. เรม ขอบใจนะที่เชื่อมั่นในตัวฉันเสมอ", "9. กลับจากความตาย (Return by Death)! กูจะแก้ไขมัน!", "10. ความทรงจำที่มีแต่ฉันที่จำได้ มันช่างเจ็บปวด", "11. แต่ฉันจะไม่ยอมให้ความตายของทุกคนต้องสูญเปล่า", "12. กูมันอ่อนแอ ไร้พลังเวท แต่กูมีสมองและลูกบ้า!", "13. ใช้ข้อมูลจากลูปที่แล้ว วางแผนให้รัดกุมที่สุด!", "14. บาปแห่งความเย่อหยิ่ง กูจะบดขยี้มันซะ!", "15. แม่มดแห่งความริษยา ปล่อยกูไปสักทีเถอะ!", "16. ฉันคือ นัตสึกิ ซุบารุ อัศวินของเอมิเลีย!", "17. จะทลายกำแพงแห่งโชคชะตา นี้ให้ดู", "18. ต่อให้ต้องแบกรับความเจ็บปวดทั้งหมดไว้คนเดียว", "19. เพื่อรอยยิ้มของทุกคน ฉันยอมทนได้!", "20. ความมืดมิดในใจ ฉันจะเอาชนะมันให้ได้!", "21. อย่าดูถูกมนุษย์ธรรมดาอย่างกูนะเว้ย!", "22. ปาฏิหาริย์ ฉันจะสร้างมันขึ้นมาด้วยมือของฉันเอง!", "23. ไม่ว่าจะกี่ลูป ฉันก็จะไม่ยอมแพ้!", "24. น้ำตาที่ไหลออกมา จะเป็นพลังผลักดันให้ก้าวต่อไป", "25. ความผิดพลาดสอนให้เราแข็งแกร่งขึ้น", "26. ฉันเกลียดตัวเองที่อ่อนแอ แต่ฉันก็จะพยายามเปลี่ยนแปลง!", "27. ขอบคุณที่สอนให้ฉันรู้จักความรักนะ เรม", "28. เสียงเรียกร้องของหัวใจ บอกให้ฉันสู้ต่อ!", "29. ดาบที่มองไม่เห็น ฉันจะหลบมันให้พ้น!", "30. เอาชนะวาฬขาว ด้วยพลังของทุกคนร่วมกัน!", "31. เบียทริซ ออกมาเถอะ ฉันচিন্তาเธอไว้เอง!", "32. คำสัญญาที่ให้ไว้ จะต้องรักษาให้ได้!", "33. อนาคตที่สดใส รอเราอยู่ข้างหน้า!", "34. กูจะไม่ยอมให้เรื่องเลวร้ายแบบนี้เกิดขึ้นอีก!", "35. ทุกความตาย มีความหมายซ่อนอยู่เสมอ", "36. ใช้ความตายเป็นบทเรียน เพื่อก้าวไปสู่ความสำเร็จ", "37. จิตใจที่บอบช้ำ แต่ไม่เคยแตกสลาย", "38. ความกล้าหาญที่แท้จริง คือการเผชิญหน้ากับความกลัว", "39. ฉันจะเขียนตอนจบของเรื่องราวนี้ด้วยตัวเอง!", "40. แม้โลกทั้งใบจะหันหลังให้ฉัน ฉันก็จะสู้ต่อไป!", "41. อุปสรรคมีไว้ให้พุ่งชน ไม่ใช่ให้หลบหนี", "42. ความหวังอันริบหรี่ แต่ก็ยังคงส่องสว่างอยู่ในใจ", "43. ฉันจะแสดงให้เห็น ว่าคนธรรมดาก็สร้างปาฏิหาริย์ได้!", "44. เสียงหัวใจที่เต้นอย่างรุนแรง บ่งบอกถึงการมีชีวิต", "45. ฉันจะไม่ยอมตาย จนกว่าจะทำเป้าหมายให้สำเร็จ!", "46. พลังใจที่ไม่มีวันหมด นี่แหละคืออาวุธที่แข็งแกร่งที่สุด", "47. จะจดจำทุกความรู้สึกไว้ เพื่อเป็นแรงผลักดัน", "48. ความรักคือพลังที่ทำให้มนุษย์ทำสิ่งที่เป็นไปไม่ได้", "49. ขอบคุณที่อยู่เคียงข้างฉันมาตลอดนะ ทุกคน", "50. นัตสึกิ ซุบารุ จะไม่ยอมให้ชีวิตนี้ต้องสูญเปล่าแน่นอน!"]
     },
     "Ippo": {
         "name": "อิปโป (Dempsey Roll)", "icon": "🥊", "desc": "หากทำวินัย 100% Streak จะไม่ขาดแม้พลาดงาน",
@@ -226,64 +244,58 @@ WARRIOR_CONSEQUENCES = ["1. กูจะต้องทนเห็นคนท�
 ETERNAL_ECHOES = ["1. มึงบอกว่าไม่อยากกากอีกแล้ว มึงทำตัวให้คู่ควรกับคำพูดรึยัง!?", "2. โลกไม่สนหรอกว่ามึงจะเหนื่อย โลกสนแค่ว่ามึงทำสำเร็จหรือเปล่า!", "3. ทุกวินาทีที่ขี้เกียจ คือการกลับไปเป็นขี้แพ้!", "4. จะเก่งได้ไงถ้ามึงเอาแต่หาข้ออ้าง ลุกขึ้นมา!", "5. Pain is temporary, quitting lasts forever!", "6. They don't know you son! Show them what you're made of!", "7. Stay hard! อย่าให้ปีศาจในหัวมึงชนะได้!", "8. มึงหลอกคนอื่นได้ แต่มึงหลอกตัวเองหน้ากระจกไม่ได้หรอกนะ!", "9. อย่าให้ความกลัว ขโมยความฝันของมึงไป!", "10. ความสำเร็จสร้างด้วยมือ ไม่ใช่ด้วยน้ำลาย!", "11. ถ้ามึงไม่สร้างฝันของตัวเอง คนอื่นก็จะจ้างมึงไปสร้างฝันของเขา!", "12. ล้มได้ ร้องไห้ได้ แต่มึงห้ามยอมแพ้เด็ดขาด!", "13. หนทางที่ยากลำบาก มักจะนำไปสู่จุดหมายที่งดงามเสมอ!", "14. ความอดทนมันขมขื่น แต่ผลของมันช่างหอมหวาน!", "15. พิสูจน์ตัวเองด้วยผลงาน ไม่ใช่ด้วยคำแก้ตัว!", "16. ยิ่งเหนื่อย ยิ่งต้องพยายาม เพราะชัยชนะอยู่ใกล้แค่เอื้อม!", "17. จงเป็นเวอร์ชั่นที่ดีที่สุด ของตัวมึงเองในทุกๆ วัน!", "18. อนาคตของมึง ซ่อนอยู่ในกิจวัตรประจำวันของมึงนั่นแหละ!", "19. อย่าลดขนาดความฝัน แต่จงเพิ่มขนาดความพยายาม!", "20. ผู้ชนะไม่เคยล้มเลิก ผู้ล้มเลิกไม่เคยชนะ!", "21. เริ่มต้นจากศูนย์ ดีกว่าไม่เริ่มต้นอะไรเลย!", "22. ความกล้าหาญ คือการก้าวไปข้างหน้า แม้จะรู้สึกกลัวก็ตาม!", "23. เชื่อมั่นในตัวเอง แล้วทุกอย่างจะเป็นไปได้!", "24. อุปสรรคมีไว้ให้ข้าม ไม่ใช่มีไว้ให้หยุด!", "25. จงทำวันนี้ให้ดีที่สุด เหมือนไม่มีวันพรุ่งนี้ให้แก้ตัว!", "26. ความพยายามอยู่ที่ไหน ความสำเร็จอยู่ที่นั่น คำนี้ยังใช้ได้เสมอ!", "27. เหงื่อของมึงในวันนี้ จะกลายเป็นรอยยิ้มในวันพรุ่งนี้!", "28. อย่าเอาชีวิตมึง ไปเปรียบเทียบกับใคร มึงมีเส้นทางของมึงเอง!", "29. จงเรียนรู้จากความผิดพลาด แล้วทำให้มันดีขึ้นในครั้งต่อไป!", "30. ความสำเร็จ ไม่ได้วัดกันที่ความฉลาด แต่วัดกันที่ความขยัน!", "31. อย่าปล่อยให้คำวิจารณ์ของคนอื่น มาทำลายความตั้งใจของมึง!", "32. จงเป็นแรงบันดาลใจ ให้กับคนที่กำลังมองดูมึงอยู่!", "33. ความยิ่งใหญ่ ไม่ได้เกิดขึ้นในชั่วข้ามคืน มันต้องใช้เวลาและความพยายาม!", "34. เมื่อมึงคิดจะยอมแพ้ ให้นึกถึงเหตุผลที่มึงเริ่มต้น!", "35. จงแข็งแกร่งดั่งหินผา และอ่อนโยนดั่งสายน้ำ!", "36. ความมีวินัย คือกุญแจสำคัญ สู่ความสำเร็จในทุกๆ เรื่อง!", "37. อย่ากลัวความล้มเหลว เพราะมันคือส่วนหนึ่งของความสำเร็จ!", "38. จงก้าวออกจาก Comfort Zone แล้วมึงจะค้นพบโลกใบใหม่!", "39. ทุกๆ วันคือโอกาสใหม่ ในการเริ่มต้นทำสิ่งดีๆ!", "40. จงทำในสิ่งที่มึงรัก แล้วมึงจะไม่รู้สึกว่าต้องทำงานเลย!", "41. ความมุ่งมั่นของมึง จะทำลายทุกกำแพงที่ขวางกั้น!", "42. จงเป็นแสงสว่าง ในความมืดมิดให้กับตัวเองและผู้อื่น!", "43. ความหวัง คือพลังที่ทำให้มนุษย์ก้าวต่อไปได้เสมอ!", "44. จงเชื่อว่ามึงทำได้ แล้วมึงจะหาทางทำให้มันสำเร็จจนได้!", "45. อย่าปล่อยให้ความฝัน เป็นเพียงแค่ความฝัน จงลงมือทำให้มันเป็นจริง!", "46. พลังที่ซ่อนอยู่ในตัวมึง มันยิ่งใหญ่กว่าที่มึงคิดไว้มาก!", "47. จงขอบคุณทุกอุปสรรค ที่เข้ามาทำให้มึงแข็งแกร่งขึ้น!", "48. ชีวิตนี้สั้นนัก จงใช้มันอย่างคุ้มค่า และมีความหมาย!", "49. มึงคือสถาปนิก ผู้ออกแบบชีวิตของมึงเอง!", "50. ลุยให้สุดขีดจำกัด แล้วมึงจะพบว่าตัวเองเจ๋งแค่ไหน!"]
 
 # ==========================================
-# 4. DATABASE & STATE INIT
+# 4. DATABASE INIT
 # ==========================================
 db = load_db()
 
 # ==========================================
-# 5. OVERLAY นรก & SLAP AWAKE
+# 5. ระบบล็อกอิน & แถบด้านข้าง (DUAL AI SETUP)
 # ==========================================
-if "punishment_active" in st.session_state:
-    st.error("🚨 วงล้อแห่งกรรมทำงาน! มึงหลุดจากวินัย ต้องชดใช้! 🚨")
-    p_text = clean_quote(st.session_state.punishment_task)
-    st.title(f"🔥 คำสั่งชดใช้กรรม: {p_text}")
-    if st.button("🩸 กูทำเสร็จแล้ว! (กลับสู่ Discipline Arc)", key="btn_finish_punish"):
-        del st.session_state.punishment_active; safe_rerun()
-    st.stop() 
-
-if st.session_state.get("slap_awake_active", False):
-    st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 4em;'>💥 ตื่นได้แล้วไอ้เวร!</h1>", unsafe_allow_html=True)
-    st.error("🚨 **คำสั่งกระชากสติ:** ลุกไปล้างหน้าด้วยน้ำเย็นจัด แล้ววิดพื้น 20 ทีเดี๋ยวนี้! ถ้าทำไม่ได้ก็เป็นไอ้ขี้แพ้ต่อไป!")
-    st.warning("พิมพ์คำปฏิญาณนี้เพื่อปลดล็อกหน้าจอ: **'กูจะไม่ยอมกลับไปเป็นขยะ'**")
-    confirm_text = st.text_input("พิมพ์ที่นี่:", key="txt_confirm_oath")
-    if st.button("🔥 กูพร้อมกลับไปลุยแล้ว!", key="btn_confirm_slap"):
-        if confirm_text.strip() == "กูจะไม่ยอมกลับไปเป็นขยะ":
-            del st.session_state["slap_awake_active"]; st.toast("🔥 ดีมาก! กลับไปลุยงานของมึงซะ!", icon="⚔️"); safe_rerun()
-        else: st.error("พิมพ์ให้ถูกทุกตัวอักษร! มึงยังไม่ตั้งใจพอ!")
-    st.stop()
-
-# ==========================================
-# 6. ระบบล็อกอิน & แถบด้านข้าง
-# ==========================================
-if "current_user" not in st.session_state: st.session_state.current_user = None
+safe_email = st.session_state.get("current_user")
 
 with st.sidebar:
     st.title("⚙️ DISCIPLINE ARC")
     st.caption(f"🗓️ วันที่: {thai_date_format(today_str)}") 
     
-    # --- GEMINI API SETTINGS (SAFE & SAVED) ---
-    if st.session_state.current_user is not None:
-        safe_email = st.session_state.current_user
-        u_data = db["users"][safe_email]
+    # --- DUAL AI SETTINGS ---
+    if safe_email is not None:
+        u_data = db["users"].get(safe_email)
         
-        st.markdown("### 🔑 AI SETTINGS")
-        saved_key = u_data.get("api_key", "")
-        api_key_input = st.text_input("Gemini API Key:", value=saved_key, type="password", key="sidebar_api_key", help="ใส่ API Key ของมึงที่นี่เพื่อปลดล็อกระบบ AI วางแผน")
+        st.markdown("### 🔑 DUAL AI CORE")
+        st.caption("เชื่อมต่อ 2 ปัญญาประดิษฐ์เพื่อประสานยุทธวิธีสูงสุด")
         
-        if api_key_input != saved_key:
-            u_data["api_key"] = api_key_input
+        saved_gemini = u_data.get("api_key", "")
+        api_gemini_input = st.text_input("🔥 Gemini API Key (ผู้สั่งการ):", value=saved_gemini, type="password", key="sidebar_api_key", help="Gemini จะรับหน้าที่ด่า ปลุกใจ และเรียงลำดับโจมตี")
+        
+        saved_claude = u_data.get("claude_api_key", "")
+        api_claude_input = st.text_input("🧠 Claude API Key (นักวางแผน):", value=saved_claude, type="password", key="sidebar_claude_key", help="Claude จะรับหน้าที่คำนวณเวลา ซอยย่อยตาราง และจัด Time-boxing")
+        
+        if api_gemini_input != saved_gemini:
+            u_data["api_key"] = api_gemini_input
             save_db(db)
-            st.success("💾 บันทึก API Key เข้าสู่ระบบสำเร็จ!")
+            st.success("💾 บันทึก Gemini Key!")
             
-        if api_key_input and HAS_GENAI:
+        if api_claude_input != saved_claude:
+            u_data["claude_api_key"] = api_claude_input
+            save_db(db)
+            st.success("💾 บันทึก Claude Key!")
+            
+        if api_gemini_input and HAS_GENAI:
             try:
-                genai.configure(api_key=api_key_input)
-                st.caption("✅ AI พร้อมทำงาน!")
-            except Exception as e:
-                st.error("❌ API Key ผิดพลาด!")
+                genai.configure(api_key=api_gemini_input)
+                st.caption("✅ Gemini: **ONLINE**")
+            except: st.error("❌ Gemini Key ผิดพลาด!")
+        else: st.caption("❌ Gemini: OFFLINE")
+        
+        if api_claude_input and HAS_CLAUDE:
+            try:
+                st.caption("✅ Claude: **ONLINE**")
+            except: st.error("❌ Claude Key ผิดพลาด!")
+        else: st.caption("❌ Claude: OFFLINE")
+
     st.divider()
     
-    if st.session_state.current_user is None:
+    if safe_email is None:
         auth_mode = st.radio("เลือกโหมด:", ["⚡ ล็อกอิน", "➕ สร้างไอดีใหม่"], key="auth_mode_radio")
         st.divider()
         if auth_mode == "➕ สร้างไอดีใหม่":
@@ -291,14 +303,14 @@ with st.sidebar:
             email_input = st.text_input("อีเมล (ID):", key="txt_reg_email")
             if st.button("เข้าสู่ Discipline Arc!", key="btn_register_submit"):
                 if email_input and name_input:
-                    safe_email = get_safe_email(email_input)
-                    if safe_email in db.get("users", {}): st.error("อีเมล/ID นี้มีในระบบแล้ว!")
+                    new_safe_email = get_safe_email(email_input)
+                    if new_safe_email in db.get("users", {}): st.error("อีเมล/ID นี้มีในระบบแล้ว!")
                     else:
-                        db["users"][safe_email] = {
+                        db["users"][new_safe_email] = {
                             "username": name_input, "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False, "ghost_exp": 0, 
                             "ambush_task": "", "failure_prob": 10, "last_login": today_str, "cleared_yesterday": True, "judged_today": "",
                             "target_name": "เป้าหมายสูงสุดของชีวิต", "target_date": str(today_date + timedelta(days=90)),
-                            "daily_oath_date": "", "anime_mentor": "None", "mentor_date": "", "api_key": ""
+                            "daily_oath_date": "", "anime_mentor": "None", "mentor_date": "", "api_key": "", "claude_api_key": ""
                         }
                         save_db(db); st.success("🔥 ลงทะเบียนสำเร็จ! ล็อกอินเลย!")
                 else: st.warning("กรอกข้อมูลให้ครบ!")
@@ -310,8 +322,8 @@ with st.sidebar:
                 selected_display = st.selectbox("เลือกบัญชีของคุณ:", list(user_options.keys()), key="sb_login_user")
                 
                 if st.button("🔥 เริ่มต้นวันใหม่ (Login)", key="btn_login_submit"):
-                    safe_email = user_options[selected_display]
-                    user_data = db["users"][safe_email]
+                    login_email = user_options[selected_display]
+                    user_data = db["users"][login_email]
                     
                     if "target_name" not in user_data: user_data["target_name"] = "เป้าหมายสูงสุด"; user_data["target_date"] = str(today_date + timedelta(days=90))
                     if "anime_mentor" not in user_data: user_data["anime_mentor"] = "None"
@@ -327,10 +339,9 @@ with st.sidebar:
                             
                         user_data["last_login"] = today_str; user_data["cleared_yesterday"] = False
                         save_db(db)
-                    st.session_state.current_user = safe_email
+                    st.session_state["current_user"] = login_email
                     safe_rerun()
     else:
-        safe_email = st.session_state.current_user
         u_data = db["users"][safe_email]
         
         st_echo = clean_quote(random.choice(ETERNAL_ECHOES))
@@ -349,15 +360,18 @@ with st.sidebar:
 
         st.divider()
         if st.button("🔥 ขอกำลังใจด่ากูหน่อย! (SLAP ME!)", type="primary", use_container_width=True, key="btn_sidebar_slap"):
-            st.session_state.active_slap_message = clean_quote(random.choice(m_info["quotes"])); safe_rerun()
+            st.session_state["active_slap_message"] = clean_quote(random.choice(m_info["quotes"]))
+            safe_rerun()
             
         if st.session_state.get("active_slap_message"):
-            st.warning(f"**{m_info['icon']} {m_info['name']}:**\n\n\"{st.session_state.active_slap_message}\"")
-            if st.button("✅ รับทราบ! ลุย!", use_container_width=True, key="btn_ack_slap"): st.session_state.active_slap_message = ""; safe_rerun()
+            st.warning(f"**{m_info['icon']} {m_info['name']}:**\n\n\"{st.session_state.get('active_slap_message')}\"")
+            if st.button("✅ รับทราบ! ลุย!", use_container_width=True, key="btn_ack_slap"): 
+                st.session_state["active_slap_message"] = ""
+                safe_rerun()
         st.divider()
 
         locked_in = st.toggle("🔒 LOCKED IN (โฟกัสขั้นสุด)", key="tg_locked_in")
-        st.session_state.locked_in_active = locked_in
+        st.session_state["locked_in_active"] = locked_in
         
         if not locked_in:
             st.warning(f"🔥 ความต่อเนื่อง: {u_data['streak']} วัน")
@@ -379,9 +393,12 @@ with st.sidebar:
             st.progress(max(0.0, min(1.0, u_data["exp"] / 100)), text=f"Lv.{u_data['level']} | EXP: {u_data['exp']}/100")
             st.divider()
         
-        if st.button("🚪 ออกจากระบบ", key="btn_logout"): st.session_state.current_user = None; safe_rerun()
+        if st.button("🚪 ออกจากระบบ", key="btn_logout"): 
+            st.session_state["current_user"] = None
+            safe_rerun()
 
-if st.session_state.current_user is None:
+# 🛡️ IF NOT LOGGED IN, STOP HERE
+if safe_email is None:
     st.title("⚙️ DISCIPLINE ARC")
     st.info("👈 ล็อกอินด้านซ้ายเพื่อเผชิญหน้ากับปีศาจในใจและสร้างวินัยเหล็ก!")
     st.stop()
@@ -389,7 +406,6 @@ if st.session_state.current_user is None:
 # ==========================================
 # 7. APP MAIN LOGIC (USER DATA LOADED)
 # ==========================================
-safe_email = st.session_state.current_user
 user = db["users"][safe_email]
 active_mentor = user.get("anime_mentor", "None")
 active_quotes = MENTORS[active_mentor]["quotes"]
@@ -422,7 +438,7 @@ finance = db["finance"][safe_email]
 if "ledger" not in finance: finance["ledger"] = []
 current_streak = user.get("streak", 0)
 
-# ===== 🚨 CHECK OVERDUE COMMAND LOG =====
+# CHECK OVERDUE COMMAND LOG
 overdue_count = 0
 overdue_debt_accum = 0
 overdue_tasks_names = []
@@ -447,9 +463,7 @@ if overdue_count > 0:
     user["in_cage"] = True; save_db(db)
     if not is_locked_in: st.error(f"🚨 **มึงโดนลงโทษ {overdue_debt_accum} ที!** ข้อหา: ดองงานในสมุดบัญชาการจนเลยเวลา! ({', '.join(overdue_tasks_names)})")
 
-# ==========================================
-# 🗺️ PREPARE ACTIVE TASKS
-# ==========================================
+# PREPARE ACTIVE TASKS
 raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date") != today_str]
 raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date") != today_str]
 raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
@@ -463,9 +477,7 @@ all_active_tasks.sort(key=lambda x: (
     get_deadline_score(x.get("deadline", ""))
 ))
 
-# ==========================================
-# 🔒 LOCKED IN MODE
-# ==========================================
+# LOCKED IN MODE
 if is_locked_in:
     st.markdown("<h1 style='text-align: center; color: #ff4b4b; font-size: 3em;'>🔒 LOCKED IN MODE</h1>", unsafe_allow_html=True)
     st.divider()
@@ -525,12 +537,15 @@ except: t_date = today_date + timedelta(days=90)
 days_left = (t_date - today_date).days
 
 if st.button("💥 กูเริ่มเหนื่อยและอยากสบาย (Slap Me Awake!)", use_container_width=True, type="secondary", key="btn_trigger_slap_awake"):
-    st.session_state.slap_awake_active = True; safe_rerun()
+    st.session_state["slap_awake_active"] = True
+    safe_rerun()
 
 colTop1, colTop2, colTop3 = st.columns([1, 1, 3])
 with colTop1:
     if st.button("🎰 วงล้อชดใช้กรรม", type="primary", use_container_width=True, key="btn_trigger_punish_wheel"):
-        st.session_state.punishment_active = True; st.session_state.punishment_task = random.choice(PUNISHMENTS); safe_rerun()
+        st.session_state["punishment_active"] = True
+        st.session_state["punishment_task"] = random.choice(PUNISHMENTS)
+        safe_rerun()
 with colTop2:
     if st.button("⚡ ปลุกวินัย", use_container_width=True, key="btn_boost_discipline"): st.toast("🔥 อย่าถอย! ลุยดิวะ!", icon="⚙️")
 with colTop3:
@@ -587,13 +602,16 @@ st.divider()
 colLeft, colRight = st.columns([1.2, 2.8])
 
 with colLeft:
+    st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
     st.markdown("### 🗑️ ขยะในจิตใจ (Distractions)")
     fail_prob = user.get('failure_prob', 10)
     st.markdown(f"**📉 โอกาสหลุดวงโคจรวินัย: {fail_prob}%**")
     st.progress(fail_prob / 100)
     if st.button("💀 กดยอมแพ้ให้สิ่งเร้า", use_container_width=True, key="btn_surrender_distraction"):
         db["dopamine_fails"][safe_email].append(today_str); user["exp"] = 0; user["blood_debt"] = user.get("blood_debt", 0) + 50; user["in_cage"] = True; user["failure_prob"] = min(100, user["failure_prob"] + 20); save_db(db); safe_rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
+    st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
     st.markdown("#### 🩸 เชื้อเพลิงความแค้น")
     with st.form("weakness_fuel_form", clear_on_submit=True):
         w_text = st.text_input("ความอ่อนแอที่มึงเคยทำพลาด:", key="txt_weakness_input")
@@ -603,46 +621,55 @@ with colLeft:
     if db.get("weakness_fuel", {}).get(safe_email):
         random_weakness = random.choice(db["weakness_fuel"][safe_email])
         w_disp = random_weakness.get("text", "") if isinstance(random_weakness, dict) else random_weakness
-        st.error(f"🩸 **มึงเคยกากแบบนี้:**\n\n\"{w_disp}\"\n\n*(ห้ามกลับไปเป็นไอ้ขี้แพ้แบบเดิม!)*")
-
-    st.markdown("#### 🗣️ THE HATER'S WALL")
-    with st.form("hater_form", clear_on_submit=True):
-        h_text = st.text_input("คำดูถูกที่ฝังใจ:", key="txt_hater_input")
-        if st.form_submit_button("ฝังความแค้น"):
-            if h_text: db["haters"][safe_email].append(h_text); save_db(db); safe_rerun()
-    if db.get("haters", {}).get(safe_email): st.warning(f"🤬 \"{random.choice(db['haters'][safe_email])}\"")
+        st.error(f"🩸 **มึงเคยกากแบบนี้:**\n\n\"{w_disp}\"")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with colRight:
     st.markdown("## ⚙️ DISCIPLINE ZONE")
     
     tab_ai, tab_missions, tab_study, tab_forge, tab_subjects, tab_planner, tab_mirror, tab_habits, tab_daily_wins, tab_sanctuary = st.tabs([
-        "🤖 AI วางแผน", "🔪 งาน", "📖 เรียน", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
+        "🧠 DUAL AI วางแผน", "🔪 งาน", "📖 เรียน", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
     ])
     
     user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
     # ----------------------------------------------------
-    # TAB AI: 🤖 TACTICAL AI PLANNER 
+    # TAB AI: 🧠 DUAL AI TACTICAL PLANNER (V24)
     # ----------------------------------------------------
     with tab_ai:
-        st.markdown("### 🤖 TACTICAL AI (ผู้บัญชาการสมองกล)")
-        st.write("เวลาเหลือน้อย งานท่วมหัว? ให้ AI สวมวิญญาณ David Goggins คำนวณตารางเวลาและยุทธวิธีให้มึงซะ!")
+        st.markdown("### 🧠 สภาปัญญาประดิษฐ์ (DUAL AI COMMAND CENTER)")
+        st.write("ให้ **Gemini (ผู้สั่งการ)** และ **Claude (นักวางกลยุทธ์)** ร่วมกันจัดตารางรบให้มึงแบบไร้ที่ติ!")
         
-        api_key_check = user.get("api_key", "")
-        if not api_key_check or not HAS_GENAI:
-            st.warning("⚠️ โปรดกรอก Gemini API Key ที่แถบด้านซ้ายล่างก่อนใช้งาน และตรวจสอบให้แน่ใจว่าติดตั้งไลบรารี `google-generativeai` แล้ว (รันบน Streamlit Cloud ต้องมีไฟล์ requirements.txt)")
+        api_gemini_check = user.get("api_key", "")
+        api_claude_check = user.get("claude_api_key", "")
+        
+        if not api_gemini_check and not api_claude_check:
+            st.warning("⚠️ โปรดกรอก API Key ของ Gemini หรือ Claude (หรือทั้งคู่) ที่แถบด้านซ้ายล่างก่อนใช้งาน")
         else:
-            with st.form("ai_assessment_form"):
-                st.markdown("**1. ซักประวัติสถานการณ์ปัจจุบัน:**")
+            with st.container(border=True):
+                st.markdown("**📋 1. ซักประวัติและประเมินสถานะการรบ (Detailed Interrogation):**")
+                
                 col_ai1, col_ai2 = st.columns(2)
-                time_avail = col_ai1.number_input("มึงมีเวลาลุยงานกี่นาที? (เช่น 120):", min_value=10, max_value=1440, value=120, step=10)
-                energy_level = col_ai2.select_slider("สภาพร่างกายและจิตใจตอนนี้?", options=["ล้าสุดๆ (ใกล้ตาย)", "พอไหว (ตึงๆ)", "พลังล้น (พร้อมบวก)"])
-                constraints = st.text_input("ข้อจำกัดอื่นๆ (เช่น ต้องนอนก่อนเที่ยงคืน, วันนี้ปวดหัวมาก):")
-                submitted_ai = st.form_submit_button("🧠 ให้ AI วางแผนรบ!", type="primary")
+                time_avail = col_ai1.number_input("⏳ มึงมีเวลาลุยงานกี่นาที? (Time Available):", min_value=10, max_value=1440, value=120, step=10)
+                main_goal = col_ai2.text_input("🎯 เป้าหมายหลักสุดของวันนี้ (Main Objective):", placeholder="เช่น ปั่นโปรเจกต์ให้เสร็จ, เคลียร์การบ้านคณิต")
+                
+                col_ai3, col_ai4 = st.columns(2)
+                focus_style = col_ai3.selectbox("🧠 สไตล์การโฟกัส (Focus Mode):", [
+                    "🍅 Pomodoro (ทำ 25 พัก 5)", 
+                    "🌊 Deep Work (ทำ 90 พัก 15)", 
+                    "💀 Brutal Mode (ไม่พักเลยจนกว่าจะตาย)"
+                ])
+                energy_level = col_ai4.select_slider("⚡ สภาพร่างกาย/จิตใจตอนนี้?", options=["ล้าสุดๆ (ใกล้ตาย)", "พอไหว (ตึงๆ)", "พลังล้น (พร้อมบวก)"], value="พอไหว (ตึงๆ)")
+                
+                col_ai5, col_ai6 = st.columns(2)
+                stress_level = col_ai5.select_slider("💣 ระดับความเครียด/กดดัน?", options=["ชิลๆ", "เริ่มลน", "สมองจะระเบิดแล้ว!"], value="เริ่มลน")
+                constraints = col_ai6.text_input("🚧 ข้อจำกัดอื่นๆ (Constraints):", placeholder="เช่น ต้องนอนก่อนเที่ยงคืน, วันนี้ปวดหัวมาก")
+                
+                submitted_ai = st.button("🔥 เรียกประชุมสภา AI วางแผนรบ!", type="primary", use_container_width=True)
 
             if submitted_ai:
-                with st.spinner("🔥 กำลังให้ AI ประมวลผลยุทธวิธีระดับทหาร... รอแป๊บไอ้นักรบ!"):
+                with st.spinner("🔥 สภา AI กำลังประมวลผลยุทธวิธีระดับทหาร... รอแป๊บไอ้นักรบ!"):
                     active_tasks_ai = []
                     for m in db["missions"][safe_email]:
                         if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False): 
@@ -656,72 +683,134 @@ with colRight:
                         
                     task_str = "\n".join(active_tasks_ai) if active_tasks_ai else "ไม่มีงานค้างเลย ถือว่าว่าง!"
                     
-                    prompt = f"""
-                    You are a ruthless, highly efficient tactical planner like David Goggins. Your user is an ambitious warrior who needs a brutal, optimal schedule.
+                    # --- PROMPTS ---
+                    claude_prompt = f"""
+                    You are a meticulous, highly logical tactical strategist (like Erwin Smith). Your goal is to optimize a {time_avail}-minute schedule for a user.
                     
-                    USER'S CURRENT STATE:
-                    - Time available: {time_avail} minutes
-                    - Energy Level: {energy_level}
+                    USER STATE:
+                    - Main Goal: {main_goal}
+                    - Energy: {energy_level}, Stress: {stress_level}
+                    - Focus Style: {focus_style}
                     - Constraints: {constraints}
                     
-                    PENDING TASKS:
+                    TASKS TO DO:
                     {task_str}
                     
                     INSTRUCTIONS:
-                    1. Evaluate the tasks based on the time available.
-                    2. Estimate how many minutes each task will take (be realistic but strict).
-                    3. Create an optimal attack order. Prioritize 'Must Do' and urgent tasks.
-                    4. If the total estimated time exceeds {time_avail} minutes, clearly state WHICH tasks must be DROPPED or DEFERRED for today. Do not sugarcoat it.
-                    5. End with a highly motivational, aggressive, Thai-language battle cry (David Goggins style) to get them moving immediately. Do not use polite particles like 'ครับ/ค่ะ'.
-                    
-                    Format the output using clear Markdown (bullet points, bold text). Write entirely in Thai.
+                    1. Create a logical, time-boxed schedule (in minutes).
+                    2. Estimate realistic time required for each task. If total time exceeds {time_avail} minutes, STRICTLY define what to DROP or PUSH to tomorrow.
+                    3. Apply the requested Focus Style ({focus_style}) and define exactly when they should take breaks.
+                    4. Be logical, clear, and extremely structured. 
+                    5. Write the response entirely in Thai, using Markdown tables or bullet points. Do not be overly polite (use strong, direct language).
                     """
                     
-                    try:
-                        genai.configure(api_key=api_key_check)
-                        safety_settings = [
-                            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-                        ]
-                        
-                        response = None
-                        error_msg = ""
-                        
-                        available_models = []
-                        try:
-                            available_models = [m.name.replace("models/", "") for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                        except Exception:
-                            available_models = ['gemini-1.5-flash', 'gemini-1.5-pro']
-                            
-                        flash_models = [m for m in available_models if 'flash' in m.lower()]
-                        pro_models = [m for m in available_models if 'pro' in m.lower() and 'vision' not in m.lower()]
-                        
-                        test_models = flash_models + pro_models + ['gemini-1.5-flash', 'gemini-1.5-pro']
-                        
-                        seen = set()
-                        model_queue = [x for x in test_models if not (x in seen or seen.add(x))]
-                        
-                        for m_name in model_queue:
-                            try:
-                                model = genai.GenerativeModel(m_name)
-                                response = model.generate_content(prompt, safety_settings=safety_settings)
-                                if response:
-                                    st.toast(f"🤖 ประมวลผลสำเร็จด้วยโมเดล: {m_name}", icon="🧠")
-                                    break 
-                            except Exception as e:
-                                error_msg += f"[{m_name}: {str(e)}] "
-                                continue
-                                
-                        if response:
-                            st.markdown("---")
-                            st.markdown("<h4 style='color:#4ba3ff;'>📊 แผนการรบจาก AI (TACTICAL REPORT)</h4>", unsafe_allow_html=True)
-                            st.markdown(response.text)
+                    gemini_prompt = f"""
+                    You are a ruthless, hardcore commander like David Goggins. Your user is facing a tough day.
+                    
+                    USER STATE:
+                    - Energy: {energy_level}, Stress: {stress_level}
+                    - Main Goal: {main_goal}
+                    
+                    TASKS TO DO:
+                    {task_str}
+                    
+                    INSTRUCTIONS:
+                    1. Look at their tasks and their weak state, and give them a brutal reality check.
+                    2. Point out the 'Must Do' tasks. If they don't do them, tell them exactly how miserable their future will be.
+                    3. Tell them to stop whining about stress ({stress_level}) and low energy ({energy_level}).
+                    4. End with a massive, aggressive battle cry.
+                    5. Write entirely in Thai (using terms like กู, มึง, โคตร). No polite words. 100% savage motivation.
+                    """
+
+                    # --- EXECUTION ---
+                    tab_ai_1, tab_ai_2 = st.tabs(["🧠 THE TACTICIAN (Claude)", "🔥 THE COMMANDER (Gemini)"])
+                    
+                    # CLAUDE EXECUTION (AUTO-FALLBACK EXTENDED)
+                    with tab_ai_1:
+                        if not HAS_CLAUDE or not api_claude_check:
+                            st.warning("⚠️ ไม่ได้เชื่อมต่อ Claude API")
                         else:
-                            st.error(f"❌ AI ไม่ยอมตอบ หรือไม่พบโมเดลที่รองรับเลย! (Error: {error_msg})")
-                    except Exception as e:
-                        st.error(f"❌ AI ประมวลผลล้มเหลว (เช็ค API Key, เน็ต, หรือ requirements.txt): {e}")
+                            try:
+                                client = anthropic.Anthropic(api_key=api_claude_check)
+                                claude_models = [
+                                    "claude-3-5-sonnet-latest", 
+                                    "claude-3-5-sonnet-20241022", 
+                                    "claude-3-5-sonnet-20240620", 
+                                    "claude-3-opus-20240229",     
+                                    "claude-3-sonnet-20240229", 
+                                    "claude-3-haiku-20240307",
+                                    "claude-5-opus", "claude-5-sonnet",
+                                    "claude-4-5-opus", "claude-4-5-sonnet",
+                                    "claude-opus-latest", "claude-sonnet-latest"
+                                ]
+                                claude_response = None
+                                claude_error = ""
+                                
+                                for c_model in claude_models:
+                                    try:
+                                        message = client.messages.create(
+                                            model=c_model,
+                                            max_tokens=1000,
+                                            system="You are an elite, logical tactical planner. Speak direct Thai.",
+                                            messages=[{"role": "user", "content": claude_prompt}]
+                                        )
+                                        claude_response = message.content[0].text
+                                        st.toast(f"🧠 Claude วางแผนสำเร็จด้วยโมเดล: {c_model}", icon="🧠")
+                                        break
+                                    except Exception as e:
+                                        claude_error += f"[{c_model} failed] "
+                                        continue
+                                        
+                                if claude_response:
+                                    st.markdown("### 🗺️ แผนยุทธวิธี (Logical Strategy)")
+                                    st.markdown(claude_response)
+                                else:
+                                    st.error(f"❌ Claude API Error ไม่พบโมเดลที่รองรับ หรือ API Key มีปัญหา: {claude_error}")
+                            except Exception as e:
+                                st.error(f"❌ Claude System Error: {e}")
+                                
+                    # GEMINI EXECUTION (AUTO-FALLBACK)
+                    with tab_ai_2:
+                        if not HAS_GENAI or not api_gemini_check:
+                            st.warning("⚠️ ไม่ได้เชื่อมต่อ Gemini API")
+                        else:
+                            try:
+                                genai.configure(api_key=api_gemini_check)
+                                safety_settings = [
+                                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                                ]
+                                
+                                available_models = []
+                                try:
+                                    available_models = [m.name.replace("models/", "") for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                                except Exception:
+                                    available_models = ['gemini-1.5-flash', 'gemini-1.5-pro']
+                                    
+                                flash_models = [m for m in available_models if 'flash' in m.lower()]
+                                pro_models = [m for m in available_models if 'pro' in m.lower() and 'vision' not in m.lower()]
+                                test_models = flash_models + pro_models + ['gemini-1.5-flash', 'gemini-1.5-pro']
+                                
+                                seen = set()
+                                model_queue = [x for x in test_models if not (x in seen or seen.add(x))]
+                                
+                                response = None
+                                for m_name in model_queue:
+                                    try:
+                                        model = genai.GenerativeModel(m_name)
+                                        response = model.generate_content(gemini_prompt, safety_settings=safety_settings)
+                                        if response: break 
+                                    except Exception: continue
+                                        
+                                if response:
+                                    st.markdown("### 🩸 คำสั่งบัญชาการ (Brutal Orders)")
+                                    st.markdown(response.text)
+                                else:
+                                    st.error("❌ Gemini ไม่ตอบสนอง (เซฟตี้บล็อก หรือไม่พบโมเดล)")
+                            except Exception as e:
+                                st.error(f"❌ Gemini API Error: {e}")
 
     # ----------------------------------------------------
     # TAB 1: 🔪 งาน
@@ -874,6 +963,18 @@ with colRight:
         ))
         
         if todo_study:
+            with st.expander("🎯 วางแผนลำดับวิชาเรียน (Q-Order)"):
+                with st.form("set_study_order_form"):
+                    new_s_orders = {}
+                    for s in todo_study:
+                        col_q, col_n = st.columns([1, 5])
+                        new_s_orders[s["id"]] = col_q.number_input("คิว", min_value=1, max_value=99, value=int(s.get("user_order", 99)), step=1, key=f"q_s_{s['id']}", label_visibility="collapsed")
+                        col_n.write(f"{'💀 [BOSS] ' if s.get('is_boss') else ''}{s['ภารกิจ']}")
+                    if st.form_submit_button("🔒 ล็อคผังเรียน!"):
+                        for s in db["study_missions"][safe_email]:
+                            if isinstance(s, dict) and s.get("id") in new_s_orders: s["user_order"] = int(new_s_orders[s["id"]])
+                        save_db(db); st.success("✅ อัปเดตผังเรียนเรียบร้อย!"); safe_rerun()
+
             for s in todo_study:
                 is_must_do = s.get("is_must_do", False)
                 css_class = "task-card-ui death-mark" if is_must_do else "task-card-ui overdue" if is_overdue_check(s.get("deadline", "")) else "task-card-ui study"
@@ -963,6 +1064,7 @@ with colRight:
                     if c3.button("📤 ส่งอนุมัติ", key=f"pend_stud_{s['id']}", use_container_width=True): s["รอตรวจ"] = True; save_db(db); safe_rerun()
                 else: c2.caption("❄️ แช่แข็ง" if is_frozen and not is_overdue else "🔒 บทเรียนคาอยู่")
                 if c5.button("🗑️", key=f"del_stud_{s['id']}"): db["study_missions"][safe_email].remove(s); save_db(db); safe_rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
         else: st.success("📚 ติวทบทวนเนื้อหาครบหมดแล้วใน Roadmap!")
 
         pending_study = [s for s in raw_active_study if s.get("รอตรวจ", False)]
@@ -1029,7 +1131,7 @@ with colRight:
     # ----------------------------------------------------
     with tab_subjects:
         st.markdown("### 🗂️ คลังแสงรายวิชา (Academic Arsenal)")
-        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ")
+        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ (ไม่นับเป็นภารกิจ)")
         
         with st.expander("➕ เพิ่มรายวิชาใหม่"):
             with st.form("add_subject_form", clear_on_submit=True):
@@ -1433,6 +1535,7 @@ with colRight:
                         if active_mentor == "Jesus": 
                             j_quote = clean_quote(random.choice(MENTORS['Jesus']['quotes']))
                             st.markdown(f"<p style='color: #4ba3ff; font-style: italic; font-size: 0.9em;'>✝️ \"{j_quote}\"</p>", unsafe_allow_html=True)
+
 
 # ==========================================
 # 💰 อัปเกรดระบบการเงิน (ULTIMATE FINANCE TRACKER)
