@@ -22,49 +22,32 @@ except ImportError:
     HAS_CLAUDE = False
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V22 UNSTOPPABLE DUAL AI)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V23 DIAGNOSTIC DUAL AI)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
-# --- CUSTOM CSS (UI OVERHAUL) ---
 st.markdown("""
 <style>
-    /* Global Tactical Theme */
-    .stApp { background-color: #0E1117; color: #E0E6ED; }
+    .subject-banner { background: linear-gradient(135deg, #141E30 0%, #243B55 100%); padding: 20px 25px; border-radius: 12px; border-left: 6px solid #4ba3ff; color: white; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .subject-banner h3 { margin: 0; padding-bottom: 5px; font-weight: 700; color: #ffffff; }
+    .subject-banner p { margin: 0; color: #a0c4ff; font-size: 0.95em; }
+    .badge { padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 600; display: inline-block; margin-left: 5px; }
+    .b-red { background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid #ff4b4b; }
+    .b-blue { background: rgba(75, 163, 255, 0.15); color: #4ba3ff; border: 1px solid #4ba3ff; }
+    .b-gold { background: rgba(226, 209, 65, 0.15); color: #e2d141; border: 1px solid #e2d141; }
+    .b-gray { background: rgba(150, 150, 150, 0.15); color: #cccccc; border: 1px solid #666666; }
+    .b-green { background: rgba(75, 255, 75, 0.15); color: #4bff4b; border: 1px solid #4bff4b; }
+    .b-death { background: #ff0000; color: #ffffff; border: 1px solid #ff0000; text-transform: uppercase; letter-spacing: 1px; }
     
-    /* Glassmorphism Panels */
-    .glass-panel {
-        background: rgba(30, 34, 45, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 15px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    }
+    @keyframes blinker { 50% { opacity: 0.5; } }
+    .blink-text { animation: blinker 1s linear infinite; font-weight: bold; color: #ff4b4b; }
     
-    .subject-banner { background: linear-gradient(135deg, #1A2536 0%, #0E1117 100%); padding: 20px 25px; border-radius: 12px; border-left: 6px solid #4ba3ff; color: white; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    .subject-banner h3 { margin: 0; padding-bottom: 5px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1px;}
-    .subject-banner p { margin: 0; color: #8FA2B8; font-size: 0.95em; }
-    
-    .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; display: inline-block; margin-left: 5px; letter-spacing: 0.5px; }
-    .b-red { background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid rgba(255, 75, 75, 0.5); }
-    .b-blue { background: rgba(75, 163, 255, 0.15); color: #4ba3ff; border: 1px solid rgba(75, 163, 255, 0.5); }
-    .b-gold { background: rgba(226, 209, 65, 0.15); color: #e2d141; border: 1px solid rgba(226, 209, 65, 0.5); }
-    .b-gray { background: rgba(150, 150, 150, 0.15); color: #cccccc; border: 1px solid rgba(150, 150, 150, 0.5); }
-    .b-green { background: rgba(75, 255, 75, 0.15); color: #4bff4b; border: 1px solid rgba(75, 255, 75, 0.5); }
-    
-    @keyframes deathBlink { 0% { box-shadow: 0 0 10px #ff0000; } 50% { box-shadow: 0 0 25px #ff0000, inset 0 0 10px rgba(255,0,0,0.3); } 100% { box-shadow: 0 0 10px #ff0000; } }
-    .b-death { background: #5a0000; color: #ff4b4b; border: 1px solid #ff0000; text-transform: uppercase; animation: deathBlink 2s infinite; }
-    
-    .task-card-ui { background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 10px; border-left: 4px solid #555; margin-bottom: 12px; transition: all 0.3s ease; }
-    .task-card-ui:hover { transform: translateX(5px); background: rgba(255, 255, 255, 0.05); }
+    .task-card-ui { background: rgba(255, 255, 255, 0.03); padding: 12px 15px; border-radius: 8px; border-left: 3px solid #555; margin-bottom: 8px; }
     .task-card-ui.overdue { border-left: 4px solid #ff4b4b; background: rgba(255, 0, 0, 0.05); }
-    .task-card-ui.study { border-left: 4px solid #4ba3ff; }
-    .task-card-ui.death-mark { border-left: 4px solid #ff0000; animation: deathBlink 2s infinite; background: rgba(255,0,0,0.05); }
+    .task-card-ui.study { border-left: 3px solid #4ba3ff; }
+    .task-card-ui.death-mark { border: 2px solid #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.5); background: rgba(255,0,0,0.1); }
     
-    .mentor-quote { background: rgba(0, 0, 0, 0.4); padding: 12px 15px; border-radius: 8px; font-style: italic; margin-top: 8px; margin-bottom: 10px; font-size: 0.95em; border-left: 3px solid #666; }
+    .mentor-quote { background: rgba(255, 255, 255, 0.05); padding: 12px 15px; border-radius: 8px; font-style: italic; margin-top: 5px; margin-bottom: 10px; font-size: 0.95em;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -253,7 +236,7 @@ WARRIOR_CONSEQUENCES = ["1. กูจะต้องทนเห็นคนท�
 ETERNAL_ECHOES = ["1. มึงบอกว่าไม่อยากกากอีกแล้ว มึงทำตัวให้คู่ควรกับคำพูดรึยัง!?", "2. โลกไม่สนหรอกว่ามึงจะเหนื่อย โลกสนแค่ว่ามึงทำสำเร็จหรือเปล่า!", "3. ทุกวินาทีที่ขี้เกียจ คือการกลับไปเป็นขี้แพ้!", "4. จะเก่งได้ไงถ้ามึงเอาแต่หาข้ออ้าง ลุกขึ้นมา!", "5. Pain is temporary, quitting lasts forever!", "6. They don't know you son! Show them what you're made of!", "7. Stay hard! อย่าให้ปีศาจในหัวมึงชนะได้!", "8. มึงหลอกคนอื่นได้ แต่มึงหลอกตัวเองหน้ากระจกไม่ได้หรอกนะ!", "9. อย่าให้ความกลัว ขโมยความฝันของมึงไป!", "10. ความสำเร็จสร้างด้วยมือ ไม่ใช่ด้วยน้ำลาย!", "11. ถ้ามึงไม่สร้างฝันของตัวเอง คนอื่นก็จะจ้างมึงไปสร้างฝันของเขา!", "12. ล้มได้ ร้องไห้ได้ แต่มึงห้ามยอมแพ้เด็ดขาด!", "13. หนทางที่ยากลำบาก มักจะนำไปสู่จุดหมายที่งดงามเสมอ!", "14. ความอดทนมันขมขื่น แต่ผลของมันช่างหอมหวาน!", "15. พิสูจน์ตัวเองด้วยผลงาน ไม่ใช่ด้วยคำแก้ตัว!", "16. ยิ่งเหนื่อย ยิ่งต้องพยายาม เพราะชัยชนะอยู่ใกล้แค่เอื้อม!", "17. จงเป็นเวอร์ชั่นที่ดีที่สุด ของตัวมึงเองในทุกๆ วัน!", "18. อนาคตของมึง ซ่อนอยู่ในกิจวัตรประจำวันของมึงนั่นแหละ!", "19. อย่าลดขนาดความฝัน แต่จงเพิ่มขนาดความพยายาม!", "20. ผู้ชนะไม่เคยล้มเลิก ผู้ล้มเลิกไม่เคยชนะ!", "21. เริ่มต้นจากศูนย์ ดีกว่าไม่เริ่มต้นอะไรเลย!", "22. ความกล้าหาญ คือการก้าวไปข้างหน้า แม้จะรู้สึกกลัวก็ตาม!", "23. เชื่อมั่นในตัวเอง แล้วทุกอย่างจะเป็นไปได้!", "24. อุปสรรคมีไว้ให้ข้าม ไม่ใช่มีไว้ให้หยุด!", "25. จงทำวันนี้ให้ดีที่สุด เหมือนไม่มีวันพรุ่งนี้ให้แก้ตัว!", "26. ความพยายามอยู่ที่ไหน ความสำเร็จอยู่ที่นั่น คำนี้ยังใช้ได้เสมอ!", "27. เหงื่อของมึงในวันนี้ จะกลายเป็นรอยยิ้มในวันพรุ่งนี้!", "28. อย่าเอาชีวิตมึง ไปเปรียบเทียบกับใคร มึงมีเส้นทางของมึงเอง!", "29. จงเรียนรู้จากความผิดพลาด แล้วทำให้มันดีขึ้นในครั้งต่อไป!", "30. ความสำเร็จ ไม่ได้วัดกันที่ความฉลาด แต่วัดกันที่ความขยัน!", "31. อย่าปล่อยให้คำวิจารณ์ของคนอื่น มาทำลายความตั้งใจของมึง!", "32. จงเป็นแรงบันดาลใจ ให้กับคนที่กำลังมองดูมึงอยู่!", "33. ความยิ่งใหญ่ ไม่ได้เกิดขึ้นในชั่วข้ามคืน มันต้องใช้เวลาและความพยายาม!", "34. เมื่อมึงคิดจะยอมแพ้ ให้นึกถึงเหตุผลที่มึงเริ่มต้น!", "35. จงแข็งแกร่งดั่งหินผา และอ่อนโยนดั่งสายน้ำ!", "36. ความมีวินัย คือกุญแจสำคัญ สู่ความสำเร็จในทุกๆ เรื่อง!", "37. อย่ากลัวความล้มเหลว เพราะมันคือส่วนหนึ่งของความสำเร็จ!", "38. จงก้าวออกจาก Comfort Zone แล้วมึงจะค้นพบโลกใบใหม่!", "39. ทุกๆ วันคือโอกาสใหม่ ในการเริ่มต้นทำสิ่งดีๆ!", "40. จงทำในสิ่งที่มึงรัก แล้วมึงจะไม่รู้สึกว่าต้องทำงานเลย!", "41. ความมุ่งมั่นของมึง จะทำลายทุกกำแพงที่ขวางกั้น!", "42. จงเป็นแสงสว่าง ในความมืดมิดให้กับตัวเองและผู้อื่น!", "43. ความหวัง คือพลังที่ทำให้มนุษย์ก้าวต่อไปได้เสมอ!", "44. จงเชื่อว่ามึงทำได้ แล้วมึงจะหาทางทำให้มันสำเร็จจนได้!", "45. อย่าปล่อยให้ความฝัน เป็นเพียงแค่ความฝัน จงลงมือทำให้มันเป็นจริง!", "46. พลังที่ซ่อนอยู่ในตัวมึง มันยิ่งใหญ่กว่าที่มึงคิดไว้มาก!", "47. จงขอบคุณทุกอุปสรรค ที่เข้ามาทำให้มึงแข็งแกร่งขึ้น!", "48. ชีวิตนี้สั้นนัก จงใช้มันอย่างคุ้มค่า และมีความหมาย!", "49. มึงคือสถาปนิก ผู้ออกแบบชีวิตของมึงเอง!", "50. ลุยให้สุดขีดจำกัด แล้วมึงจะพบว่าตัวเองเจ๋งแค่ไหน!"]
 
 # ==========================================
-# 4. DATABASE & STATE INIT
+# 4. DATABASE INIT
 # ==========================================
 db = load_db()
 
@@ -623,7 +606,7 @@ with colRight:
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
     # ----------------------------------------------------
-    # TAB AI: 🧠 DUAL AI TACTICAL PLANNER (V22)
+    # TAB AI: 🧠 DUAL AI TACTICAL PLANNER (V23) AUTO-FALLBACK
     # ----------------------------------------------------
     with tab_ai:
         st.markdown("### 🧠 สภาปัญญาประดิษฐ์ (DUAL AI COMMAND CENTER)")
@@ -713,7 +696,7 @@ with colRight:
                     # --- EXECUTION ---
                     tab_ai_1, tab_ai_2 = st.tabs(["🧠 THE TACTICIAN (Claude)", "🔥 THE COMMANDER (Gemini)"])
                     
-                    # CLAUDE EXECUTION (AUTO-FALLBACK)
+                    # CLAUDE EXECUTION (AUTO-FALLBACK WITH DIAGNOSTICS)
                     with tab_ai_1:
                         if not HAS_CLAUDE or not api_claude_check:
                             st.warning("⚠️ ไม่ได้เชื่อมต่อ Claude API")
@@ -721,16 +704,16 @@ with colRight:
                             try:
                                 client = anthropic.Anthropic(api_key=api_claude_check)
                                 
-                                # โมเดลไล่ระดับ ถ้าระบบหาตัวแรกไม่เจอ จะไหลไปหาตัวถัดไป
+                                # โมเดลของแท้จาก Anthropic (ไม่มี Opus 5 มีแต่ 3)
                                 claude_models = [
-                                    "claude-3-5-sonnet-latest", 
                                     "claude-3-5-sonnet-20241022", 
                                     "claude-3-5-sonnet-20240620", 
+                                    "claude-3-opus-20240229",
                                     "claude-3-sonnet-20240229", 
                                     "claude-3-haiku-20240307"
                                 ]
                                 claude_response = None
-                                claude_error = ""
+                                claude_errors = []
                                 
                                 for c_model in claude_models:
                                     try:
@@ -744,16 +727,19 @@ with colRight:
                                         st.toast(f"🧠 Claude วางแผนสำเร็จด้วยโมเดล: {c_model}", icon="🧠")
                                         break
                                     except Exception as e:
-                                        claude_error += f"[{c_model} failed] "
+                                        claude_errors.append(f"❌ {c_model}: {str(e)}")
                                         continue
                                         
                                 if claude_response:
                                     st.markdown("### 🗺️ แผนยุทธวิธี (Logical Strategy)")
                                     st.markdown(claude_response)
                                 else:
-                                    st.error(f"❌ Claude API Error ไม่พบโมเดลที่รองรับ: {claude_error}")
+                                    st.error("❌ Claude API ขัดข้อง! (อาจจะเครดิตหมด, พึ่งเติมเงินยังไม่อัปเดต, หรือ API Key ผิด)")
+                                    with st.expander("🔍 ดูสาเหตุ Error เชิงลึก (คลิก)"):
+                                        for err in claude_errors:
+                                            st.write(err)
                             except Exception as e:
-                                st.error(f"❌ Claude System Error: {e}")
+                                st.error(f"❌ ระบบ Claude มีปัญหา: {e}")
                                 
                     # GEMINI EXECUTION (AUTO-FALLBACK)
                     with tab_ai_2:
@@ -1113,7 +1099,7 @@ with colRight:
                 if col3.button("🗑️", key=f"del_sk_{sk['id']}"): db["skill_forge"][safe_email].remove(sk); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 4: 🗂️ คลังแสงวิชา (ACADEMIC ARArsenal)
+    # TAB 4: 🗂️ คลังแสงวิชา (ACADEMIC ARSENAL)
     # ----------------------------------------------------
     with tab_subjects:
         st.markdown("### 🗂️ คลังแสงรายวิชา (Academic Arsenal)")
@@ -1240,7 +1226,6 @@ with colRight:
                 elif "สอบ" in pl_type: item_type = "exam"
                 
                 final_dl = str(pl_date) if pl_date and item_type != "note" and "ไม่มีกำหนด" not in pl_dl_type else ""
-                
                 subtasks = [{"name": s.strip(), "done": False, "done_date": ""} for s in pl_subtasks_str.split('\n') if s.strip()] if item_type in ["task", "study"] else []
                 
                 db["command_log"][safe_email].append({
