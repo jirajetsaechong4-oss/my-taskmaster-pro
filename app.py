@@ -7,7 +7,7 @@ import hashlib
 import random
 import re
 
-# 🚀 นำเข้า Gemini AI
+# 🚀 นำเข้า Gemini AI (ตัด Claude ทิ้งตามคำสั่ง)
 try:
     import google.generativeai as genai
     HAS_GENAI = True
@@ -15,100 +15,91 @@ except ImportError:
     HAS_GENAI = False
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V25 ULTIMATE UI & SINGLE AI CORE)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V26 CYBER-TACTICAL UI & BULLETPROOF)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
-# 🛡️ THE SHIELD: ป้องกัน AttributeError แบบ 100% (ห้ามลบเด็ดขาด)
-if "current_user" not in st.session_state: st.session_state["current_user"] = None
-if "punishment_active" not in st.session_state: st.session_state["punishment_active"] = False
-if "punishment_task" not in st.session_state: st.session_state["punishment_task"] = ""
-if "slap_awake_active" not in st.session_state: st.session_state["slap_awake_active"] = False
-if "active_slap_message" not in st.session_state: st.session_state["active_slap_message"] = ""
-if "locked_in_active" not in st.session_state: st.session_state["locked_in_active"] = False
-
-# --- CUSTOM CSS (ULTIMATE OVERHAUL - สวยสัดๆ) ---
+# --- CUSTOM CSS (สวยสัดๆ CYBER-TACTICAL OVERHAUL) ---
 st.markdown("""
 <style>
-    /* Global Tactical Dark Theme */
-    .stApp { 
-        background: radial-gradient(circle at top center, #111827 0%, #000000 100%); 
-        color: #E2E8F0; 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    /* Premium Glassmorphism Panels */
+    /* Global Theme & Scrollbar */
+    .stApp { background: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 100%); color: #E2E8F0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #0284c7; }
+
+    /* Glassmorphism Panels */
     .glass-panel {
-        background: rgba(30, 41, 59, 0.45);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 22px;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        padding: 20px;
         border-radius: 16px;
         margin-bottom: 20px;
-        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
     }
     
     /* Subject Banners */
     .subject-banner { 
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); 
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
         padding: 20px 30px; 
         border-radius: 16px; 
-        border-left: 8px solid #38BDF8; 
+        border-left: 6px solid #38bdf8; 
         color: white; 
         margin-bottom: 15px; 
-        box-shadow: 0 8px 25px rgba(0,0,0,0.6); 
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+        position: relative;
+        overflow: hidden;
     }
-    .subject-banner h3 { margin: 0; padding-bottom: 5px; font-weight: 800; color: #F8FAFC; text-transform: uppercase; letter-spacing: 1.5px; }
-    .subject-banner p { margin: 0; color: #94A3B8; font-size: 1em; }
+    .subject-banner::after { content: ''; position: absolute; top: 0; right: 0; width: 100px; height: 100%; background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.1)); transform: skewX(-45deg); }
+    .subject-banner h3 { margin: 0; padding-bottom: 5px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 2px;}
+    .subject-banner p { margin: 0; color: #94a3b8; font-size: 0.95em; }
     
     /* Sleek Badges */
-    .badge { padding: 5px 14px; border-radius: 20px; font-size: 0.75em; font-weight: 800; display: inline-block; margin-left: 6px; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-    .b-red { background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.5); }
-    .b-blue { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.5); }
-    .b-gold { background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.5); }
-    .b-gray { background: rgba(148, 163, 184, 0.15); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.5); }
-    .b-green { background: rgba(34, 197, 94, 0.15); color: #22C55E; border: 1px solid rgba(34, 197, 94, 0.5); }
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; display: inline-block; margin-left: 6px; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .b-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5); }
+    .b-blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); }
+    .b-gold { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.5); }
+    .b-gray { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.5); }
+    .b-green { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.5); }
     
     /* Death Mark Animation */
-    @keyframes pulse-red { 
-        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 
-        70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 
-        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } 
-    }
-    .b-death { background: linear-gradient(90deg, #7f1d1d, #991b1b); color: #fca5a5; border: 1px solid #ef4444; text-transform: uppercase; animation: pulse-red 2s infinite; }
+    @keyframes deathPulse { 0% { box-shadow: 0 0 5px #ef4444; } 50% { box-shadow: 0 0 20px #ef4444, inset 0 0 10px rgba(239,68,68,0.2); } 100% { box-shadow: 0 0 5px #ef4444; } }
+    .b-death { background: linear-gradient(90deg, #7f1d1d, #991b1b); color: #fca5a5; border: 1px solid #ef4444; text-transform: uppercase; animation: deathPulse 2s infinite; }
     
     /* 3D Task Cards */
     .task-card-ui { 
-        background: rgba(255, 255, 255, 0.04); 
-        padding: 18px 20px; 
+        background: rgba(30, 41, 59, 0.5); 
+        padding: 16px 20px; 
         border-radius: 12px; 
-        border-left: 4px solid #64748B; 
+        border-left: 4px solid #64748b; 
         margin-bottom: 15px; 
+        border-top: 1px solid rgba(255,255,255,0.05);
+        border-right: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid rgba(0,0,0,0.5);
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
     }
-    .task-card-ui:hover { transform: translateY(-3px) scale(1.01); background: rgba(255, 255, 255, 0.07); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-    .task-card-ui.overdue { border-left: 5px solid #EF4444; background: rgba(239, 68, 68, 0.05); }
-    .task-card-ui.study { border-left: 5px solid #38BDF8; }
-    .task-card-ui.death-mark { border-left: 5px solid #EF4444; animation: pulse-red 2s infinite; background: rgba(239, 68, 68, 0.08); }
+    .task-card-ui:hover { transform: translateY(-4px) scale(1.01); background: rgba(30, 41, 59, 0.8); border-left-color: #38bdf8; box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 15px rgba(56, 189, 248, 0.2); z-index: 10;}
+    .task-card-ui.overdue { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05); }
+    .task-card-ui.overdue:hover { border-left-color: #ef4444; box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 15px rgba(239, 68, 68, 0.3); }
+    .task-card-ui.study { border-left: 4px solid #38bdf8; }
+    .task-card-ui.death-mark { border-left: 4px solid #ef4444; animation: deathPulse 2s infinite; background: rgba(239, 68, 68, 0.08); }
     
-    /* Mentor Quotes Setup */
-    .mentor-quote { background: rgba(15, 23, 42, 0.7); padding: 14px 18px; border-radius: 8px; font-style: italic; margin-top: 10px; margin-bottom: 12px; font-size: 0.95em; border-left: 4px solid #666; color: #CBD5E1;}
+    /* Mentor Quotes */
+    .mentor-quote { background: rgba(2, 6, 23, 0.6); padding: 14px 18px; border-radius: 8px; font-style: italic; margin-top: 10px; margin-bottom: 12px; font-size: 0.95em; border-left: 4px solid #475569; color: #e2e8f0; }
     
     /* Custom Streamlit Tabs */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; padding-bottom: 5px; }
-    .stTabs [data-baseweb="tab"] { background-color: rgba(255,255,255,0.03); border-radius: 8px 8px 0 0; padding: 10px 20px; transition: background-color 0.3s; }
-    .stTabs [data-baseweb="tab"]:hover { background-color: rgba(255,255,255,0.08); }
-    .stTabs [aria-selected="true"] { background-color: rgba(56, 189, 248, 0.15); border-bottom: 3px solid #38BDF8; color: white !important; font-weight: bold; }
-    
-    /* Custom Buttons Override */
-    .stButton>button { border-radius: 8px; transition: transform 0.1s; }
-    .stButton>button:active { transform: scale(0.95); }
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; padding-bottom: 5px; }
+    .stTabs [data-baseweb="tab"] { background-color: rgba(30, 41, 59, 0.5); border-radius: 8px 8px 0 0; padding: 10px 25px; transition: all 0.3s; border: 1px solid transparent; }
+    .stTabs [data-baseweb="tab"]:hover { background-color: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); }
+    .stTabs [aria-selected="true"] { background-color: rgba(56, 189, 248, 0.15) !important; border-top: 2px solid #38bdf8 !important; border-bottom: none !important; color: white !important; font-weight: 800; box-shadow: 0 -5px 15px rgba(56, 189, 248, 0.1); }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. ฟังก์ชันพื้นฐานทั้งหมด (HELPER FUNCTIONS)
+# 2. ฟังก์ชันพื้นฐาน & ฐานข้อมูล (HELPER FUNCTIONS - ป้องกัน NameError)
 # ==========================================
 FIREBASE_URL = "https://mytaskpro-f7328-default-rtdb.asia-southeast1.firebasedatabase.app" 
 FIREBASE_SECRET = "Wv2Ha7WZrDLwnpJyKMt29z9I0MGb0kxitoOaaoGe"
@@ -185,7 +176,7 @@ def format_days_left(dl_str):
     return f"💀 เลยกำหนด {-days} วัน"
 
 def get_badge_html(dl_str, dl_type, is_must_do=False):
-    if is_must_do: return f"<span class='badge b-death'>🩸 MUST DO TODAY! (พลาด=ตาย)</span>"
+    if is_must_do: return f"<span class='badge b-death blink-text'>🩸 MUST DO TODAY!</span>"
     if not dl_str or dl_str == "": return "<span class='badge b-gray'>⚪ ไม่มีกำหนดเวลา</span>"
     days = get_deadline_score(dl_str)
     txt = format_days_left(dl_str)
@@ -234,15 +225,19 @@ def load_db():
             for k, v in defaults.items():
                 if k not in data or data[k] is None: data[k] = v
             return data
-    except: pass
+    except Exception as e:
+        pass
     return {"users": {}, "missions": {}, "study_missions": {}, "command_log": {}, "accountability_mirror": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "haters": {}, "finance": {}, "iron_habits": {}, "daily_wins": {}, "exams": {}, "beat_yesterday": {}, "limit_breaks": {}, "weakness_fuel": {}, "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {}}
 
 def save_db(data):
     try: requests.put(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}", json=data)
     except Exception as e: st.error(f"🚨 เซฟข้อมูลลงฐานข้อมูลไม่สำเร็จ! Error: {e}")
 
+# 🛡️ โหลดฐานข้อมูลทันที! (ป้องกัน NameError)
+db = load_db()
+
 # ==========================================
-# 3. ข้อมูลคำพูด (QUOTES & MENTORS)
+# 3. ข้อมูลคำพูด (QUOTES & MENTORS) 50 ประโยค
 # ==========================================
 MENTORS = {
     "None": {
@@ -292,7 +287,7 @@ WARRIOR_CONSEQUENCES = ["1. กูจะต้องทนเห็นคนท�
 ETERNAL_ECHOES = ["1. มึงบอกว่าไม่อยากกากอีกแล้ว มึงทำตัวให้คู่ควรกับคำพูดรึยัง!?", "2. โลกไม่สนหรอกว่ามึงจะเหนื่อย โลกสนแค่ว่ามึงทำสำเร็จหรือเปล่า!", "3. ทุกวินาทีที่ขี้เกียจ คือการกลับไปเป็นขี้แพ้!", "4. จะเก่งได้ไงถ้ามึงเอาแต่หาข้ออ้าง ลุกขึ้นมา!", "5. Pain is temporary, quitting lasts forever!", "6. They don't know you son! Show them what you're made of!", "7. Stay hard! อย่าให้ปีศาจในหัวมึงชนะได้!", "8. มึงหลอกคนอื่นได้ แต่มึงหลอกตัวเองหน้ากระจกไม่ได้หรอกนะ!", "9. อย่าให้ความกลัว ขโมยความฝันของมึงไป!", "10. ความสำเร็จสร้างด้วยมือ ไม่ใช่ด้วยน้ำลาย!", "11. ถ้ามึงไม่สร้างฝันของตัวเอง คนอื่นก็จะจ้างมึงไปสร้างฝันของเขา!", "12. ล้มได้ ร้องไห้ได้ แต่มึงห้ามยอมแพ้เด็ดขาด!", "13. หนทางที่ยากลำบาก มักจะนำไปสู่จุดหมายที่งดงามเสมอ!", "14. ความอดทนมันขมขื่น แต่ผลของมันช่างหอมหวาน!", "15. พิสูจน์ตัวเองด้วยผลงาน ไม่ใช่ด้วยคำแก้ตัว!", "16. ยิ่งเหนื่อย ยิ่งต้องพยายาม เพราะชัยชนะอยู่ใกล้แค่เอื้อม!", "17. จงเป็นเวอร์ชั่นที่ดีที่สุด ของตัวมึงเองในทุกๆ วัน!", "18. อนาคตของมึง ซ่อนอยู่ในกิจวัตรประจำวันของมึงนั่นแหละ!", "19. อย่าลดขนาดความฝัน แต่จงเพิ่มขนาดความพยายาม!", "20. ผู้ชนะไม่เคยล้มเลิก ผู้ล้มเลิกไม่เคยชนะ!", "21. เริ่มต้นจากศูนย์ ดีกว่าไม่เริ่มต้นอะไรเลย!", "22. ความกล้าหาญ คือการก้าวไปข้างหน้า แม้จะรู้สึกกลัวก็ตาม!", "23. เชื่อมั่นในตัวเอง แล้วทุกอย่างจะเป็นไปได้!", "24. อุปสรรคมีไว้ให้ข้าม ไม่ใช่มีไว้ให้หยุด!", "25. จงทำวันนี้ให้ดีที่สุด เหมือนไม่มีวันพรุ่งนี้ให้แก้ตัว!", "26. ความพยายามอยู่ที่ไหน ความสำเร็จอยู่ที่นั่น คำนี้ยังใช้ได้เสมอ!", "27. เหงื่อของมึงในวันนี้ จะกลายเป็นรอยยิ้มในวันพรุ่งนี้!", "28. อย่าเอาชีวิตมึง ไปเปรียบเทียบกับใคร มึงมีเส้นทางของมึงเอง!", "29. จงเรียนรู้จากความผิดพลาด แล้วทำให้มันดีขึ้นในครั้งต่อไป!", "30. ความสำเร็จ ไม่ได้วัดกันที่ความฉลาด แต่วัดกันที่ความขยัน!", "31. อย่าปล่อยให้คำวิจารณ์ของคนอื่น มาทำลายความตั้งใจของมึง!", "32. จงเป็นแรงบันดาลใจ ให้กับคนที่กำลังมองดูมึงอยู่!", "33. ความยิ่งใหญ่ ไม่ได้เกิดขึ้นในชั่วข้ามคืน มันต้องใช้เวลาและความพยายาม!", "34. เมื่อมึงคิดจะยอมแพ้ ให้นึกถึงเหตุผลที่มึงเริ่มต้น!", "35. จงแข็งแกร่งดั่งหินผา และอ่อนโยนดั่งสายน้ำ!", "36. ความมีวินัย คือกุญแจสำคัญ สู่ความสำเร็จในทุกๆ เรื่อง!", "37. อย่ากลัวความล้มเหลว เพราะมันคือส่วนหนึ่งของความสำเร็จ!", "38. จงก้าวออกจาก Comfort Zone แล้วมึงจะค้นพบโลกใบใหม่!", "39. ทุกๆ วันคือโอกาสใหม่ ในการเริ่มต้นทำสิ่งดีๆ!", "40. จงทำในสิ่งที่มึงรัก แล้วมึงจะไม่รู้สึกว่าต้องทำงานเลย!", "41. ความมุ่งมั่นของมึง จะทำลายทุกกำแพงที่ขวางกั้น!", "42. จงเป็นแสงสว่าง ในความมืดมิดให้กับตัวเองและผู้อื่น!", "43. ความหวัง คือพลังที่ทำให้มนุษย์ก้าวต่อไปได้เสมอ!", "44. จงเชื่อว่ามึงทำได้ แล้วมึงจะหาทางทำให้มันสำเร็จจนได้!", "45. อย่าปล่อยให้ความฝัน เป็นเพียงแค่ความฝัน จงลงมือทำให้มันเป็นจริง!", "46. พลังที่ซ่อนอยู่ในตัวมึง มันยิ่งใหญ่กว่าที่มึงคิดไว้มาก!", "47. จงขอบคุณทุกอุปสรรค ที่เข้ามาทำให้มึงแข็งแกร่งขึ้น!", "48. ชีวิตนี้สั้นนัก จงใช้มันอย่างคุ้มค่า และมีความหมาย!", "49. มึงคือสถาปนิก ผู้ออกแบบชีวิตของมึงเอง!", "50. ลุยให้สุดขีดจำกัด แล้วมึงจะพบว่าตัวเองเจ๋งแค่ไหน!"]
 
 # ==========================================
-# 4. SYSTEM AUTH & SIDEBAR 
+# 4. ระบบล็อกอิน & แถบด้านข้าง
 # ==========================================
 safe_email = st.session_state.get("current_user")
 
@@ -300,7 +295,6 @@ with st.sidebar:
     st.title("⚙️ DISCIPLINE ARC")
     st.caption(f"🗓️ วันที่: {thai_date_format(today_str)}") 
     
-    # --- GEMINI API SETTINGS (SAFE & SAVED) ---
     if safe_email is not None:
         u_data = db["users"].get(safe_email)
         st.markdown("### 🔑 AI SETTINGS")
@@ -429,7 +423,7 @@ if safe_email is None:
     st.stop()
 
 # ==========================================
-# 7. APP MAIN LOGIC (USER DATA LOADED)
+# 5. APP MAIN LOGIC (USER DATA LOADED)
 # ==========================================
 user = db["users"][safe_email]
 active_mentor = user.get("anime_mentor", "None")
@@ -584,7 +578,7 @@ if user.get("in_cage"): st.error("🚨 **มึงอยู่ในกรง!**
 st.divider()
 
 # ==========================================
-# 🔥 สรุปวินัยเหล็กประจำวัน (THE IRON SUMMARY - กู้คืนมาให้แล้ว!)
+# 🔥 สรุปวินัยเหล็กประจำวัน (THE IRON SUMMARY)
 # ==========================================
 st.markdown("## 🔥 สรุปวินัยเหล็กประจำวัน (THE IRON SUMMARY)")
 st.info("เป้าหมายมีไว้พุ่งชน ไม่ต้องสนเวลา! ว่างตอนไหน ฟาดให้เรียบตามลิสต์นี้! หมดข้ออ้าง!")
@@ -651,6 +645,15 @@ with colLeft:
         st.error(f"🩸 **มึงเคยกากแบบนี้:**\n\n\"{w_disp}\"")
     st.markdown("</div>", unsafe_allow_html=True)
 
+    st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
+    st.markdown("#### 🗣️ THE HATER'S WALL")
+    with st.form("hater_form", clear_on_submit=True):
+        h_text = st.text_input("คำดูถูกที่ฝังใจ:", key="txt_hater_input")
+        if st.form_submit_button("ฝังความแค้น"):
+            if h_text: db["haters"][safe_email].append(h_text); save_db(db); safe_rerun()
+    if db.get("haters", {}).get(safe_email): st.warning(f"🤬 \"{random.choice(db['haters'][safe_email])}\"")
+    st.markdown("</div>", unsafe_allow_html=True)
+
 with colRight:
     st.markdown("## ⚙️ DISCIPLINE ZONE")
     
@@ -662,7 +665,7 @@ with colRight:
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
     # ----------------------------------------------------
-    # TAB AI: 🤖 TACTICAL AI PLANNER (GEMINI ONLY - V25)
+    # TAB AI: 🤖 TACTICAL AI PLANNER (GEMINI ONLY - V26)
     # ----------------------------------------------------
     with tab_ai:
         st.markdown("### 🤖 TACTICAL AI (ผู้บัญชาการสมองกลสูงสุด)")
@@ -709,7 +712,6 @@ with colRight:
                         
                     task_str = "\n".join(active_tasks_ai) if active_tasks_ai else "ไม่มีงานค้างเลย ถือว่าว่าง!"
                     
-                    # --- SUPER PROMPT (ALL-IN-ONE GEMINI) ---
                     super_prompt = f"""
                     คุณคือ AI ผู้บัญชาการรบที่ผสมผสานระหว่าง "นักวางกลยุทธ์อัจฉริยะ" และ "ครูฝึกจอมโหดไร้ความปราณี (สไตล์ David Goggins)"
                     
@@ -1167,7 +1169,7 @@ with colRight:
                                         for sub in subs: st.write(f"- {'✅' if sub.get('done') else '⬜'} {sub.get('name')}")
                     
                     with col_view2:
-                        st.markdown("<h5 style='color:#38BDF8;'>📝 โน้ตความรู้ / บันทึกช่วยจำ</h5>", unsafe_allow_html=True)
+                        st.markdown("<h5 style='color:#38bdf8;'>📝 โน้ตความรู้ / บันทึกช่วยจำ</h5>", unsafe_allow_html=True)
                         if not related_notes: st.caption("- ไม่มีบันทึก")
                         else:
                             for wrapper in related_notes:
@@ -1380,7 +1382,7 @@ with colRight:
             cols = st.columns(3)
             for idx, note in enumerate(reversed(mirror_notes)):
                 col = cols[idx % 3]
-                bg_color, border_color, icon = ("rgba(34,197,94,0.1)", "#4bff4b", "🎯") if note.get('is_goal') else ("rgba(239,68,68,0.1)", "#ff4b4b", "🔥")
+                bg_color, border_color, icon = ("rgba(34,197,94,0.1)", "#22c55e", "🎯") if note.get('is_goal') else ("rgba(239,68,68,0.1)", "#ef4444", "🔥")
                 with col:
                     st.markdown(f"<div style='background-color: {bg_color}; border-left: 5px solid {border_color}; padding: 10px; margin-bottom: 10px; border-radius: 5px;'><b>{icon} {thai_date_format(note.get('date_added', '-'))}</b><br><p style='margin-top: 5px;'>{note.get('text', '')}</p></div>", unsafe_allow_html=True)
                     if st.button("🗑️ ดึงออก", key=f"del_mirror_{note['id']}", use_container_width=True): db["accountability_mirror"][safe_email].remove(note); save_db(db); safe_rerun()
@@ -1434,7 +1436,7 @@ with colRight:
                         h_hype = clean_quote(active_quotes[get_stable_index(h_id + 'habit_hype', len(active_quotes))])
                         
                         st.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ff4b4b;'>🩸 <b>ถ้าหลุดวินัย:</b> {h.get('consequence', '') or csq_h_text}</div>", unsafe_allow_html=True)
-                        st.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ffa500;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {h_hype}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #f59e0b;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {h_hype}</div>", unsafe_allow_html=True)
 
                     if h.get("last_done_date") == today_str: c2.success("✅ รักษาวินัยได้แล้ววันนี้!")
                     else:
@@ -1495,7 +1497,7 @@ with colRight:
                         st.caption(f"📅 วันที่บันทึก: {thai_date_format(note.get('วันที่', ''))}"); st.write(f"💭 {note.get('ข้อความ', '')}")
                         if active_mentor == "Jesus": 
                             j_quote = clean_quote(random.choice(MENTORS['Jesus']['quotes']))
-                            st.markdown(f"<p style='color: #4ba3ff; font-style: italic; font-size: 0.9em;'>✝️ \"{j_quote}\"</p>", unsafe_allow_html=True)
+                            st.markdown(f"<p style='color: #38bdf8; font-style: italic; font-size: 0.9em;'>✝️ \"{j_quote}\"</p>", unsafe_allow_html=True)
 
 
 # ==========================================
@@ -1572,10 +1574,10 @@ else:
         score_percent = int((done_count / total_load * 100)) if total_load > 0 else 100
         
         if total_load == 0 or score_percent == 100: grade, grade_color = "S", "#e2d141"
-        elif score_percent >= 80: grade, grade_color = "A", "#4ba3ff"
-        elif score_percent >= 60: grade, grade_color = "B", "#4bff4b"
-        elif score_percent >= 40: grade, grade_color = "C", "#ffa500"
-        else: grade, grade_color = "F", "#ff4b4b"
+        elif score_percent >= 80: grade, grade_color = "A", "#38bdf8"
+        elif score_percent >= 60: grade, grade_color = "B", "#22c55e"
+        elif score_percent >= 40: grade, grade_color = "C", "#f59e0b"
+        else: grade, grade_color = "F", "#ef4444"
 
         evaluations = {
             "S": "ไร้ที่ติ! ความสมบูรณ์แบบคือสิ่งที่คู่ควรกับผู้ที่มุ่งมั่น จงรักษามันไว้!",
@@ -1631,17 +1633,17 @@ with tab_h_judgement:
         for j_date in sorted(judgements.keys(), reverse=True):
             j_data = judgements[j_date]
             g = j_data.get("grade", "F")
-            g_color = "#e2d141" if g == "S" else "#4ba3ff" if g == "A" else "#4bff4b" if g == "B" else "#ffa500" if g == "C" else "#ff4b4b"
-            st.markdown(f"<div style='padding: 10px; border-left: 5px solid {g_color}; background: rgba(255,255,255,0.05); margin-bottom: 5px;'><b>{thai_date_format(j_date)}</b> | เกรด: <span style='color:{g_color}; font-weight:bold; font-size:1.2em;'>{g}</span> ({j_data.get('score', 0)}%) | สำเร็จ {j_data.get('done', 0)} พลาด {j_data.get('missed', 0)}</div>", unsafe_allow_html=True)
+            g_color = "#e2d141" if g == "S" else "#38bdf8" if g == "A" else "#22c55e" if g == "B" else "#f59e0b" if g == "C" else "#ef4444"
+            st.markdown(f"<div style='padding: 10px; border-left: 5px solid {g_color}; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius:5px;'><b>{thai_date_format(j_date)}</b> | เกรด: <span style='color:{g_color}; font-weight:bold; font-size:1.2em;'>{g}</span> ({j_data.get('score', 0)}%) | สำเร็จ {j_data.get('done', 0)} พลาด {j_data.get('missed', 0)}</div>", unsafe_allow_html=True)
 
 with tab_h_finance:
     st.markdown("### 💰 สมุดบัญชีการเงิน (Financial Ledger)")
     if not finance.get("ledger"): st.info("ยังไม่มีบันทึกการเงิน")
     else:
         for tx in reversed(finance["ledger"]):
-            color = "#4bff4b" if tx.get("type") in ["income", "savings"] else "#ff4b4b"
+            color = "#22c55e" if tx.get("type") in ["income", "savings"] else "#ef4444"
             icon = "🟢" if tx.get("type") in ["income", "savings"] else "🔴"
-            st.markdown(f"<div style='border-left: 3px solid {color}; padding-left: 10px; margin-bottom: 5px;'>{icon} <b>{thai_date_format(tx.get('date', ''))}</b> : {tx.get('name', 'ไม่ระบุ')} <span style='color:{color}; float:right;'>{'+' if icon == '🟢' else '-'}{float(tx.get('amount', 0)):,.2f} ฿</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-left: 3px solid {color}; padding-left: 10px; margin-bottom: 5px; background:rgba(255,255,255,0.02); padding: 8px; border-radius:5px;'>{icon} <b>{thai_date_format(tx.get('date', ''))}</b> : {tx.get('name', 'ไม่ระบุ')} <span style='color:{color}; float:right;'>{'+' if icon == '🟢' else '-'}{float(tx.get('amount', 0)):,.2f} ฿</span></div>", unsafe_allow_html=True)
 
 with tab_h_journey:
     st.markdown("### 🗺️ ประวัติภารกิจที่พิชิตแล้ว")
