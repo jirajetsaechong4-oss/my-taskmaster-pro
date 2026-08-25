@@ -7,7 +7,7 @@ import hashlib
 import random
 import re
 
-# 🚀 นำเข้า Gemini AI (ตัด Claude ทิ้งตามสั่ง)
+# 🚀 นำเข้า Gemini AI 
 try:
     import google.generativeai as genai
     HAS_GENAI = True
@@ -15,7 +15,7 @@ except ImportError:
     HAS_GENAI = False
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V27 CYBER-TACTICAL 1000X)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V28 SUPREME CYBER-TACTICAL)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -27,15 +27,18 @@ if "slap_awake_active" not in st.session_state: st.session_state["slap_awake_act
 if "active_slap_message" not in st.session_state: st.session_state["active_slap_message"] = ""
 if "locked_in_active" not in st.session_state: st.session_state["locked_in_active"] = False
 
-# --- CUSTOM CSS (โคตรสวย สวยสัดๆ 1000X OVERHAUL) ---
+# --- CUSTOM CSS (สวยสัดๆ SUPREME OVERHAUL) ---
 st.markdown("""
 <style>
-    /* Global Tactical Dark Theme */
+    /* Global Tactical Dark Theme with Cyber Grid */
     .stApp { 
-        background-color: #070B14;
+        background-color: #050810;
         background-image: 
+            linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
             radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 25%),
             radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.06), transparent 25%);
+        background-size: 30px 30px, 30px 30px, 100% 100%, 100% 100%;
         color: #E2E8F0; 
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
@@ -48,15 +51,17 @@ st.markdown("""
 
     /* Glassmorphism Panels */
     .glass-panel {
-        background: rgba(15, 23, 42, 0.6);
+        background: rgba(15, 23, 42, 0.65);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(56, 189, 248, 0.15);
         padding: 22px;
         border-radius: 16px;
         margin-bottom: 20px;
-        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);
+        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.6);
+        transition: 0.3s;
     }
+    .glass-panel:hover { border-color: rgba(56, 189, 248, 0.3); box-shadow: 0 10px 40px 0 rgba(56, 189, 248, 0.1); }
     
     /* Subject Banners */
     .subject-banner { 
@@ -81,6 +86,7 @@ st.markdown("""
     .b-gold { background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.5); }
     .b-gray { background: rgba(148, 163, 184, 0.15); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.5); }
     .b-green { background: rgba(34, 197, 94, 0.15); color: #22C55E; border: 1px solid rgba(34, 197, 94, 0.5); }
+    .b-purple { background: rgba(168, 85, 247, 0.15); color: #A855F7; border: 1px solid rgba(168, 85, 247, 0.5); }
     
     /* Death Mark Animation */
     @keyframes pulse-red { 0% { box-shadow: 0 0 5px #ef4444; } 50% { box-shadow: 0 0 20px #ef4444, inset 0 0 10px rgba(239,68,68,0.2); } 100% { box-shadow: 0 0 5px #ef4444; } }
@@ -99,42 +105,40 @@ st.markdown("""
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
     }
     
-    /* 🔴 Priority 1: ด่วนสุด */
+    /* Priorities */
     .task-priority-1 { border-left: 5px solid #EF4444; background: linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(30,41,59,0.5) 100%); }
     .task-priority-1:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(239,68,68,0.3); z-index: 10; }
     
-    /* 🟠 Priority 2: งานฉุกเฉิน */
     .task-priority-2 { border-left: 5px solid #F97316; background: linear-gradient(135deg, rgba(249,115,22,0.1) 0%, rgba(30,41,59,0.5) 100%); }
     .task-priority-2:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(249,115,22,0.18) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(249,115,22,0.3); z-index: 10; }
     
-    /* 🟡 Priority 3: ปานกลาง */
     .task-priority-3 { border-left: 5px solid #EAB308; background: linear-gradient(135deg, rgba(234,179,8,0.08) 0%, rgba(30,41,59,0.5) 100%); }
     .task-priority-3:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(234,179,8,0.15) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(234,179,8,0.25); z-index: 10; }
     
-    /* 🟢 Priority 4: ชิลๆ */
     .task-priority-4 { border-left: 5px solid #22C55E; background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(30,41,59,0.5) 100%); }
     .task-priority-4:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(34,197,94,0.25); z-index: 10; }
     
+    /* New: Side Quests & Q&A Specific Cards */
+    .sq-card { background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(30, 41, 59, 0.6) 100%); border-left: 5px solid #A855F7; padding: 15px 20px; border-radius: 12px; margin-bottom: 12px; transition: 0.3s; border-top: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); }
+    .sq-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 20px rgba(168, 85, 247, 0.3); border-left-width: 8px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%); }
+    
+    .qa-card { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(30, 41, 59, 0.6) 100%); border-left: 5px solid #10B981; padding: 15px 20px; border-radius: 12px; margin-bottom: 12px; transition: 0.3s; border-top: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); }
+    .qa-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 20px rgba(16, 185, 129, 0.3); border-left-width: 8px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%); }
+
     /* Death Mark Overrides */
     .task-card-ui.death-mark { border: 2px solid #ef4444; border-left: 8px solid #ef4444; animation: pulse-red 2s infinite; background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(30,41,59,0.8) 100%); }
     
     /* Metric Typography Gradient */
-    [data-testid="stMetricValue"] {
-        font-size: 2.5rem;
-        font-weight: 900;
-        background: -webkit-linear-gradient(45deg, #38BDF8, #818CF8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
+    [data-testid="stMetricValue"] { font-size: 2.5rem; font-weight: 900; background: -webkit-linear-gradient(45deg, #38BDF8, #A855F7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     
     /* Mentor Quotes */
-    .mentor-quote { background: rgba(2, 6, 23, 0.6); padding: 14px 18px; border-radius: 8px; font-style: italic; margin-top: 10px; margin-bottom: 12px; font-size: 0.95em; border-left: 4px solid #475569; color: #e2e8f0; }
+    .mentor-quote { background: rgba(2, 6, 23, 0.7); padding: 14px 18px; border-radius: 8px; font-style: italic; margin-top: 10px; margin-bottom: 12px; font-size: 0.95em; border-left: 4px solid #475569; color: #e2e8f0; }
     
     /* Custom Streamlit Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 10px; padding-bottom: 5px; }
     .stTabs [data-baseweb="tab"] { background-color: rgba(30, 41, 59, 0.5); border-radius: 8px 8px 0 0; padding: 10px 25px; transition: all 0.3s; border: 1px solid transparent; }
     .stTabs [data-baseweb="tab"]:hover { background-color: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); }
-    .stTabs [aria-selected="true"] { background-color: rgba(56, 189, 248, 0.15) !important; border-top: 2px solid #38bdf8 !important; border-bottom: none !important; color: white !important; font-weight: 800; box-shadow: 0 -5px 15px rgba(56, 189, 248, 0.1); }
+    .stTabs [aria-selected="true"] { background-color: rgba(56, 189, 248, 0.15) !important; border-top: 2px solid #38bdf8 !important; border-bottom: none !important; color: white !important; font-weight: 800; box-shadow: 0 -5px 15px rgba(56, 189, 248, 0.15); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -216,7 +220,7 @@ def format_days_left(dl_str):
     return f"💀 เลยกำหนด {-days} วัน"
 
 def get_badge_html(dl_str, dl_type, is_must_do=False):
-    if is_must_do: return f"<span class='badge b-death blink-text'>🩸 MUST DO TODAY! (พลาด=ตาย)</span>"
+    if is_must_do: return f"<span class='badge b-death blink-text'>🩸 MUST DO TODAY!</span>"
     if not dl_str or dl_str == "": return "<span class='badge b-gray'>⚪ ไม่มีกำหนดเวลา</span>"
     days = get_deadline_score(dl_str)
     txt = format_days_left(dl_str)
@@ -229,14 +233,13 @@ def get_badge_html(dl_str, dl_type, is_must_do=False):
 def is_overdue_check(dl_str): 
     return get_deadline_score(dl_str) < 0
 
-# 🔥 ฟังก์ชันใหม่: ดึง CSS Class แยกสีตามความสำคัญของการ์ด
 def get_task_css_class(item, base_type="task"):
     dl_str = item.get("deadline", "")
     is_overdue = is_overdue_check(dl_str) if dl_str != "" else False
     is_must_do = item.get("is_must_do", False)
     prio_str = item.get("priority", item.get("ประเภท", ""))
     
-    prio_css = "task-priority-3" # ค่าพื้นฐาน
+    prio_css = "task-priority-3" 
     if "ด่วนสุด" in prio_str: prio_css = "task-priority-1"
     elif "ฉุกเฉิน" in prio_str: prio_css = "task-priority-2"
     elif "ปานกลาง" in prio_str: prio_css = "task-priority-3"
@@ -280,20 +283,26 @@ def load_db():
                 "users": {}, "missions": {}, "study_missions": {}, "command_log": {}, "accountability_mirror": {}, 
                 "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "haters": {}, "finance": {}, "iron_habits": {}, 
                 "daily_wins": {}, "exams": {}, "beat_yesterday": {}, "limit_breaks": {}, "weakness_fuel": {}, 
-                "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {}
+                "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {},
+                "qa_vault": {}, "side_quests": {} # 🛡️ V28 New Features Initialization
             }
             for k, v in defaults.items():
                 if k not in data or data[k] is None: data[k] = v
             return data
     except Exception as e:
         pass
-    return {"users": {}, "missions": {}, "study_missions": {}, "command_log": {}, "accountability_mirror": {}, "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "haters": {}, "finance": {}, "iron_habits": {}, "daily_wins": {}, "exams": {}, "beat_yesterday": {}, "limit_breaks": {}, "weakness_fuel": {}, "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {}}
+    return {
+        "users": {}, "missions": {}, "study_missions": {}, "command_log": {}, "accountability_mirror": {}, "dopamine_fails": {}, 
+        "excuses": {}, "cookie_jar": {}, "haters": {}, "finance": {}, "iron_habits": {}, "daily_wins": {}, "exams": {}, 
+        "beat_yesterday": {}, "limit_breaks": {}, "weakness_fuel": {}, "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, 
+        "subjects": {}, "qa_vault": {}, "side_quests": {}
+    }
 
 def save_db(data):
     try: requests.put(f"{FIREBASE_URL}/db.json?auth={FIREBASE_SECRET}", json=data)
     except Exception as e: st.error(f"🚨 เซฟข้อมูลลงฐานข้อมูลไม่สำเร็จ! Error: {e}")
 
-# 🛡️ โหลดฐานข้อมูลทันที! (ป้องกัน NameError)
+# 🛡️ โหลดฐานข้อมูลทันที! 
 db = load_db()
 
 # ==========================================
@@ -502,8 +511,8 @@ if user.get("daily_oath_date") != today_str:
             user["daily_oath_date"] = today_str; save_db(db); safe_rerun()
     st.stop() 
 
-# CHECK DB STRUCTURE
-list_keys = ["missions", "study_missions", "command_log", "accountability_mirror", "dopamine_fails", "excuses", "cookie_jar", "haters", "iron_habits", "limit_breaks", "weakness_fuel", "sanctuary", "skill_forge", "subjects"]
+# 🛡️ CHECK DB STRUCTURE (รวม Feature ใหม่ V28)
+list_keys = ["missions", "study_missions", "command_log", "accountability_mirror", "dopamine_fails", "excuses", "cookie_jar", "haters", "iron_habits", "limit_breaks", "weakness_fuel", "sanctuary", "skill_forge", "subjects", "qa_vault", "side_quests"]
 for k in list_keys:
     if safe_email not in db[k] or db[k][safe_email] is None: db[k][safe_email] = []
     elif isinstance(db[k][safe_email], dict): db[k][safe_email] = list(db[k][safe_email].values())
@@ -547,9 +556,12 @@ if overdue_count > 0:
 raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date") != today_str]
 raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date") != today_str]
 raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
-for h in raw_h: h["ภารกิจ"] = h["name"]; h["is_habit"] = True
+raw_sq = [sq for sq in db["side_quests"][safe_email] if isinstance(sq, dict) and not sq.get("done")] # 🛡️ V28 Side Quests
 
-all_active_tasks = raw_m + raw_s + raw_h
+for h in raw_h: h["ภารกิจ"] = h["name"]; h["is_habit"] = True
+for sq in raw_sq: sq["ภารกิจ"] = sq["task"]; sq["is_sidequest"] = True; sq["ประเภท"] = "🟡 ปานกลาง"
+
+all_active_tasks = raw_m + raw_s + raw_h + raw_sq
 all_active_tasks.sort(key=lambda x: (
     0 if x.get("is_must_do") else 1, 
     int(x.get("user_order", 99)), 
@@ -564,7 +576,7 @@ if is_locked_in:
     if not all_active_tasks: st.success("🎉 ไม่มีงานค้างแล้ว! ปิดโหมด Locked In ได้เลย")
     else:
         top_task = all_active_tasks[0]
-        icon = "⛓️" if top_task.get("is_habit") else "📖" if top_task.get("is_study") else "🔪"
+        icon = "⛓️" if top_task.get("is_habit") else "🎯" if top_task.get("is_sidequest") else "📖" if top_task.get("is_study") else "🔪"
         must_do_label = " 🩸 **[ชี้เป็นชี้ตาย!]**" if top_task.get("is_must_do") else ""
         st.markdown(f"## {icon} เป้าหมายปัจจุบัน:{must_do_label} **{top_task.get('ภารกิจ')}**")
         st.caption("มึงไม่เห็นงานอื่น และระบบอื่นๆ จนกว่ามึงจะทำไอ้งานนี้เสร็จ!")
@@ -582,6 +594,12 @@ if is_locked_in:
                             h["streak"] = h.get("streak", 0) + 1 if h.get("last_done_date") == yesterday_str else 1
                             h["last_done_date"] = today_str; h["total_done"] = h.get("total_done", 0) + 1
                     user["exp"] += 10; save_db(db); safe_rerun()
+            elif top_task.get("is_sidequest"):
+                if st.button("✅ พิชิตเควสย่อย!", use_container_width=True, type="primary", key="btn_locked_sq_done"):
+                    for sq in db["side_quests"][safe_email]:
+                        if sq.get("id") == top_task.get("id"):
+                            sq["done"] = True; sq["done_date"] = today_str
+                    user["exp"] += 5; save_db(db); safe_rerun()
             elif top_task.get("subtasks"):
                 st.warning("ซอยขั้นตอนไว้ ลุยทีละข้อ!")
                 target_list = db["study_missions"][safe_email] if top_task.get("is_study") else db["missions"][safe_email]
@@ -650,7 +668,7 @@ with col_sum1:
     st.markdown("### 🔪 งาน & 📖 เรียน")
     has_tasks = False
     for task in all_active_tasks:
-        if not task.get("is_habit"):
+        if not task.get("is_habit") and not task.get("is_sidequest"):
             has_tasks = True
             icon = "📖" if task.get("is_study") else "🔪"
             must_do = " <span class='badge b-death'>🩸 MUST DO</span>" if task.get("is_must_do") else ""
@@ -667,12 +685,15 @@ with col_sum1:
 
 with col_sum2:
     st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
-    st.markdown("### ⛓️ วินัยเหล็กประจำวัน")
+    st.markdown("### ⛓️ วินัยเหล็ก & 🎯 เควสย่อย")
     has_habits = False
     for task in all_active_tasks:
         if task.get("is_habit"):
             has_habits = True
             st.markdown(f"<div style='background:rgba(255,255,255,0.03); padding:10px; border-left:3px solid #38BDF8; margin-bottom:8px; border-radius:8px;'>⛓️ <b>{task.get('ภารกิจ', '')}</b></div>", unsafe_allow_html=True)
+        elif task.get("is_sidequest"):
+            has_habits = True
+            st.markdown(f"<div style='background:rgba(255,255,255,0.03); padding:10px; border-left:3px solid #A855F7; margin-bottom:8px; border-radius:8px;'>🎯 <b>{task.get('ภารกิจ', '')}</b></div>", unsafe_allow_html=True)
     if not has_habits: st.success("✅ รักษาวินัยครบถ้วน!")
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -730,15 +751,16 @@ with colLeft:
 with colRight:
     st.markdown("## ⚙️ DISCIPLINE ZONE")
     
-    tab_ai, tab_missions, tab_study, tab_forge, tab_subjects, tab_planner, tab_mirror, tab_habits, tab_daily_wins, tab_sanctuary = st.tabs([
-        "🤖 AI วางแผน", "🔪 งาน", "📖 เรียน", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
+    # 🛡️ V28: เพิ่ม Tab 🎯 เควสย่อย และ ❓ Q&A
+    tab_ai, tab_missions, tab_study, tab_sidequests, tab_forge, tab_subjects, tab_planner, tab_qa, tab_mirror, tab_habits, tab_daily_wins, tab_sanctuary = st.tabs([
+        "🤖 AI วางแผน", "🔪 งาน", "📖 เรียน", "🎯 เควสย่อย", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "❓ Q&A", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
     ])
     
     user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
     # ----------------------------------------------------
-    # TAB AI: 🤖 TACTICAL AI PLANNER (GEMINI ONLY - V27)
+    # TAB AI: 🤖 TACTICAL AI PLANNER 
     # ----------------------------------------------------
     with tab_ai:
         st.markdown("### 🤖 TACTICAL AI (ผู้บัญชาการสมองกลสูงสุด)")
@@ -782,6 +804,9 @@ with colRight:
                     for h in db["iron_habits"][safe_email]:
                         if isinstance(h, dict) and h.get("last_done_date") != today_str: 
                             active_tasks_ai.append(f"[วินัย] {h.get('name')}")
+                    for sq in db["side_quests"][safe_email]:
+                        if isinstance(sq, dict) and not sq.get("done"):
+                            active_tasks_ai.append(f"[เควสย่อยส่วนตัว] {sq.get('task')}")
                         
                     task_str = "\n".join(active_tasks_ai) if active_tasks_ai else "ไม่มีงานค้างเลย ถือว่าว่าง!"
                     
@@ -1038,7 +1063,7 @@ with colRight:
                 c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ff4b4b;'>🩸 <b>ถ้ากูไม่ทำ:</b> {s.get('consequence', '') or csq_s_text}</div>", unsafe_allow_html=True)
                 
                 s_hype = clean_quote(active_quotes[get_stable_index(s_id + 'study_hype', len(active_quotes))])
-                c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #4ba3ff;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {s_hype}</div>", unsafe_allow_html=True)
+                c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #38BDF8;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {s_hype}</div>", unsafe_allow_html=True)
                 
                 with c1.popover("✏️ แก้ไขเป้าหมาย"):
                     new_t = st.text_input("ชื่อภารกิจ:", value=s["ภารกิจ"], key=f"ed_s_name_{s['id']}")
@@ -1114,7 +1139,40 @@ with colRight:
                 if c3.button("⏪ กลับมาอ่าน", key=f"revert_stud_{s['id']}"): s["รอตรวจ"] = False; save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 3: ⚒️ โรงตีเหล็ก (THE SKILL FORGE)
+    # 🛡️ V28 TAB 3.5: 🎯 เควสย่อยส่วนตัว (SIDE QUESTS)
+    # ----------------------------------------------------
+    with tab_sidequests:
+        st.markdown("### 🎯 เควสย่อยส่วนตัว (Side Quests)")
+        st.write("งานจิปาถะส่วนตัว เช่น 'วันนี้ต้องลงโปรแกรม', 'ตอบเมลครู' ที่ไม่ใช่งานใหญ่ แต่ถ้าละเลยก็ต้องโดนหักคะแนนพิพากษา!")
+        
+        with st.form("add_sq_form", clear_on_submit=True):
+            col_sq1, col_sq2 = st.columns([4, 1])
+            sq_name = col_sq1.text_input("ชื่อเควสย่อย (เช่น โหลดแอป, ตอบไลน์):")
+            if col_sq2.form_submit_button("บรรจุเควส", use_container_width=True):
+                if sq_name:
+                    db["side_quests"][safe_email].append({"id": str(uuid.uuid4()), "task": sq_name, "done": False, "done_date": ""})
+                    save_db(db); safe_rerun()
+        
+        active_sq = [sq for sq in db["side_quests"][safe_email] if isinstance(sq, dict) and not sq.get("done")]
+        if not active_sq:
+            st.info("ไม่มีเควสย่อยค้างอยู่")
+        else:
+            for sq in active_sq:
+                st.markdown("<div class='sq-card'>", unsafe_allow_html=True)
+                col1, col2, col3 = st.columns([6, 1.5, 0.5])
+                col1.markdown(f"🎯 **{sq['task']}**")
+                
+                if col2.button("✅ เสร็จสิ้น", key=f"sq_done_{sq['id']}", use_container_width=True):
+                    sq["done"] = True; sq["done_date"] = today_str
+                    user["exp"] += 5
+                    save_db(db); safe_rerun()
+                if col3.button("🗑️", key=f"sq_del_{sq['id']}"):
+                    db["side_quests"][safe_email].remove(sq)
+                    save_db(db); safe_rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+
+    # ----------------------------------------------------
+    # TAB 4: ⚒️ โรงตีเหล็ก (THE SKILL FORGE)
     # ----------------------------------------------------
     with tab_forge:
         st.markdown("### ⚒️ โรงตีเหล็ก (THE SKILL FORGE)")
@@ -1161,11 +1219,11 @@ with colRight:
                 if col3.button("🗑️", key=f"del_sk_{sk['id']}"): db["skill_forge"][safe_email].remove(sk); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 4: 🗂️ คลังแสงวิชา (ACADEMIC ARSENAL)
+    # TAB 5: 🗂️ คลังแสงวิชา (ACADEMIC ARSENAL)
     # ----------------------------------------------------
     with tab_subjects:
         st.markdown("### 🗂️ คลังแสงรายวิชา (Academic Arsenal)")
-        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ")
+        st.write("จัดการทุกอย่างแบบแยกตามวิชา ดูงานค้าง ดูตารางสอบ และจดบันทึกช่วยจำ (ไม่นับเป็นภารกิจ)")
         
         with st.expander("➕ เพิ่มรายวิชาใหม่"):
             with st.form("add_subject_form", clear_on_submit=True):
@@ -1258,7 +1316,7 @@ with colRight:
                 st.write("") 
 
     # ----------------------------------------------------
-    # TAB 5: 📝 สมุดบัญชาการ (COMMAND LOG)
+    # TAB 6: 📝 สมุดบัญชาการ (COMMAND LOG)
     # ----------------------------------------------------
     with tab_planner:
         st.markdown("### 📝 สมุดบัญชาการ (Command Log)")
@@ -1445,7 +1503,40 @@ with colRight:
                     st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
-    # TAB 6: 🪞 กระจกแห่งความรับผิดชอบ
+    # 🛡️ V28 TAB 7: ❓ คลังปัญญา (Q&A VAULT)
+    # ----------------------------------------------------
+    with tab_qa:
+        st.markdown("### ❓ คลังปัญญา (Q&A Vault)")
+        st.write("สงสัยอะไร? เจอคำตอบแล้วใช่ไหม? บันทึกมันไว้ที่นี่เพื่ออัปเกรดความรู้ของมึงซะ!")
+        
+        with st.form("add_qa_form", clear_on_submit=True):
+            qa_q = st.text_input("คำถาม / เรื่องที่สงสัย (เช่น Error นี้แก้ยังไง?):", placeholder="พิมพ์คำถามที่นี่...")
+            qa_a = st.text_area("คำตอบ / วิธีแก้ (สิ่งที่ได้เรียนรู้):", placeholder="พิมพ์คำตอบ หรือโน้ตกันลืมที่นี่...", height=100)
+            if st.form_submit_button("บันทึกคลังปัญญา", use_container_width=True):
+                if qa_q and qa_a:
+                    db["qa_vault"][safe_email].append({"id": str(uuid.uuid4()), "q": qa_q, "a": qa_a, "date": today_str})
+                    user["exp"] += 2
+                    save_db(db); st.success("✅ อัปเกรดความรู้สำเร็จ! (+2 EXP)"); safe_rerun()
+                else:
+                    st.warning("กรอกให้ครบทั้งคำถามและคำตอบดิวะ!")
+
+        st.divider()
+        qa_list = db["qa_vault"].get(safe_email, [])
+        if not qa_list:
+            st.info("คลังปัญญายังว่างเปล่า... โลกนี้ไม่มีอะไรให้มึงสงสัยเลยหรอ?")
+        else:
+            for qa in reversed(qa_list):
+                if not isinstance(qa, dict): continue
+                st.markdown("<div class='qa-card'>", unsafe_allow_html=True)
+                with st.expander(f"❓ {qa['q']} (บันทึกเมื่อ: {thai_date_format(qa.get('date', ''))})"):
+                    st.markdown(f"**💡 คำตอบ:**\n\n{qa['a']}")
+                    if st.button("🗑️ ลบทิ้ง", key=f"del_qa_{qa['id']}"):
+                        db["qa_vault"][safe_email].remove(qa)
+                        save_db(db); safe_rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+
+    # ----------------------------------------------------
+    # TAB 8: 🪞 กระจกแห่งความรับผิดชอบ
     # ----------------------------------------------------
     with tab_mirror:
         st.markdown("### 🪞 กระจกแห่งความรับผิดชอบ (Accountability Mirror)")
@@ -1469,7 +1560,7 @@ with colRight:
                     if st.button("🗑️ ดึงออก", key=f"del_mirror_{note['id']}", use_container_width=True): db["accountability_mirror"][safe_email].remove(note); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 7: ⛓️ วินัยเหล็ก
+    # TAB 9: ⛓️ วินัยเหล็ก
     # ----------------------------------------------------
     with tab_habits:
         st.markdown("### ⛓️ วินัยเหล็ก (THE IRON HABITS)")
@@ -1530,7 +1621,7 @@ with colRight:
                     if c3.button("🗑️", key=f"del_h_{h.get('id', h.get('name', ''))}"): db["iron_habits"][safe_email].remove(h); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 8: 🏅 ชัยชนะรายวัน
+    # TAB 10: 🏅 ชัยชนะรายวัน
     # ----------------------------------------------------
     with tab_daily_wins:
         st.markdown("### 🏅 ชัยชนะรายวัน (Daily Wins)")
@@ -1562,7 +1653,7 @@ with colRight:
                     if col4.button("🗑️", key=f"del_dwin_{item['id']}"): win_items.remove(item); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 9: 🔥 พักใจ
+    # TAB 11: 🔥 พักใจ
     # ----------------------------------------------------
     with tab_sanctuary:
         st.markdown("## 🔥 แคมป์ไฟพักใจ (The Sanctuary)")
@@ -1639,16 +1730,24 @@ else:
         st.error("❌ ติดหนี้เลือดอยู่! ไปวิดพื้นชดใช้กรรมให้หมดก่อนมาขอรับคำพิพากษา!")
     else:
         expected_today, completed_today = [], []
+        
+        # 🛡️ รวบรวมงานทั้งหมดรวมถึง Side Quests เข้ากระบวนการพิพากษา!
         all_m_and_s = [m for m in db["missions"][safe_email] if isinstance(m, dict)] + [s for s in db["study_missions"][safe_email] if isinstance(s, dict)]
         for item in all_m_and_s:
             if item.get("เสร็จแล้ว") and item.get("done_date") == today_str: completed_today.append(item)
             elif not item.get("เสร็จแล้ว") and not item.get("รอตรวจ", False):
                 if item.get("is_must_do") or item.get("skip_today_date") != today_str or is_overdue_check(item.get("deadline", "")): 
                     expected_today.append(item)
+        
         for h in db["iron_habits"][safe_email]:
             if isinstance(h, dict):
                 if h.get("last_done_date") == today_str: completed_today.append(h)
                 else: expected_today.append(h)
+                
+        for sq in db["side_quests"][safe_email]:
+            if isinstance(sq, dict):
+                if sq.get("done") and sq.get("done_date") == today_str: completed_today.append(sq)
+                elif not sq.get("done"): expected_today.append(sq) # ❌ ถ้าไม่เสร็จ โดนประจาน!
 
         total_load = len(expected_today) + len(completed_today)
         done_count, missed_count = len(completed_today), len(expected_today)
