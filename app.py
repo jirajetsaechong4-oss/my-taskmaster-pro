@@ -8,7 +8,7 @@ import random
 import re
 
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V30 THE ULTIMATE OFFLINE ARCHITECT)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V31 THE DUAL WAR ROOM)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -56,22 +56,27 @@ st.markdown("""
     }
     .glass-panel:hover { border-color: rgba(56, 189, 248, 0.3); box-shadow: 0 10px 40px 0 rgba(56, 189, 248, 0.1); }
     
-    /* Cyber Terminal for Auto-Planner */
+    /* Dual Cyber Terminals */
     .cyber-terminal {
         background: rgba(2, 6, 23, 0.85);
         border: 1px solid #38bdf8;
         border-left: 5px solid #38bdf8;
-        padding: 25px;
+        padding: 20px;
         font-family: 'Courier New', Courier, monospace;
         border-radius: 12px;
         box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.05), 0 0 15px rgba(56, 189, 248, 0.2);
         color: #38bdf8;
         margin-top: 15px;
     }
-    .cyber-terminal h4 { color: #f8fafc; border-bottom: 1px dashed rgba(56,189,248,0.5); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
-    .cyber-phase { margin-top: 18px; margin-bottom: 8px; color: #f59e0b; font-weight: bold; font-size: 1.1em;}
-    .cyber-item { border-left: 2px dashed #475569; padding-left: 15px; margin-bottom: 8px; position: relative; color: #e2e8f0;}
-    .cyber-item::before { content: '>'; position: absolute; left: -8px; top: 0; color: #38bdf8; font-weight: bold; background: #020617; }
+    .cyber-terminal.combat { border-color: #ef4444; border-left-color: #ef4444; color: #ef4444; box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.05), 0 0 15px rgba(239, 68, 68, 0.2); }
+    .cyber-terminal h4 { color: #f8fafc; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
+    .cyber-phase { margin-top: 15px; margin-bottom: 8px; font-weight: bold; font-size: 1.1em;}
+    .cyber-phase.hab { color: #38bdf8; }
+    .cyber-phase.com { color: #f59e0b; }
+    .cyber-item { border-left: 2px dashed #475569; padding-left: 12px; margin-bottom: 8px; position: relative; color: #e2e8f0; font-size: 0.9em;}
+    .cyber-item::before { content: '>'; position: absolute; left: -8px; top: 0; font-weight: bold; background: #020617; }
+    .cyber-item.hab::before { color: #38bdf8; }
+    .cyber-item.com::before { color: #ef4444; }
     
     /* Subject Banners */
     .subject-banner { 
@@ -262,7 +267,6 @@ def get_task_css_class(item, base_type="task"):
     
     return " ".join(classes)
 
-# 🔥 V30 ฟังก์ชันสำหรับดึง Progress Bar ของ Subtask โชว์บนหน้าการ์ด
 def get_subtask_progress_html(item):
     subs = item.get("subtasks", [])
     if not subs: return ""
@@ -337,7 +341,7 @@ def save_db(data):
 db = load_db()
 
 # ==========================================
-# 3. ข้อมูลคำพูด (QUOTES & MENTORS) 50 ประโยค อยู่ครบ 100%
+# 3. ข้อมูลคำพูด (QUOTES & MENTORS) 50 ประโยค
 # ==========================================
 MENTORS = {
     "None": {
@@ -592,7 +596,7 @@ if is_locked_in:
         st.caption("มึงไม่เห็นงานอื่น และระบบอื่นๆ จนกว่ามึงจะทำไอ้งานนี้เสร็จ!")
         
         display_hype = clean_quote(active_quotes[get_stable_index(str(top_task.get("id", "")) + "hype", len(active_quotes))])
-        hype_color = "#4ba3ff" if active_mentor == "Jesus" else "#e2d141" if active_mentor == "Zenitsu" else "#ffa500"
+        hype_color = "#38bdf8" if active_mentor == "Jesus" else "#f59e0b" if active_mentor == "Zenitsu" else "#ef4444"
         st.markdown(f"<div class='mentor-quote' style='border-left: 5px solid {hype_color};'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {display_hype}</div>", unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1,2,1])
@@ -761,114 +765,134 @@ with colLeft:
 with colRight:
     st.markdown("## ⚙️ DISCIPLINE ZONE")
     
-    # 🛡️ V30: TABS UPDATE (AUTO-PLANNER OFFLINE)
+    # 🛡️ V31: TABS UPDATE (THE DUAL AUTO-PLANNER)
     tab_planner_ai, tab_missions, tab_study, tab_sidequests, tab_forge, tab_subjects, tab_planner, tab_qa, tab_mirror, tab_habits, tab_daily_wins, tab_sanctuary = st.tabs([
-        "🧠 AUTO-PLANNER", "🔪 งาน", "📖 เรียน", "🎯 เควสย่อย", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "❓ Q&A", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
+        "🧠 DUAL PLANNER", "🔪 งาน", "📖 เรียน", "🎯 เควสย่อย", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "❓ Q&A", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
     ])
     
     user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
     # ----------------------------------------------------
-    # TAB 1: 🧠 TACTICAL AUTO-PLANNER (OFFLINE V30)
+    # TAB 1: 🧠 THE DUAL AUTO-PLANNER (V31 SEPARATED)
     # ----------------------------------------------------
     with tab_planner_ai:
-        st.markdown("### 🧠 TACTICAL AUTO-PLANNER (ระบบเสนาธิการออฟไลน์)")
-        st.write("ไม่ต้องง้อเน็ต ไม่ต้องเสียตังค์ API! ระบบจำลองสมองกลจะคำนวณและจัด Priority Time-boxing ให้มึงจากอัลกอริทึมระดับทหาร!")
+        st.markdown("### 🧠 THE DUAL AUTO-PLANNER (ห้องบัญชาการรบแยกส่วน)")
+        st.write("แยกระบบคำนวณระหว่าง 'การสร้างวินัย' และ 'การสะสางงานค้าง' เพื่อการประเมินที่โหดและตรงจุดที่สุด!")
         
-        with st.container(border=True):
-            st.markdown("**📋 ป้อนข้อมูลทรัพยากรการรบ:**")
+        col_plan1, col_plan2 = st.columns(2)
+        
+        # --- LEFT: HABIT PLANNER ---
+        with col_plan1:
+            st.markdown("<div class='glass-panel' style='border-top: 4px solid #38bdf8;'>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color:#38bdf8; text-align:center;'>⛓️ กองบัญชาการวินัย (HABITS)</h4>", unsafe_allow_html=True)
+            time_habit = st.number_input("⏳ เวลาฝึกวินัย (นาที):", min_value=5, max_value=300, value=30, step=5, key="t_hab")
+            mode_habit = st.selectbox("โหมดการฝึกวินัย:", ["🏃 วอร์มอัป (ชิลๆ - 5 นาที/ข้อ)", "🔥 เอาจริง (มาตรฐาน - 10 นาที/ข้อ)", "💀 ทรมานร่าง (รีดขีดจำกัด - 15 นาที/ข้อ)"], key="m_hab")
+            btn_hab = st.button("⛓️ ประมวลผลตารางวินัย", use_container_width=True, key="btn_plan_hab")
             
-            col_ai1, col_ai2 = st.columns(2)
-            time_avail = col_ai1.number_input("⏳ เวลาที่มึงพร้อมลุย (นาที):", min_value=10, max_value=1440, value=120, step=10)
-            focus_style = col_ai2.selectbox("🧠 โหมดความตาย:", [
-                "🍅 Pomodoro (ลุย 25 พัก 5)", 
-                "⚡ Flow State (ลุย 50 พัก 10)",
-                "🌊 Deep Work (ลุย 90 พัก 15)", 
-                "🦅 Spartan Time (ลุย 120 พัก 10)",
-                "🩸 Hell Week (ลุย 180 พัก 5)",
-                "💀 Brutal Mode (ลุยยันตาย ไม่พัก)"
-            ])
+            if btn_hab:
+                habits_sim = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
+                st.markdown("<div class='cyber-terminal'>", unsafe_allow_html=True)
+                st.markdown("<h4>SYSTEM LOG: DISCIPLINE OVERVIEW</h4>", unsafe_allow_html=True)
+                
+                if not habits_sim:
+                    st.success("✅ วินัยมึงครบแล้วสำหรับวันนี้! ไปลุยงานหลักซะ!")
+                else:
+                    time_per_habit = 5 if "วอร์มอัป" in mode_habit else 15 if "ทรมาน" in mode_habit else 10
+                    total_needed = len(habits_sim) * time_per_habit
+                    
+                    st.write(f"**เวลาที่มี:** {time_habit} นาที | **เวลาที่ต้องใช้ทั้งหมด:** {total_needed} นาที")
+                    st.markdown("<div class='cyber-phase hab'>[ PROTOCOL: HABIT EXECUTION ]</div>", unsafe_allow_html=True)
+                    
+                    t_left = time_habit
+                    for h in habits_sim:
+                        if t_left >= time_per_habit:
+                            st.markdown(f"<div class='cyber-item hab'>{h.get('name')} (~{time_per_habit} นาที)</div>", unsafe_allow_html=True)
+                            t_left -= time_per_habit
+                        else:
+                            st.markdown(f"<div class='cyber-item' style='color:#ef4444;'><s>{h.get('name')}</s> [FAILED: INSUFFICIENT TIME]</div>", unsafe_allow_html=True)
+                    
+                    st.markdown("<br><div class='cyber-phase hab'>[ COMMANDER'S REVIEW ]</div>", unsafe_allow_html=True)
+                    if time_habit < total_needed:
+                        st.markdown("<span style='color:#ef4444; font-weight:bold;'>🚨 สภาพ! เวลาแค่นี้มึงยังไม่พอขัดเกลาวินัยพื้นฐานเลย! โคตรน่าสมเพช มึงห้ามหาข้ออ้างเด็ดขาด!</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<span style='color:#38bdf8;'>เวลาพอถมเถ! ยัดตารางนี้เข้าไปในหัวมึง แล้วทำมันให้จบๆ ไปซะ!</span>", unsafe_allow_html=True)
+                
+                st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
             
-            submitted_auto = st.button("🔥 เริ่มประมวลผลกลยุทธ์!", type="primary", use_container_width=True)
-
-        if submitted_auto:
-            with st.spinner("⏳ System processing... Analyzing resources and targets..."):
-                habits_sim = []
+        # --- RIGHT: TASK PLANNER ---
+        with col_plan2:
+            st.markdown("<div class='glass-panel' style='border-top: 4px solid #ef4444;'>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color:#ef4444; text-align:center;'>🔪 กองบัญชาการรบ (TASKS & QUESTS)</h4>", unsafe_allow_html=True)
+            time_task = st.number_input("⏳ เวลาสางงานค้าง (นาที):", min_value=10, max_value=1440, value=120, step=10, key="t_tsk")
+            mode_task = st.selectbox("โหมดความตาย:", ["🍅 Pomodoro (50/10)", "🌊 Deep Work (90/15)", "🦅 Spartan Time (120/10)", "🩸 Hell Week (180/5)", "💀 Brutal (ไม่พัก)"], key="m_tsk")
+            btn_tsk = st.button("💀 ประมวลผลแผนฆ่างาน", type="primary", use_container_width=True, key="btn_plan_tsk")
+            
+            if btn_tsk:
                 tasks_sim = []
-                
-                # แยก Habits (ใช้เวลาคงที่ 10 นาที)
-                for h in db["iron_habits"][safe_email]:
-                    if isinstance(h, dict) and h.get("last_done_date") != today_str:
-                        habits_sim.append({"name": h.get('name'), "type": "วินัย"})
-                
-                # เอางานหลัก เรียน และเควสย่อยมารวมกัน
                 for m in db["missions"][safe_email]:
-                    if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False): 
+                    if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date") != today_str: 
                         tasks_sim.append({"name": m.get('ภารกิจ'), "type": "งาน", "must_do": m.get("is_must_do", False), "score": get_priority_score(m.get("ประเภท", "")), "dl_score": get_deadline_score(m.get("deadline", ""))})
                 for s in db["study_missions"][safe_email]:
-                    if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False): 
+                    if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date") != today_str: 
                         tasks_sim.append({"name": s.get('ภารกิจ'), "type": "เรียน", "must_do": s.get("is_must_do", False), "score": get_priority_score(s.get("ประเภท", "")), "dl_score": get_deadline_score(s.get("deadline", ""))})
                 for sq in db["side_quests"][safe_email]:
                     if isinstance(sq, dict) and not sq.get("done"):
                         tasks_sim.append({"name": sq.get('task'), "type": "เควสย่อย", "must_do": False, "score": 2, "dl_score": 999})
                 
-                if not habits_sim and not tasks_sim:
-                    st.success("🎉 ไม่มีภารกิจค้างเลย! ระบบไร้เป้าหมายให้ประมวลผล พักผ่อนได้ไอ้นักรบ!")
+                st.markdown("<div class='cyber-terminal combat'>", unsafe_allow_html=True)
+                st.markdown("<h4>SYSTEM LOG: COMBAT PROTOCOL</h4>", unsafe_allow_html=True)
+                
+                if not tasks_sim:
+                    st.success("✅ โล่ง! ไม่มีงานค้างในระบบ!")
                 else:
                     tasks_sim.sort(key=lambda x: (0 if x["must_do"] else 1, x["dl_score"], x["score"]))
+                    st.write(f"**เวลาที่มี:** {time_task} นาที | **โหมด:** {mode_task}")
+                    st.markdown("<div class='cyber-phase com'>[ PROTOCOL: MISSION EXECUTION ]</div>", unsafe_allow_html=True)
                     
-                    st.markdown("---")
-                    st.markdown("<h3 style='color:#38bdf8; text-transform:uppercase;'>🤖 CYBER-TACTICAL DOSSIER</h3>", unsafe_allow_html=True)
-                    st.markdown(f"<div class='cyber-terminal'>", unsafe_allow_html=True)
+                    t_left = time_task
+                    dropped_must_do = False
+                    dropped_overdue = False
                     
-                    st.write(f"**[ RESOURCES ]** TIME: {time_avail} MINS | MODE: {focus_style}")
-                    
-                    time_left = time_avail
-                    
-                    # PHASE 1: Habits
-                    if habits_sim:
-                        st.markdown("<div class='cyber-phase'>[ PHASE 1: WARM-UP / IRON HABITS ]</div>", unsafe_allow_html=True)
-                        for h in habits_sim:
-                            if time_left >= 10:
-                                st.markdown(f"<div class='cyber-item'>[วินัย] {h['name']} (~10 นาที)</div>", unsafe_allow_html=True)
-                                time_left -= 10
-                            else:
-                                st.markdown(f"<div class='cyber-item' style='color:#64748b;'><s>[วินัย] {h['name']}</s> (INSUFFICIENT TIME)</div>", unsafe_allow_html=True)
-                    
-                    # PHASE 2: Main Execution
-                    st.markdown("<div class='cyber-phase'>[ PHASE 2: MAIN EXECUTION ]</div>", unsafe_allow_html=True)
                     for task in tasks_sim:
-                        if time_left <= 0:
-                            st.markdown(f"<div class='cyber-item' style='color:#64748b;'><s>[{task['type']}] {task['name']}</s> (ABORTED: NO TIME LEFT)</div>", unsafe_allow_html=True)
+                        is_overdue = task["dl_score"] < 0
+                        
+                        if t_left <= 0:
+                            if task["must_do"]: dropped_must_do = True
+                            if is_overdue: dropped_overdue = True
+                            st.markdown(f"<div class='cyber-item' style='color:#64748b;'><s>[{task['type']}] {task['name']}</s> (ABORTED: NO TIME)</div>", unsafe_allow_html=True)
                             continue
                             
-                        # Estimate time: Must Do = 45m, Priority 1 = 30m, Priority 2 = 20m, others = 15m
-                        est_time = 45 if task["must_do"] else 30 if task["score"] == 1 else 20 if task["score"] == 2 else 15
-                        if time_left < est_time: est_time = time_left
+                        # Estimate time
+                        est_time = 45 if task["must_do"] else 30 if task["score"]==1 or is_overdue else 20 if task["score"]==2 else 15 if task["type"]!="เควสย่อย" else 10
+                        if t_left < est_time: est_time = t_left
                         
-                        warning = " <span style='color:#ef4444;'>[!! MUST DO !!]</span>" if task["must_do"] else ""
-                        st.markdown(f"<div class='cyber-item'>[{task['type']}] {task['name']}{warning} (~{est_time} นาที)</div>", unsafe_allow_html=True)
-                        time_left -= est_time
+                        warning = " <span style='color:#ef4444;'>[!! MUST DO !!]</span>" if task["must_do"] else " <span style='color:#f59e0b;'>[OVERDUE]</span>" if is_overdue else ""
+                        st.markdown(f"<div class='cyber-item com'>[{task['type']}] {task['name']}{warning} (~{est_time} นาที)</div>", unsafe_allow_html=True)
+                        t_left -= est_time
                         
-                    st.markdown("<br><div class='cyber-phase'>[ PHASE 3: COMMANDER'S ORDERS ]</div>", unsafe_allow_html=True)
+                    st.markdown("<br><div class='cyber-phase com'>[ COMMANDER'S REVIEW ]</div>", unsafe_allow_html=True)
                     
-                    # Brutal Text Generation Based on Focus Style
+                    if dropped_must_do:
+                        st.markdown("<span style='color:#ef4444; font-weight:bold; font-size:1.1em;'>🚨 [CRITICAL FAILURE] ไอ้เวร! มึงดองงานจนเวลาไม่พอทำงานชี้เป็นชี้ตาย (MUST DO)! มึงเตรียมตัวตายตอนพิพากษาได้เลย!</span><br><br>", unsafe_allow_html=True)
+                    elif dropped_overdue:
+                        st.markdown("<span style='color:#f59e0b; font-weight:bold;'>⚠️ [WARNING] งานดองข้ามชาติมึงก็ยังสะสางไม่หมด! พรุ่งนี้มึงต้องตื่นมาจัดการมันให้ได้!</span><br><br>", unsafe_allow_html=True)
+                    
                     brutal_text = ""
-                    if "Pomodoro" in focus_style: brutal_text = "ลุกขึ้นมาขยับตัวตอนพัก 5 นาทีด้วย! อย่าเสือกหยิบมือถือมาไถให้เสียสมาธิ!"
-                    elif "Flow" in focus_style: brutal_text = "เข้าสู่โซนไร้ตัวตน ปล่อยให้สัญชาตญาณนำทาง 50 นาทีนี้มึงคือเครื่องจักร!"
-                    elif "Deep" in focus_style: brutal_text = "90 นาทีนี้คือโลกที่มีแค่มึงกับเป้าหมาย ใครทักมาไม่ต้องตอบ ตัดขาดจากโลกภายนอกซะ!"
-                    elif "Spartan" in focus_style: brutal_text = "120 นาทีแห่งนรก! บีบคั้นสมองมึงออกมาให้หมด นี่คือสนามรบ!"
-                    elif "Hell" in focus_style: brutal_text = "180 นาทีรวด! ถ้ามึงไม่ตาย มึงก็รอด! กัดฟันทำไปซะไอ้ลูกหมา!"
+                    if "Pomodoro" in mode_task: brutal_text = "ลุกขึ้นมาขยับตัวตอนพักด้วย! อย่าเสือกหยิบมือถือมาไถให้เสียสมาธิ!"
+                    elif "Deep" in mode_task: brutal_text = "90 นาทีนี้คือโลกที่มีแค่มึงกับเป้าหมาย ใครทักมาไม่ต้องตอบ ตัดขาดจากโลกภายนอกซะ!"
+                    elif "Spartan" in mode_task: brutal_text = "120 นาทีไม่มีคำว่าปรานี ลุกไปเยี่ยวคือแพ้! บีบคั้นสมองมึงออกมาให้หมด!"
+                    elif "Hell" in mode_task: brutal_text = "180 นาทีรวด! ถ้ามึงไม่ตาย มึงก็รอด! กัดฟันทำไปซะไอ้ลูกหมา!"
                     else: brutal_text = "พักคือข้ออ้างของคนอ่อนแอ! ลุยจนกว่าตาจะลาย ทำจนกว่างานจะเสร็จ มึงห้ามลุกไปไหน!"
                     
-                    quote = clean_quote(random.choice(MENTORS["None"]["quotes"]))
-                    st.markdown(f"<div style='color:#e2e8f0; font-style:italic;'>\"{quote}\"<br><br>> {brutal_text} ลุยได้แล้ว!!</div>", unsafe_allow_html=True)
-                    
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color:#e2e8f0;'>{brutal_text}</span>", unsafe_allow_html=True)
+
+                st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
-    # TAB 2: 🔪 งาน (V30 ADDED PROGRESS BAR HTML)
+    # TAB 2: 🔪 งาน
     # ----------------------------------------------------
     with tab_missions:
         st.markdown("### 🔪 งานที่ต้องบดขยี้วันนี้")
@@ -915,7 +939,6 @@ with colRight:
                 q_tag = f"<span class='badge b-gold'>Q{m.get('user_order', 99)}</span>" if int(m.get('user_order', 99)) != 99 else ""
                 type_icon = "💀 BOSS" if m.get("is_boss") else "🔪" if m.get("subtasks") else "⚡"
                 
-                # 🛡️ V30 Added Subtask Progress Bar inline!
                 inline_prog = get_subtask_progress_html(m)
                 
                 c1.markdown(f"<div style='margin-bottom:8px;'>{prio_badge} {q_tag} {subj_tag}</div><div style='font-size:1.1em;'>{type_icon} <b>{m['ภารกิจ']}</b> {badge_html} {frozen_badge}</div>{inline_prog}", unsafe_allow_html=True)
@@ -956,7 +979,7 @@ with colRight:
                     if m.get("รายละเอียด"): st.write(m["รายละเอียด"])
                     all_done = True
                     if m.get("subtasks"):
-                        st.markdown("**📌 งานย่อยที่ต้องเคลียร์ (ทำแค่อันเดียวก็รอดพิพากษา):**")
+                        st.markdown("**📌 งานย่อยที่ต้องเคลียร์ (ทำแค่อันเดียวก็รอดพิพากษา *ถ้ายังไม่เลยกำหนด*):**")
                         for i, stask in enumerate(m["subtasks"]):
                             is_locked = stask.get("done", False) and stask.get("done_date", "") != today_str
                             can_interact = not is_locked and (not is_frozen or is_overdue)
@@ -1002,7 +1025,7 @@ with colRight:
                 if c3.button("⏪ ดึงกลับมาทำ", key=f"revert_{m['id']}"): m["รอตรวจ"] = False; save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 3: 📖 เรียน (V30 ADDED PROGRESS BAR HTML)
+    # TAB 3: 📖 เรียน
     # ----------------------------------------------------
     with tab_study:
         st.markdown("### 📖 วิชาที่ต้องบรรลุในวันนี้")
@@ -1089,7 +1112,7 @@ with colRight:
                     if s.get("รายละเอียด"): st.write(s["รายละเอียด"])
                     all_done = True
                     if s.get("subtasks"):
-                        st.markdown("**📌 บทเรียนที่ต้องเก็บ (เรียนบทเดียวก็รอดพิพากษา):**")
+                        st.markdown("**📌 บทเรียนที่ต้องเก็บ (เรียนบทเดียวก็รอดพิพากษา *ถ้ายังไม่เลยกำหนด*):**")
                         for i, stask in enumerate(s["subtasks"]):
                             is_locked = stask.get("done", False) and stask.get("done_date", "") != today_str
                             can_interact = not is_locked and (not is_frozen or is_overdue)
@@ -1507,7 +1530,7 @@ with colRight:
                     st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
-    # 🛡️ V28 TAB 8: ❓ คลังปัญญา (Q&A VAULT)
+    # TAB 8: ❓ คลังปัญญา (Q&A VAULT)
     # ----------------------------------------------------
     with tab_qa:
         st.markdown("### ❓ คลังปัญญา (Q&A Vault)")
@@ -1675,6 +1698,7 @@ with colRight:
                             j_quote = clean_quote(random.choice(MENTORS['Jesus']['quotes']))
                             st.markdown(f"<p style='color: #38bdf8; font-style: italic; font-size: 0.9em;'>✝️ \"{j_quote}\"</p>", unsafe_allow_html=True)
 
+
 # ==========================================
 # 💰 อัปเกรดระบบการเงิน (ULTIMATE FINANCE TRACKER)
 # ==========================================
@@ -1707,7 +1731,7 @@ with c_fin2:
                 save_db(db); st.success("บันทึกยอดสำเร็จ!"); safe_rerun()
 
 # ==========================================
-# 6. หนี้เลือด & ⚖️ THE JUDGMENT FEED (AUTOMATED) - 🛡️ V30 SUBTASK FIX
+# 6. หนี้เลือด & ⚖️ THE JUDGMENT FEED (AUTOMATED) - 🛡️ V31 SUBTASK FIX OVERDUE
 # ==========================================
 st.divider()
 c_bot1, c_bot2 = st.columns(2)
@@ -1752,7 +1776,7 @@ else:
                             made_progress_today = True
                             break
                             
-                # 🛡️ V30 LOGIC: ถ้าเลย Deadline แล้ว ถือว่าพลาด 100% ไม่สนว่าวันนี้มึงจะทำ Subtask ไปบ้างไหม
+                # 🛡️ V31 LOGIC: เลยกำหนด = พลาด 100% ไม่สนว่าทำ subtask ไหม!
                 if is_overdue:
                     expected_today.append(item)
                 elif made_progress_today:
