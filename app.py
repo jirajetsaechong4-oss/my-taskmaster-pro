@@ -7,15 +7,8 @@ import hashlib
 import random
 import re
 
-# 🚀 นำเข้า Gemini AI 
-try:
-    import google.generativeai as genai
-    HAS_GENAI = True
-except ImportError:
-    HAS_GENAI = False
-
 # ==========================================
-# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V28 SUPREME CYBER-TACTICAL)
+# 1. ตั้งค่าระบบ (DISCIPLINE ARC - V29 THE OFFLINE SUPREME & SUBTASK FIX)
 # ==========================================
 st.set_page_config(page_title="DISCIPLINE ARC", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -27,7 +20,7 @@ if "slap_awake_active" not in st.session_state: st.session_state["slap_awake_act
 if "active_slap_message" not in st.session_state: st.session_state["active_slap_message"] = ""
 if "locked_in_active" not in st.session_state: st.session_state["locked_in_active"] = False
 
-# --- CUSTOM CSS (สวยสัดๆ SUPREME OVERHAUL) ---
+# --- CUSTOM CSS (สวยสัดๆ SUPREME OVERHAUL + CYBER GRID) ---
 st.markdown("""
 <style>
     /* Global Tactical Dark Theme with Cyber Grid */
@@ -118,13 +111,18 @@ st.markdown("""
     .task-priority-4 { border-left: 5px solid #22C55E; background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(30,41,59,0.5) 100%); }
     .task-priority-4:hover { transform: translateY(-4px) scale(1.01); background: linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(30,41,59,0.8) 100%); border-left-width: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 15px rgba(34,197,94,0.25); z-index: 10; }
     
-    /* New: Side Quests & Q&A Specific Cards */
+    /* Side Quests & Q&A */
     .sq-card { background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(30, 41, 59, 0.6) 100%); border-left: 5px solid #A855F7; padding: 15px 20px; border-radius: 12px; margin-bottom: 12px; transition: 0.3s; border-top: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); }
     .sq-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 20px rgba(168, 85, 247, 0.3); border-left-width: 8px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%); }
     
     .qa-card { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(30, 41, 59, 0.6) 100%); border-left: 5px solid #10B981; padding: 15px 20px; border-radius: 12px; margin-bottom: 12px; transition: 0.3s; border-top: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); }
     .qa-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 12px 25px rgba(0,0,0,0.5), 0 0 20px rgba(16, 185, 129, 0.3); border-left-width: 8px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%); }
 
+    /* Auto-Planner Matrix Report */
+    .tactical-report { background: rgba(2, 6, 23, 0.8); border: 1px solid #38bdf8; border-radius: 12px; padding: 25px; box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.1), 0 0 15px rgba(56, 189, 248, 0.2); }
+    .timeline-item { border-left: 3px dashed #475569; padding-left: 15px; margin-bottom: 15px; position: relative; }
+    .timeline-item::before { content: '■'; position: absolute; left: -7.5px; top: 0; color: #38bdf8; font-size: 10px; }
+    
     /* Death Mark Overrides */
     .task-card-ui.death-mark { border: 2px solid #ef4444; border-left: 8px solid #ef4444; animation: pulse-red 2s infinite; background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(30,41,59,0.8) 100%); }
     
@@ -270,6 +268,13 @@ def calculate_task_rewards(task, current_streak, mentor_name):
     if mentor_name == "Future You" and score == 1: final_exp += 20
     return final_exp, fail_reduce
 
+def get_skill_tier_info(exp):
+    if exp < 100: return "🟤 ทองแดง (Bronze)", "#b45309"
+    elif exp < 300: return "⚪ เหล็กกล้า (Iron)", "#94a3b8"
+    elif exp < 600: return "🟡 ทองคำ (Gold)", "#f59e0b"
+    elif exp < 1000: return "🟣 แพลตตินัม (Platinum)", "#a855f7"
+    else: return "💠 เพชร (Diamond)", "#06b6d4"
+
 def load_db():
     if FIREBASE_URL == "" or FIREBASE_URL is None: 
         st.error("🚨 ใส่ลิงก์ Firebase ก่อน!")
@@ -284,7 +289,7 @@ def load_db():
                 "dopamine_fails": {}, "excuses": {}, "cookie_jar": {}, "haters": {}, "finance": {}, "iron_habits": {}, 
                 "daily_wins": {}, "exams": {}, "beat_yesterday": {}, "limit_breaks": {}, "weakness_fuel": {}, 
                 "sanctuary": {}, "skill_forge": {}, "judgment_history": {}, "subjects": {},
-                "qa_vault": {}, "side_quests": {} # 🛡️ V28 New Features Initialization
+                "qa_vault": {}, "side_quests": {} 
             }
             for k, v in defaults.items():
                 if k not in data or data[k] is None: data[k] = v
@@ -364,26 +369,6 @@ with st.sidebar:
     st.title("⚙️ DISCIPLINE ARC")
     st.caption(f"🗓️ วันที่: {thai_date_format(today_str)}") 
     
-    # --- GEMINI API SETTINGS (SAFE & SAVED) ---
-    if safe_email is not None:
-        u_data = db["users"].get(safe_email)
-        st.markdown("### 🔑 AI SETTINGS")
-        saved_key = u_data.get("api_key", "")
-        api_key_input = st.text_input("Gemini API Key:", value=saved_key, type="password", key="sidebar_api_key", help="ใส่ API Key ของมึงที่นี่เพื่อปลดล็อกระบบ AI วางแผนและวิเคราะห์ระดับเทพ")
-        
-        if api_key_input != saved_key:
-            u_data["api_key"] = api_key_input
-            save_db(db)
-            st.success("💾 บันทึก API Key เข้าสู่ระบบสำเร็จ!")
-            
-        if api_key_input and HAS_GENAI:
-            try:
-                genai.configure(api_key=api_key_input)
-                st.caption("✅ AI พร้อมทำงาน!")
-            except Exception as e:
-                st.error("❌ API Key ผิดพลาด!")
-    st.divider()
-    
     if safe_email is None:
         auth_mode = st.radio("เลือกโหมด:", ["⚡ ล็อกอิน", "➕ สร้างไอดีใหม่"], key="auth_mode_radio")
         st.divider()
@@ -399,7 +384,7 @@ with st.sidebar:
                             "username": name_input, "level": 1, "exp": 0, "streak": 0, "blood_debt": 0, "in_cage": False, "ghost_exp": 0, 
                             "ambush_task": "", "failure_prob": 10, "last_login": today_str, "cleared_yesterday": True, "judged_today": "",
                             "target_name": "เป้าหมายสูงสุดของชีวิต", "target_date": str(today_date + timedelta(days=90)),
-                            "daily_oath_date": "", "anime_mentor": "None", "mentor_date": "", "api_key": ""
+                            "daily_oath_date": "", "anime_mentor": "None", "mentor_date": ""
                         }
                         save_db(db); st.success("🔥 ลงทะเบียนสำเร็จ! ล็อกอินเลย!")
                 else: st.warning("กรอกข้อมูลให้ครบ!")
@@ -511,7 +496,7 @@ if user.get("daily_oath_date") != today_str:
             user["daily_oath_date"] = today_str; save_db(db); safe_rerun()
     st.stop() 
 
-# 🛡️ CHECK DB STRUCTURE (รวม Feature ใหม่ V28)
+# CHECK DB STRUCTURE
 list_keys = ["missions", "study_missions", "command_log", "accountability_mirror", "dopamine_fails", "excuses", "cookie_jar", "haters", "iron_habits", "limit_breaks", "weakness_fuel", "sanctuary", "skill_forge", "subjects", "qa_vault", "side_quests"]
 for k in list_keys:
     if safe_email not in db[k] or db[k][safe_email] is None: db[k][safe_email] = []
@@ -546,7 +531,6 @@ if overdue_count > 0:
     fail_prob_penalty = 10 * overdue_count
     if active_mentor == "Future You":
         fail_prob_penalty *= 2
-        st.toast("⏳ [รากฐานแห่งอนาคต] มึงทำอนาคตกูพัง! โดนค่าความกาก x2 จากงานค้าง!", icon="💀")
     user["failure_prob"] = min(100, user.get("failure_prob", 10) + fail_prob_penalty)
     user["blood_debt"] = user.get("blood_debt", 0) + overdue_debt_accum
     user["in_cage"] = True; save_db(db)
@@ -556,7 +540,7 @@ if overdue_count > 0:
 raw_m = [m for m in db["missions"][safe_email] if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False) and m.get("skip_today_date") != today_str]
 raw_s = [s for s in db["study_missions"][safe_email] if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False) and s.get("skip_today_date") != today_str]
 raw_h = [h for h in db["iron_habits"][safe_email] if isinstance(h, dict) and h.get("last_done_date") != today_str]
-raw_sq = [sq for sq in db["side_quests"][safe_email] if isinstance(sq, dict) and not sq.get("done")] # 🛡️ V28 Side Quests
+raw_sq = [sq for sq in db["side_quests"][safe_email] if isinstance(sq, dict) and not sq.get("done")]
 
 for h in raw_h: h["ภารกิจ"] = h["name"]; h["is_habit"] = True
 for sq in raw_sq: sq["ภารกิจ"] = sq["task"]; sq["is_sidequest"] = True; sq["ประเภท"] = "🟡 ปานกลาง"
@@ -751,130 +735,88 @@ with colLeft:
 with colRight:
     st.markdown("## ⚙️ DISCIPLINE ZONE")
     
-    # 🛡️ V28: เพิ่ม Tab 🎯 เควสย่อย และ ❓ Q&A
-    tab_ai, tab_missions, tab_study, tab_sidequests, tab_forge, tab_subjects, tab_planner, tab_qa, tab_mirror, tab_habits, tab_daily_wins, tab_sanctuary = st.tabs([
-        "🤖 AI วางแผน", "🔪 งาน", "📖 เรียน", "🎯 เควสย่อย", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "❓ Q&A", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
+    # 🛡️ V29: TABS UPDATE (เอา AI ออก เปลี่ยนเป็นระบบจำลอง)
+    tab_planner_ai, tab_missions, tab_study, tab_sidequests, tab_forge, tab_subjects, tab_planner, tab_qa, tab_mirror, tab_habits, tab_daily_wins, tab_sanctuary = st.tabs([
+        "🧠 AUTO-PLANNER", "🔪 งาน", "📖 เรียน", "🎯 เควสย่อย", "⚒️ ตีเหล็ก", "🗂️ คลังวิชา", "📝 บัญชาการ", "❓ Q&A", "🪞 กระจก", "⛓️ วินัย", "🏅 ชัยชนะ", "🔥 พักใจ"
     ])
     
     user_subj_names = [s["name"] for s in db["subjects"].get(safe_email, []) if isinstance(s, dict)]
     subj_options = ["- ไม่ระบุ -"] + user_subj_names
     
     # ----------------------------------------------------
-    # TAB AI: 🤖 TACTICAL AI PLANNER 
+    # TAB 1: 🧠 TACTICAL AUTO-PLANNER (OFFLINE SYSTEM)
     # ----------------------------------------------------
-    with tab_ai:
-        st.markdown("### 🤖 TACTICAL AI (ผู้บัญชาการสมองกลสูงสุด)")
-        st.write("ให้ **Gemini** รับหน้าที่เป็นทั้ง 'นักวางกลยุทธ์' และ 'ครูฝึกจอมโหด' ในคนเดียว! คำนวณตารางเวลาและยุทธวิธีให้มึงซะ!")
+    with tab_planner_ai:
+        st.markdown("### 🧠 TACTICAL AUTO-PLANNER (ระบบเสนาธิการออฟไลน์)")
+        st.write("ไม่ต้องง้อเน็ต ไม่ต้องใช้ API! ระบบจะคำนวณและจัด Priority Time-boxing ให้มึงจากอัลกอริทึมระดับทหาร!")
         
-        api_gemini_check = user.get("api_key", "")
-        
-        if not api_gemini_check or not HAS_GENAI:
-            st.warning("⚠️ โปรดกรอก API Key ของ Gemini ที่แถบด้านซ้ายล่างก่อนใช้งาน")
-        else:
-            with st.container(border=True):
-                st.markdown("**📋 ซักประวัติและประเมินสถานะการรบ (Detailed Interrogation):**")
-                
-                col_ai1, col_ai2 = st.columns(2)
-                time_avail = col_ai1.number_input("⏳ มึงมีเวลาลุยงานกี่นาที? (Time Available):", min_value=10, max_value=1440, value=120, step=10)
-                main_goal = col_ai2.text_input("🎯 เป้าหมายหลักสุดของวันนี้ (Main Objective):", placeholder="เช่น ปั่นโปรเจกต์ให้เสร็จ, เคลียร์การบ้านคณิต")
-                
-                col_ai3, col_ai4 = st.columns(2)
-                focus_style = col_ai3.selectbox("🧠 สไตล์การโฟกัส (Focus Mode):", [
-                    "🍅 Pomodoro (ทำ 25 พัก 5)", 
-                    "🌊 Deep Work (ทำ 90 พัก 15)", 
-                    "💀 Brutal Mode (ไม่พักเลยจนกว่าจะตาย)"
-                ])
-                energy_level = col_ai4.select_slider("⚡ สภาพร่างกาย/จิตใจตอนนี้?", options=["ล้าสุดๆ (ใกล้ตาย)", "พอไหว (ตึงๆ)", "พลังล้น (พร้อมบวก)"], value="พอไหว (ตึงๆ)")
-                
-                col_ai5, col_ai6 = st.columns(2)
-                stress_level = col_ai5.select_slider("💣 ระดับความเครียด/กดดัน?", options=["ชิลๆ", "เริ่มลน", "สมองจะระเบิดแล้ว!"], value="เริ่มลน")
-                constraints = col_ai6.text_input("🚧 ข้อจำกัดอื่นๆ (Constraints):", placeholder="เช่น ต้องนอนก่อนเที่ยงคืน, วันนี้ปวดหัวมาก")
-                
-                submitted_ai = st.button("🔥 ประมวลผลแผนการรบ!", type="primary", use_container_width=True)
+        with st.container(border=True):
+            st.markdown("**📋 ใส่ข้อมูลทรัพยากรที่มึงมีตอนนี้:**")
+            
+            col_ai1, col_ai2 = st.columns(2)
+            time_avail = col_ai1.number_input("⏳ เวลาที่มึงพร้อมลุย (นาที):", min_value=10, max_value=1440, value=120, step=10)
+            focus_style = col_ai2.selectbox("🧠 โหมดความตาย:", [
+                "🍅 Pomodoro (ลุย 25 พัก 5)", 
+                "🌊 Deep Work (ลุย 90 พัก 15)", 
+                "💀 Brutal Mode (ไม่พักเลยจนกว่าจะตาย)"
+            ])
+            
+            submitted_auto = st.button("🔥 เริ่มประมวลผลกลยุทธ์!", type="primary", use_container_width=True)
 
-            if submitted_ai:
-                with st.spinner("🔥 ผู้บัญชาการ AI กำลังวิเคราะห์ยุทธวิธี... รอแป๊บไอ้นักรบ!"):
-                    active_tasks_ai = []
-                    for m in db["missions"][safe_email]:
-                        if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False): 
-                            active_tasks_ai.append(f"[งาน] {m.get('ภารกิจ')} (Priority: {m.get('ประเภท')}, Must Do: {m.get('is_must_do', False)})")
-                    for s in db["study_missions"][safe_email]:
-                        if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False): 
-                            active_tasks_ai.append(f"[เรียน] {s.get('ภารกิจ')} (Priority: {s.get('ประเภท')}, Must Do: {s.get('is_must_do', False)})")
-                    for h in db["iron_habits"][safe_email]:
-                        if isinstance(h, dict) and h.get("last_done_date") != today_str: 
-                            active_tasks_ai.append(f"[วินัย] {h.get('name')}")
-                    for sq in db["side_quests"][safe_email]:
-                        if isinstance(sq, dict) and not sq.get("done"):
-                            active_tasks_ai.append(f"[เควสย่อยส่วนตัว] {sq.get('task')}")
-                        
-                    task_str = "\n".join(active_tasks_ai) if active_tasks_ai else "ไม่มีงานค้างเลย ถือว่าว่าง!"
+        if submitted_auto:
+            with st.spinner("⏳ กำลังสแกนคลังแสงและเรียงลำดับเป้าหมาย..."):
+                active_tasks_sim = []
+                for m in db["missions"][safe_email]:
+                    if isinstance(m, dict) and not m.get("เสร็จแล้ว") and not m.get("รอตรวจ", False): 
+                        active_tasks_sim.append({"name": m.get('ภารกิจ'), "type": "งาน", "must_do": m.get("is_must_do", False), "score": get_priority_score(m.get("ประเภท", "")), "dl_score": get_deadline_score(m.get("deadline", ""))})
+                for s in db["study_missions"][safe_email]:
+                    if isinstance(s, dict) and not s.get("เสร็จแล้ว") and not s.get("รอตรวจ", False): 
+                        active_tasks_sim.append({"name": s.get('ภารกิจ'), "type": "เรียน", "must_do": s.get("is_must_do", False), "score": get_priority_score(s.get("ประเภท", "")), "dl_score": get_deadline_score(s.get("deadline", ""))})
+                for sq in db["side_quests"][safe_email]:
+                    if isinstance(sq, dict) and not sq.get("done"):
+                        active_tasks_sim.append({"name": sq.get('task'), "type": "เควสย่อย", "must_do": False, "score": 2, "dl_score": 999})
+                
+                if not active_tasks_sim:
+                    st.success("🎉 ไม่มีภารกิจค้างเลย! พักผ่อนได้ไอ้นักรบ!")
+                else:
+                    # Logic: Sort by Must Do (True first), then Deadline Score, then Priority Score
+                    active_tasks_sim.sort(key=lambda x: (0 if x["must_do"] else 1, x["dl_score"], x["score"]))
                     
-                    super_prompt = f"""
-                    คุณคือ AI ผู้บัญชาการรบที่ผสมผสานระหว่าง "นักวางกลยุทธ์อัจฉริยะ" และ "ครูฝึกจอมโหดไร้ความปราณี (สไตล์ David Goggins)"
+                    st.markdown("---")
+                    st.markdown("<h3 style='color:#38bdf8; text-transform:uppercase;'>🤖 SYSTEM REPORT: TACTICAL PROTOCOL</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='tactical-report'>", unsafe_allow_html=True)
                     
-                    ข้อมูลของฉันในตอนนี้:
-                    - เวลาที่มีจำกัด: {time_avail} นาที
-                    - เป้าหมายหลัก: {main_goal}
-                    - สภาพร่างกาย/พลังงาน: {energy_level}
-                    - ความเครียด: {stress_level}
-                    - สไตล์การทำงานที่อยากได้: {focus_style}
-                    - ข้อจำกัด: {constraints}
+                    st.write(f"**⏳ ทรัพยากรเวลา:** {time_avail} นาที | **โหมด:** {focus_style}")
+                    st.markdown("#### 🗺️ ลำดับการโจมตี (EXECUTION ORDER):")
                     
-                    งานที่ค้างอยู่:
-                    {task_str}
+                    time_left = time_avail
+                    task_num = 1
                     
-                    คำสั่ง (บังคับทำตามทุกข้อ):
-                    1. สร้างตารางเวลาการทำงานที่เป๊ะที่สุด (Time-boxed) ให้พอดีกับเวลา {time_avail} นาที จัดสรรเวลาให้แต่ละงานชัดเจน
-                    2. บังคับใส่เวลาพักตามสไตล์ {focus_style}
-                    3. ประเมินว่างานไหนสำคัญที่สุด (โดยเฉพาะ Must Do) ถ้าเวลาไม่พอ ให้บอกเลยว่า "โยนงานไหนทิ้งไปก่อน" ไม่ต้องปลอบใจ
-                    4. ด่าและเตือนสติฉันอย่างรุนแรงแบบ David Goggins ให้ฉันเลิกหาข้ออ้างเรื่องความเครียดและข้อจำกัด ใช้ภาษาไทยที่ดุดัน (กู, มึง, โคตร, สวะ, ขี้แพ้) ห้ามใช้คำสุภาพ (ครับ/ค่ะ) เด็ดขาด
-                    
-                    แสดงผลลัพธ์โดยแบ่งเป็น 2 ส่วนชัดเจน:
-                    ส่วนที่ 1: 🗺️ แผนยุทธวิธี (ตารางเวลาแบบละเอียดและเหตุผล)
-                    ส่วนที่ 2: 🩸 คำสั่งบัญชาการ (คำด่าและคำกระตุ้นเตือนสติขั้นรุนแรง)
-                    """
-                    
-                    try:
-                        genai.configure(api_key=api_gemini_check)
-                        safety_settings = [
-                            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-                        ]
-                        
-                        available_models = []
-                        try:
-                            available_models = [m.name.replace("models/", "") for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                        except Exception:
-                            available_models = ['gemini-1.5-flash', 'gemini-1.5-pro']
+                    for task in active_tasks_sim:
+                        if time_left <= 0:
+                            st.markdown(f"<div class='timeline-item' style='color:#94a3b8;'><s>[ตัดทิ้ง] {task['name']}</s> (เวลาหมด)</div>", unsafe_allow_html=True)
+                            continue
                             
-                        flash_models = [m for m in available_models if 'flash' in m.lower()]
-                        pro_models = [m for m in available_models if 'pro' in m.lower() and 'vision' not in m.lower()]
-                        test_models = flash_models + pro_models + ['gemini-1.5-flash', 'gemini-1.5-pro']
+                        # Estimate time: Must Do = 45m, Priority 1 = 30m, Priority 2 = 20m, others = 15m
+                        est_time = 45 if task["must_do"] else 30 if task["score"] == 1 else 20 if task["score"] == 2 else 15
+                        if time_left < est_time: est_time = time_left
                         
-                        seen = set()
-                        model_queue = [x for x in test_models if not (x in seen or seen.add(x))]
+                        warning = " 🚨 **[MUST DO]**" if task["must_do"] else ""
+                        color = "#ef4444" if task["must_do"] or task["score"]==1 else "#eab308" if task["score"]==2 else "#22c55e"
                         
-                        response = None
-                        for m_name in model_queue:
-                            try:
-                                model = genai.GenerativeModel(m_name)
-                                response = model.generate_content(super_prompt, safety_settings=safety_settings)
-                                if response: break 
-                            except Exception: continue
-                                
-                        if response:
-                            st.markdown("---")
-                            st.markdown(response.text)
-                        else:
-                            st.error("❌ Gemini ไม่ตอบสนอง (เซฟตี้บล็อก หรือไม่พบโมเดล)")
-                    except Exception as e:
-                        st.error(f"❌ Gemini API Error: {e}")
+                        st.markdown(f"<div class='timeline-item' style='color:{color};'><b>เป้าหมายที่ {task_num}:</b> [{task['type']}] {task['name']}{warning} <span style='color:#94a3b8;'>(~{est_time} นาที)</span></div>", unsafe_allow_html=True)
+                        time_left -= est_time
+                        task_num += 1
+                        
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    st.markdown("#### 🩸 คำสั่งจากผู้บัญชาการ:")
+                    # สุ่มคำด่าปลุกใจ
+                    quote = clean_quote(random.choice(MENTORS["None"]["quotes"]))
+                    st.error(f"> **\"{quote}\"**\n\n> เลิกหาข้ออ้าง แล้วไปทำตามตารางเดี๋ยวนี้! เวลาไม่เคยรอคนขี้แพ้!")
 
     # ----------------------------------------------------
-    # TAB 1: 🔪 งาน
+    # TAB 2: 🔪 งาน
     # ----------------------------------------------------
     with tab_missions:
         st.markdown("### 🔪 งานที่ต้องบดขยี้วันนี้")
@@ -927,9 +869,6 @@ with colRight:
                 csq_text = clean_quote(WARRIOR_CONSEQUENCES[get_stable_index(m_id + 'conseq', len(WARRIOR_CONSEQUENCES))])
                 c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ff4b4b;'>🩸 <b>ถ้ากูไม่ทำ:</b> {m.get('consequence', '') or csq_text}</div>", unsafe_allow_html=True)
                 
-                m_hype = clean_quote(active_quotes[get_stable_index(m_id + 'task_hype', len(active_quotes))])
-                c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #f59e0b;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {m_hype}</div>", unsafe_allow_html=True)
-                
                 with c1.popover("✏️ แก้ไขงาน"):
                     new_t = st.text_input("ชื่อภารกิจ:", value=m["ภารกิจ"], key=f"ed_m_name_{m['id']}")
                     new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(m.get("subject", "- ไม่ระบุ -")) if m.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_m_sub_{m['id']}")
@@ -962,14 +901,13 @@ with colRight:
                     if m.get("รายละเอียด"): st.write(m["รายละเอียด"])
                     all_done = True
                     if m.get("subtasks"):
-                        st.markdown("**📌 งานย่อยที่ต้องเคลียร์:**")
+                        st.markdown("**📌 งานย่อยที่ต้องเคลียร์ (ทำแค่อันเดียวก็รอดพิพากษา):**")
                         for i, stask in enumerate(m["subtasks"]):
                             is_locked = stask.get("done", False) and stask.get("done_date", "") != today_str
                             can_interact = not is_locked and (not is_frozen or is_overdue)
                             checked = st.checkbox(f"{stask['name']} {'🔒 ('+thai_date_format(stask.get('done_date', ''))+')' if is_locked else ''}", value=stask.get("done", False), disabled=not can_interact, key=f"st_{m['id']}_{i}")
                             if can_interact and checked != stask.get("done", False):
-                                m["subtasks"][i]["done"] = checked; m["subtasks"][i]["done_date"] = today_str if checked else ""; 
-                                if checked and active_mentor == "Yuji": user["failure_prob"] = max(0, user.get("failure_prob",10) - 2)
+                                m["subtasks"][i]["done"] = checked; m["subtasks"][i]["done_date"] = today_str if checked else ""
                                 save_db(db); safe_rerun()
                             if not checked: all_done = False
                         total_subs = len(m["subtasks"]); done_subs = len([s for s in m["subtasks"] if s.get("done")])
@@ -1009,7 +947,7 @@ with colRight:
                 if c3.button("⏪ ดึงกลับมาทำ", key=f"revert_{m['id']}"): m["รอตรวจ"] = False; save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 2: 📖 เรียน
+    # TAB 3: 📖 เรียน
     # ----------------------------------------------------
     with tab_study:
         st.markdown("### 📖 วิชาที่ต้องบรรลุในวันนี้")
@@ -1062,9 +1000,6 @@ with colRight:
                 csq_s_text = clean_quote(WARRIOR_CONSEQUENCES[get_stable_index(s_id + 'conseq', len(WARRIOR_CONSEQUENCES))])
                 c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #ff4b4b;'>🩸 <b>ถ้ากูไม่ทำ:</b> {s.get('consequence', '') or csq_s_text}</div>", unsafe_allow_html=True)
                 
-                s_hype = clean_quote(active_quotes[get_stable_index(s_id + 'study_hype', len(active_quotes))])
-                c1.markdown(f"<div class='mentor-quote' style='border-left: 3px solid #38BDF8;'>{MENTORS[active_mentor]['icon']} <b>{MENTORS[active_mentor]['name']}:</b> {s_hype}</div>", unsafe_allow_html=True)
-                
                 with c1.popover("✏️ แก้ไขเป้าหมาย"):
                     new_t = st.text_input("ชื่อภารกิจ:", value=s["ภารกิจ"], key=f"ed_s_name_{s['id']}")
                     new_s = st.selectbox("วิชา:", subj_options, index=subj_options.index(s.get("subject", "- ไม่ระบุ -")) if s.get("subject", "- ไม่ระบุ -") in subj_options else 0, key=f"ed_s_sub_{s['id']}")
@@ -1097,14 +1032,13 @@ with colRight:
                     if s.get("รายละเอียด"): st.write(s["รายละเอียด"])
                     all_done = True
                     if s.get("subtasks"):
-                        st.markdown("**📌 บทเรียนที่ต้องเก็บ:**")
+                        st.markdown("**📌 บทเรียนที่ต้องเก็บ (เรียนบทเดียวก็รอดพิพากษา):**")
                         for i, stask in enumerate(s["subtasks"]):
                             is_locked = stask.get("done", False) and stask.get("done_date", "") != today_str
                             can_interact = not is_locked and (not is_frozen or is_overdue)
                             checked = st.checkbox(f"{stask['name']} {'🔒 ('+thai_date_format(stask.get('done_date', ''))+')' if is_locked else ''}", value=stask.get("done", False), disabled=not can_interact, key=f"st_stud_{s['id']}_{i}")
                             if can_interact and checked != stask.get("done", False):
-                                s["subtasks"][i]["done"] = checked; s["subtasks"][i]["done_date"] = today_str if checked else ""; 
-                                if checked and active_mentor == "Yuji": user["failure_prob"] = max(0, user.get("failure_prob",10) - 2)
+                                s["subtasks"][i]["done"] = checked; s["subtasks"][i]["done_date"] = today_str if checked else ""
                                 save_db(db); safe_rerun()
                             if not checked: all_done = False
                         total_subs = len(s["subtasks"]); done_subs = len([stk for stk in s["subtasks"] if stk.get("done")])
@@ -1139,15 +1073,15 @@ with colRight:
                 if c3.button("⏪ กลับมาอ่าน", key=f"revert_stud_{s['id']}"): s["รอตรวจ"] = False; save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # 🛡️ V28 TAB 3.5: 🎯 เควสย่อยส่วนตัว (SIDE QUESTS)
+    # TAB 4: 🎯 เควสย่อยส่วนตัว (SIDE QUESTS)
     # ----------------------------------------------------
     with tab_sidequests:
         st.markdown("### 🎯 เควสย่อยส่วนตัว (Side Quests)")
-        st.write("งานจิปาถะส่วนตัว เช่น 'วันนี้ต้องลงโปรแกรม', 'ตอบเมลครู' ที่ไม่ใช่งานใหญ่ แต่ถ้าละเลยก็ต้องโดนหักคะแนนพิพากษา!")
+        st.write("งานจิปาถะส่วนตัว เช่น 'วันนี้ต้องลงโปรแกรม', 'ตอบเมล' ไม่ใช่งานใหญ่ แต่ถ้าละเลยโดนหักคะแนนพิพากษา!")
         
         with st.form("add_sq_form", clear_on_submit=True):
             col_sq1, col_sq2 = st.columns([4, 1])
-            sq_name = col_sq1.text_input("ชื่อเควสย่อย (เช่น โหลดแอป, ตอบไลน์):")
+            sq_name = col_sq1.text_input("ชื่อเควสย่อย:", placeholder="เช่น ลงโปรแกรม ROS 2, ซื้อปากกา")
             if col_sq2.form_submit_button("บรรจุเควส", use_container_width=True):
                 if sq_name:
                     db["side_quests"][safe_email].append({"id": str(uuid.uuid4()), "task": sq_name, "done": False, "done_date": ""})
@@ -1172,46 +1106,59 @@ with colRight:
                 st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
-    # TAB 4: ⚒️ โรงตีเหล็ก (THE SKILL FORGE)
+    # TAB 5: ⚒️ โรงตีเหล็ก (THE ADVANCED FORGE V2)
     # ----------------------------------------------------
     with tab_forge:
-        st.markdown("### ⚒️ โรงตีเหล็ก (THE SKILL FORGE)")
-        st.write("ปลดล็อกขีดจำกัด! สะสม EXP ไปเรื่อยๆ ให้ Level พุ่งทะยาน **(ทุกๆ 100 EXP = 1 Level)** แต่ดึงมาฝึกพร้อมกันได้แค่ 2 อย่าง!")
+        st.markdown("### ⚒️ โรงตีเหล็ก V2 (The Advanced Skill Forge)")
+        st.write("ปลดล็อกขีดจำกัด! สะสม EXP พัฒนาระดับขั้น (Tiers) ดึงทักษะมาโฟกัสพร้อมกันได้แค่ 2 อย่าง!")
+        
         forge_data = db["skill_forge"].get(safe_email, [])
         active_skills = [sk for sk in forge_data if sk.get("status") == "active"]
         dormant_skills = [sk for sk in forge_data if sk.get("status") == "dormant"]
         
-        with st.expander("➕ เพิ่มทักษะที่อยากเรียนรู้"):
+        with st.expander("➕ เพิ่มทักษะที่อยากเรียนรู้ (Add Skill)"):
             with st.form("forge_add_form", clear_on_submit=True):
-                sk_name = st.text_input("ชื่อทักษะ (เช่น เขียนโปรแกรม, ภาษาญี่ปุ่น):", key="txt_sk_name")
-                sk_why = st.text_input("ทำไมถึงอยากเก่งเรื่องนี้? (แรงผลักดัน):", key="txt_sk_why")
-                if st.form_submit_button("บันทึกทักษะลงคลัง"):
+                sk_name = st.text_input("ชื่อทักษะ (เช่น เขียนโปรแกรม Python):", key="txt_sk_name")
+                sk_why = st.text_input("แรงผลักดัน (ทำไมต้องเก่งเรื่องนี้?):", key="txt_sk_why")
+                if st.form_submit_button("บรรจุลงคลังเหล็ก"):
                     if sk_name:
                         db["skill_forge"][safe_email].append({"id": str(uuid.uuid4()), "name": sk_name, "why": sk_why, "status": "dormant", "exp_gained": 0, "date_added": today_str})
                         save_db(db); safe_rerun()
                         
         st.divider()
-        st.markdown(f"#### 🔥 ทักษะที่กำลังฝึกฝน (Active Skills: {len(active_skills)}/2)")
-        if not active_skills: st.info("ยังไม่มีทักษะที่ดึงมาฝึก ไปดึงมาจากคลังสิวะ!")
+        st.markdown(f"#### 🔥 ทักษะที่กำลังฝังราก (Active Focus: {len(active_skills)}/2)")
+        if not active_skills: st.info("ยังไม่มีทักษะที่ดึงมาฝึก ไปดึงจากคลังสิวะ!")
         for sk in active_skills:
-            with st.container(border=True):
-                col1, col2, col3 = st.columns([5, 2, 1])
-                col1.markdown(f"**⚡ {sk['name']}**")
-                col1.caption(f"แรงผลักดัน: {sk.get('why', '-')}")
-                sk_exp = sk.get('exp_gained', 0)
-                col1.progress((sk_exp % 100) / 100.0, text=f"👑 Lv.{(sk_exp // 100) + 1} | {sk_exp % 100} / 100 EXP (รวม: {sk_exp} EXP)")
-                if col2.button("🔥 ฝึกซ้อมวันนี้ (+10 EXP)", key=f"train_{sk['id']}", use_container_width=True):
-                    sk["exp_gained"] = sk_exp + 10; user["exp"] += 5; st.toast(f"⚒️ ความชำนาญเพิ่มขึ้น!", icon="🔥"); save_db(db); safe_rerun()
-                if col3.button("🧊 พักไว้", key=f"rest_{sk['id']}"): sk["status"] = "dormant"; save_db(db); safe_rerun()
+            st.markdown("<div class='glass-panel' style='border-left: 5px solid #F59E0B;'>", unsafe_allow_html=True)
+            col1, col2 = st.columns([5, 3])
+            
+            sk_exp = sk.get('exp_gained', 0)
+            tier_name, tier_color = get_skill_tier_info(sk_exp)
+            
+            col1.markdown(f"<h4 style='margin-bottom:0;'>⚡ {sk['name']}</h4>", unsafe_allow_html=True)
+            col1.caption(f"🔥 {sk.get('why', '-')}")
+            col1.markdown(f"<b style='color:{tier_color};'>{tier_name}</b> | 👑 Lv.{(sk_exp // 100) + 1} | รวม {sk_exp} EXP", unsafe_allow_html=True)
+            col1.progress((sk_exp % 100) / 100.0)
+            
+            col2.markdown("**โหมดการฝึกฝน:**")
+            t1, t2, t3 = col2.columns(3)
+            if t1.button("🏃 เบาๆ\n(+10 EXP)", key=f"t1_{sk['id']}", use_container_width=True): sk["exp_gained"]=sk_exp+10; user["exp"]+=2; save_db(db); safe_rerun()
+            if t2.button("🔥 เอาจริง\n(+30 EXP)", key=f"t2_{sk['id']}", use_container_width=True): sk["exp_gained"]=sk_exp+30; user["exp"]+=5; save_db(db); safe_rerun()
+            if t3.button("💀 ขีดสุด\n(+50 EXP)", key=f"t3_{sk['id']}", use_container_width=True): sk["exp_gained"]=sk_exp+50; user["exp"]+=10; save_db(db); safe_rerun()
+            
+            if col2.button("🧊 พักทักษะนี้ (เข้าคลัง)", key=f"rest_{sk['id']}", use_container_width=True): sk["status"] = "dormant"; save_db(db); safe_rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
                     
         st.divider()
-        st.markdown("#### 🧊 คลังทักษะรอการฝึก (Dormant Skills)")
+        st.markdown("#### 🧊 คลังทักษะรอการฝึก (Dormant Vault)")
         if not dormant_skills: st.info("คลังว่างเปล่า")
         for sk in dormant_skills:
             with st.container(border=True):
                 col1, col2, col3 = st.columns([5, 2, 1])
                 sk_exp = sk.get('exp_gained', 0)
-                col1.write(f"🧊 **{sk['name']}** (Lv.{(sk_exp // 100) + 1} | รวม: {sk_exp} EXP)")
+                tier_name, tier_color = get_skill_tier_info(sk_exp)
+                
+                col1.write(f"🧊 **{sk['name']}** (<span style='color:{tier_color};'>{tier_name}</span> Lv.{(sk_exp // 100) + 1})", unsafe_allow_html=True)
                 col1.caption(f"เหตุผล: {sk.get('why', '-')}")
                 if col2.button("⚡ สวมใส่เพื่อฝึก (Equip)", key=f"equip_{sk['id']}", use_container_width=True):
                     if len(active_skills) >= 2: st.error("🚨 กฎเหล็ก: โฟกัสพร้อมกันได้แค่ 2 อย่าง!")
@@ -1219,7 +1166,7 @@ with colRight:
                 if col3.button("🗑️", key=f"del_sk_{sk['id']}"): db["skill_forge"][safe_email].remove(sk); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 5: 🗂️ คลังแสงวิชา (ACADEMIC ARSENAL)
+    # TAB 6: 🗂️ คลังแสงวิชา (ACADEMIC ARSENAL)
     # ----------------------------------------------------
     with tab_subjects:
         st.markdown("### 🗂️ คลังแสงรายวิชา (Academic Arsenal)")
@@ -1316,7 +1263,7 @@ with colRight:
                 st.write("") 
 
     # ----------------------------------------------------
-    # TAB 6: 📝 สมุดบัญชาการ (COMMAND LOG)
+    # TAB 7: 📝 สมุดบัญชาการ (COMMAND LOG)
     # ----------------------------------------------------
     with tab_planner:
         st.markdown("### 📝 สมุดบัญชาการ (Command Log)")
@@ -1503,7 +1450,7 @@ with colRight:
                     st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
-    # 🛡️ V28 TAB 7: ❓ คลังปัญญา (Q&A VAULT)
+    # 🛡️ V28 TAB 8: ❓ คลังปัญญา (Q&A VAULT)
     # ----------------------------------------------------
     with tab_qa:
         st.markdown("### ❓ คลังปัญญา (Q&A Vault)")
@@ -1536,7 +1483,7 @@ with colRight:
                 st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
-    # TAB 8: 🪞 กระจกแห่งความรับผิดชอบ
+    # TAB 9: 🪞 กระจกแห่งความรับผิดชอบ
     # ----------------------------------------------------
     with tab_mirror:
         st.markdown("### 🪞 กระจกแห่งความรับผิดชอบ (Accountability Mirror)")
@@ -1560,7 +1507,7 @@ with colRight:
                     if st.button("🗑️ ดึงออก", key=f"del_mirror_{note['id']}", use_container_width=True): db["accountability_mirror"][safe_email].remove(note); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 9: ⛓️ วินัยเหล็ก
+    # TAB 10: ⛓️ วินัยเหล็ก
     # ----------------------------------------------------
     with tab_habits:
         st.markdown("### ⛓️ วินัยเหล็ก (THE IRON HABITS)")
@@ -1621,7 +1568,7 @@ with colRight:
                     if c3.button("🗑️", key=f"del_h_{h.get('id', h.get('name', ''))}"): db["iron_habits"][safe_email].remove(h); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 10: 🏅 ชัยชนะรายวัน
+    # TAB 11: 🏅 ชัยชนะรายวัน
     # ----------------------------------------------------
     with tab_daily_wins:
         st.markdown("### 🏅 ชัยชนะรายวัน (Daily Wins)")
@@ -1653,7 +1600,7 @@ with colRight:
                     if col4.button("🗑️", key=f"del_dwin_{item['id']}"): win_items.remove(item); save_db(db); safe_rerun()
 
     # ----------------------------------------------------
-    # TAB 11: 🔥 พักใจ
+    # TAB 12: 🔥 พักใจ
     # ----------------------------------------------------
     with tab_sanctuary:
         st.markdown("## 🔥 แคมป์ไฟพักใจ (The Sanctuary)")
@@ -1704,7 +1651,7 @@ with c_fin2:
                 save_db(db); st.success("บันทึกยอดสำเร็จ!"); safe_rerun()
 
 # ==========================================
-# 6. หนี้เลือด & ⚖️ THE JUDGMENT FEED (AUTOMATED)
+# 6. หนี้เลือด & ⚖️ THE JUDGMENT FEED (AUTOMATED) - 🛡️ V29 SUBTASK FIX 
 # ==========================================
 st.divider()
 c_bot1, c_bot2 = st.columns(2)
@@ -1729,34 +1676,52 @@ else:
     if user.get("in_cage") or user.get("blood_debt", 0) > 0: 
         st.error("❌ ติดหนี้เลือดอยู่! ไปวิดพื้นชดใช้กรรมให้หมดก่อนมาขอรับคำพิพากษา!")
     else:
-        expected_today, completed_today = [], []
+        expected_today = []
+        completed_today = []
+        progressed_today = [] # 🛡️ V29: งานย่อยที่กดขยับไปแล้วในวันนี้ (ถือว่าปลอดภัย)
         
-        # 🛡️ รวบรวมงานทั้งหมดรวมถึง Side Quests เข้ากระบวนการพิพากษา!
+        # 1. เช็คงานหลักและเรียน
         all_m_and_s = [m for m in db["missions"][safe_email] if isinstance(m, dict)] + [s for s in db["study_missions"][safe_email] if isinstance(s, dict)]
         for item in all_m_and_s:
-            if item.get("เสร็จแล้ว") and item.get("done_date") == today_str: completed_today.append(item)
+            # ถ้าเสร็จสมบูรณ์วันนี้
+            if item.get("เสร็จแล้ว") and item.get("done_date") == today_str: 
+                completed_today.append(item)
             elif not item.get("เสร็จแล้ว") and not item.get("รอตรวจ", False):
-                if item.get("is_must_do") or item.get("skip_today_date") != today_str or is_overdue_check(item.get("deadline", "")): 
+                # 🛡️ V29: ตรวจสอบว่า "วันนี้" มีการทำ Subtask ไปบ้างหรือยัง?
+                made_progress_today = False
+                if item.get("subtasks"):
+                    for sub in item["subtasks"]:
+                        if sub.get("done") and sub.get("done_date") == today_str:
+                            made_progress_today = True
+                            break
+                            
+                if made_progress_today:
+                    progressed_today.append(item) # ปลอดภัย ไม่ถือว่าทิ้งงาน
+                elif item.get("is_must_do") or item.get("skip_today_date") != today_str or is_overdue_check(item.get("deadline", "")): 
                     expected_today.append(item)
-        
+                    
+        # 2. เช็ควินัยเหล็ก
         for h in db["iron_habits"][safe_email]:
             if isinstance(h, dict):
                 if h.get("last_done_date") == today_str: completed_today.append(h)
                 else: expected_today.append(h)
                 
+        # 3. เช็คเควสย่อย
         for sq in db["side_quests"][safe_email]:
             if isinstance(sq, dict):
                 if sq.get("done") and sq.get("done_date") == today_str: completed_today.append(sq)
-                elif not sq.get("done"): expected_today.append(sq) # ❌ ถ้าไม่เสร็จ โดนประจาน!
+                elif not sq.get("done"): expected_today.append(sq)
 
-        total_load = len(expected_today) + len(completed_today)
-        done_count, missed_count = len(completed_today), len(expected_today)
+        # 🛡️ การคิดคะแนนใหม่: (เสร็จ 100% + ขยับงานย่อย) นับเป็น Done
+        done_count = len(completed_today) + len(progressed_today)
+        missed_count = len(expected_today)
+        total_load = done_count + missed_count
         score_percent = int((done_count / total_load * 100)) if total_load > 0 else 100
         
-        if total_load == 0 or score_percent == 100: grade, grade_color = "S", "#e2d141"
+        if total_load == 0 or score_percent == 100: grade, grade_color = "S", "#f59e0b" # สีทอง
         elif score_percent >= 80: grade, grade_color = "A", "#38bdf8"
         elif score_percent >= 60: grade, grade_color = "B", "#22c55e"
-        elif score_percent >= 40: grade, grade_color = "C", "#f59e0b"
+        elif score_percent >= 40: grade, grade_color = "C", "#f97316"
         else: grade, grade_color = "F", "#ef4444"
 
         evaluations = {
@@ -1769,7 +1734,8 @@ else:
         
         st.markdown(f"<div style='background-color:rgba(0,0,0,0.5); padding:20px; border: 2px solid {grade_color}; border-radius: 10px; text-align:center; box-shadow: 0 0 15px {grade_color}40;'>", unsafe_allow_html=True)
         st.markdown(f"<h1 style='color: {grade_color}; font-size: 4.5em; margin-bottom:0; text-shadow: 2px 2px 10px rgba(0,0,0,0.8);'>GRADE: {grade}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<h3>วินัยสัมฤทธิ์ผล: {score_percent}% ({done_count}/{total_load} ภารกิจ)</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>วินัยสัมฤทธิ์ผล: {score_percent}%</h3>", unsafe_allow_html=True)
+        st.caption(f"เสร็จสิ้น: {len(completed_today)} | ก้าวหน้า (งานย่อย): {len(progressed_today)} | ล้มเหลว/ดองงาน: {len(expected_today)}")
         st.divider()
         st.markdown(f"<h4 style='color:{grade_color};'>🗣️ คำตัดสินจาก {MENTORS[active_mentor]['name']}:</h4>", unsafe_allow_html=True)
         st.write(f"> **\"{evaluations[grade]}\"**")
