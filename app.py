@@ -1146,6 +1146,43 @@ def get_skill_tier_info(exp):
     elif exp < 600: return "🟡 ทองคำ (Gold)", "#f59e0b"
     elif exp < 1000: return "🟣 แพลตตินัม (Platinum)", "#a855f7"
     else: return "💠 เพชร (Diamond)", "#06b6d4"
+# ==========================================
+# 🚀 4. ฟังก์ชัน AI DATA LINK (สร้าง PROMPT สำเร็จรูป)
+# ==========================================
+def generate_ai_export_payload(tasks):
+    payload = f"📅 STATUS REPORT: {thai_date_format(today_str)}\n"
+    payload += "="*60 + "\n"
+    payload += "SYSTEM CONTEXT: ฉันต้องการให้คุณทำหน้าที่เป็น 'Personal Tactical AI Agent' ช่วยวิเคราะห์และวางแผนตารางชีวิตให้ฉัน โดยอิงจากทรัพยากรเวลาที่มีจำกัด และภารกิจที่ค้างอยู่ด้านล่างนี้ ช่วยจัด Time-boxing เรียงลำดับความสำคัญ และแนะนำเทคนิคการโฟกัสให้ที\n\n"
+    payload += "-"*60 + "\n\n"
+
+    for t in tasks:
+        if t.get("is_habit"): t_type = "⛓️ วินัยเหล็ก"
+        elif t.get("is_sidequest"): t_type = "🎯 เควสย่อย"
+        elif t.get("is_study"): t_type = "📖 การเรียน"
+        else: t_type = "🔪 ภารกิจหลัก"
+
+        t_name = t.get("ภารกิจ", "Unknown")
+        t_prio = t.get("ประเภท", "ไม่ระบุ")
+        t_dead = t.get("deadline", "ไม่มีกำหนด")
+        t_desc = t.get("รายละเอียด", "")
+        t_must = "[🔥 MUST DO TODAY]" if t.get("is_must_do") else ""
+
+        payload += f"[{t_type}] {t_name} {t_must}\n"
+        if not t.get("is_habit") and not t.get("is_sidequest"):
+            payload += f"   - ความสำคัญ: {t_prio}\n"
+            if str(t_dead).strip(): payload += f"   - Deadline: {t_dead}\n"
+        if str(t_desc).strip():
+            payload += f"   - รายละเอียด: {t_desc}\n"
+
+        subs = t.get("subtasks", [])
+        if subs:
+            payload += "   - งานย่อย (Subtasks):\n"
+            for s in subs:
+                done_mark = "[x]" if s.get("done") else "[ ]"
+                payload += f"     * {done_mark} {s.get('name')}\n"
+        payload += "\n"
+
+    return payload
 
 def load_db():
     if FIREBASE_URL == "" or FIREBASE_URL is None:
@@ -1728,6 +1765,33 @@ with colRight:
     # ----------------------------------------------------
     # TAB 1: 🧠 THE DUAL AUTO-PLANNER (V31 SEPARATED)
     # ----------------------------------------------------
+    # ----------------------------------------------------
+    # TAB 1: 🧠 THE DUAL AUTO-PLANNER & AI DATA LINK
+    # ----------------------------------------------------
+    with tab_planner_ai:
+        
+        # 📡 AI DATA LINK (ส่งออกข้อมูลให้ AI ภายนอก)
+        st.markdown("<div class='glass-panel' style='border-left: 4px solid #A855F7; padding:18px; margin-bottom:25px;'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:#A855F7; margin-top:0; margin-bottom:10px;'><i class='fa-solid fa-satellite-dish'></i> AI DATA LINK (ระบบเชื่อมต่อ AI เอเจนท์ส่วนตัว)</h4>", unsafe_allow_html=True)
+        st.write("ดาวน์โหลดภารกิจค้างทั้งหมดของวันนี้เป็นไฟล์ `.txt` เพื่อเอาไปแปะให้ ChatGPT, Claude หรือ AI เอเจนท์ของมึงช่วยวิเคราะห์และวางแผนตารางเวลาแบบเจาะลึก!")
+        
+        export_payload = generate_ai_export_payload(all_active_tasks)
+        
+        c_dl1, c_dl2 = st.columns([1, 3])
+        with c_dl1:
+            st.download_button(
+                label="📥 ดาวน์โหลดไฟล์ (TXT)",
+                data=export_payload,
+                file_name=f"Discipline_Plan_{today_str}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+        with c_dl2:
+            with st.expander("👁️ ดูตัวอย่างข้อมูลที่จะส่งให้ AI (Preview Prompt)"):
+                st.code(export_payload, language="markdown")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # (โค้ดเก่าส่วน st.markdown("### 🧠 THE DUAL AUTO-PLANNER...") ของมึงจะอยู่ต่อจากตรงนี้)
     with tab_planner_ai:
         st.markdown("### 🧠 THE DUAL AUTO-PLANNER (ห้องบัญชาการรบแยกส่วน)")
         st.write("แยกระบบคำนวณระหว่าง 'การสร้างวินัย' และ 'การสะสางงานค้าง' เพื่อการประเมินที่โหดและตรงจุดที่สุด!")
